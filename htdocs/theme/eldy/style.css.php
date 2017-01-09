@@ -241,6 +241,7 @@ body {
 <?php } ?>
 	color: rgb(<?php echo $colortext; ?>);
 	font-size: <?php print $fontsize ?>px;
+	line-height: 130%;
 	font-family: <?php print $fontlist ?>;
     margin-top: 0;
     margin-bottom: 0;
@@ -254,6 +255,7 @@ a.tab { font-weight: bold !important; }
 
 a:link, a:visited, a:hover, a:active { font-family: <?php print $fontlist ?>; font-weight: normal; color: rgb(<?php print $colortextlink; ?>); text-decoration: none;  }
 a:hover { text-decoration: underline; color: rgb(<?php print $colortextlink; ?>); }
+a.commonlink { color: rgb(<?php print $colortextlink; ?>) !important; text-decoration: none; } 
 
 input, input.flat, textarea, textarea.flat, form.flat select, select, select.flat, .dataTables_length label select {
     background-color: #FFF;
@@ -261,6 +263,7 @@ input, input.flat, textarea, textarea.flat, form.flat select, select, select.fla
 
 input:focus, textarea:focus, button:focus, select:focus {
     box-shadow: 0 0 4px #8091BF;
+    /* TODO Remove shadow on focus. Use instead border-bottom: 1px solid #aaa !important; To disable with select2 too. */
 }
 textarea.cke_source:focus
 {
@@ -336,9 +339,9 @@ input[type=checkbox] { background-color: transparent; border: none; box-shadow: 
 input[type=radio]    { background-color: transparent; border: none; box-shadow: none; }
 input[type=image]    { background-color: transparent; border: none; box-shadow: none; }
 input:-webkit-autofill {
-	background-color: #FBFFEA !important;
+	background-color: #FDFFF0 !important;
 	background-image:none !important;
-	-webkit-box-shadow: 0 0 0 50px #FBFFEA inset;
+	-webkit-box-shadow: 0 0 0 50px #FDFFF0 inset;
 }
 ::-webkit-input-placeholder { color:#ccc; }
 :-moz-placeholder { color:#bbb; } 			/* firefox 18- */
@@ -588,9 +591,16 @@ div.myavailability {
     overflow-y: hidden;
     -ms-overflow-style: -ms-autohiding-scrollbar;
 }*/
+/* Style used for most tables */ 
 .div-table-responsive {
     overflow-x: auto;
     min-height: 0.01%;
+    line-height: 100%;
+}
+/* Style used for full page tables with field selector and no content after table (priority before previous for such tables) */ 
+div.fiche>form>div.div-table-responsive {
+    overflow-x: auto;
+    min-height: 350px;
 }
 
 
@@ -783,6 +793,7 @@ td.showDragHandle {
 .side-nav {
 	display: table-cell;
 	border-right: 1px solid #d0d0d0;
+	box-shadow: 3px 0 6px -2px #eee;
 }
 div.blockvmenulogo
 {
@@ -861,12 +872,12 @@ div.fichecenterbis {
 div.fichethirdleft {
 	<?php if ($conf->browser->layout != 'phone')   { print "float: ".$left.";\n"; } ?>
 	<?php if ($conf->browser->layout != 'phone')   { print "width: 50%;\n"; } ?>
-	<?php if ($conf->browser->layout == 'phone') { print "padding-bottom: 6px;\n"; } ?>
+	<?php if ($conf->browser->layout == 'phone')   { print "padding-bottom: 6px;\n"; } ?>
 }
 div.fichetwothirdright {
 	<?php if ($conf->browser->layout != 'phone')   { print "float: ".$right.";\n"; } ?>
 	<?php if ($conf->browser->layout != 'phone')   { print "width: 50%;\n"; } ?>
-	<?php if ($conf->browser->layout == 'phone') { print "padding-bottom: 6px\n"; } ?>
+	<?php if ($conf->browser->layout == 'phone')   { print "padding-bottom: 6px\n"; } ?>
 }
 div.fichehalfleft {
 	<?php if ($conf->browser->layout != 'phone')   { print "float: ".$left.";\n"; } ?>
@@ -961,12 +972,13 @@ div.attacharea {
 }
 
 div.arearef {
-	/*border-bottom: 1px solid #bbb;*/
 	padding-top: 2px;
-	padding-bottom: 5px;
-	/*padding-right: 3px;
-	padding-left: 2px;*/
 	margin-bottom: 10px;
+	padding-bottom: 7px;
+}
+div.arearefnobottom {
+	padding-top: 2px;
+	padding-bottom: 4px;
 }
 div.heightref {
 	min-height: 80px;
@@ -1367,6 +1379,7 @@ foreach($mainmenuusedarray as $val)
 .bodylogin
 {
 	background: #f0f0f0;
+	/* background: linear-gradient(to left top, rgb(255,255,255), rgb(240,240,240)) fixed; */
 }
 .login_vertical_align {
 	padding: 10px;
@@ -1398,12 +1411,29 @@ form#login {
 	-moz-box-shadow: 0 2px 23px 2px rgba(0, 0, 0, 0.1), 0 2px 6px rgba(60,60,60,0.15);
 	-webkit-box-shadow: 0 2px 23px 2px rgba(0, 0, 0, 0.1), 0 2px 6px rgba(60,60,60,0.15);
 	box-shadow: 0 2px 23px 2px rgba(0, 0, 0, 0.1), 0 2px 6px rgba(60,60,60,0.15);
+	
 	/*-moz-box-shadow: 3px 2px 20px #CCC;
     -webkit-box-shadow: 3px 2px 20px #CCC;
     box-shadow: 3px 2px 20px #CCC;*/
 
 	border-radius: 5px;
-	border:solid 1px rgba(80,80,80,.4);
+	/*border-top:solid 1px rgba(180,180,180,.4);
+	border-left:solid 1px rgba(180,180,180,.4);
+	border-right:solid 1px rgba(180,180,180,.4);
+	border-bottom:solid 1px rgba(180,180,180,.4);*/
+}
+.login_table input#username, .login_table input#password, .login_table input#securitycode {
+	border: none;
+	border-bottom: solid 1px rgba(180,180,180,.4);
+	padding: 5px;
+	margin-left: 18px;
+	margin-top: 5px;
+}
+.login_table input#username:focus, .login_table input#password:focus, .login_table input#securitycode:focus {
+	outline: none !important;
+	/* box-shadow: none;
+	-webkit-box-shadow: 0 0 0 50px #FFF inset;
+	box-shadow: 0 0 0 50px #FFF inset;*/
 }
 .login_main_message {
 	text-align: center;
@@ -1440,8 +1470,8 @@ table.login_table_securitycode tr td {
 	border: 1px solid #DDDDDD;
 }
 #img_logo, .img_logo {
-	max-width: 200px;
-	max-height: 100px;
+	max-width: 170px;
+	max-height: 90px;
 }
 
 div.login_block {
@@ -1515,18 +1545,18 @@ img.loginphoto {
     height: 16px;
 }
 .span-icon-user {
-	/* background-image: url(<?php echo dol_buildpath($path.'/theme/'.$theme.'/img/object_user.png',1); ?>); */
+	background-image: url(<?php echo dol_buildpath($path.'/theme/'.$theme.'/img/object_user.png',1); ?>);
 	background-repeat: no-repeat;
 }
 .span-icon-password {
-	/* background-image: url(<?php echo dol_buildpath($path.'/theme/'.$theme.'/img/lock.png',1); ?>); */
+	background-image: url(<?php echo dol_buildpath($path.'/theme/'.$theme.'/img/lock.png',1); ?>);
 	background-repeat: no-repeat;
 }
-
+/*
 .span-icon-user input, .span-icon-password input {
 	/* margin-left: 18px; */
 	margin-left: 0px;
-}
+}*/
 
 /* ============================================================================== */
 /* Menu gauche                                                                    */
@@ -1928,6 +1958,7 @@ img.toolbarbutton {
 }
 
 .ecm-in-layout-south {
+    border-top: 0px !important;
     border-left: 0px !important;
     border-right: 0px !important;
     border-bottom: 0px !important;
@@ -1954,15 +1985,8 @@ div.tabBar {
     color: #<?php echo $colortextbacktab; ?>;
     padding-top: 16px;
     padding-left: 0px; padding-right: 0px;
-    /*padding-left: 18px;
-    padding-right: 18px;*/
     padding-bottom: 14px;
     margin: 0px 0px 14px 0px;
-    /*-moz-border-radius:4px;
-    -webkit-border-radius: 4px;
-	border-radius: 4px;
-    border-right: 1px solid #AAA;
-    border-left: 1px solid #AAA; */
     border-top: 1px solid #BBB;
     border-bottom: 1px solid #AAA;
 	width: auto;
@@ -2449,11 +2473,16 @@ table.liste tr, table.noborder tr, div.noborder form {
 table.liste th, table.noborder th, table.noborder tr.liste_titre td, table.noborder tr.box_titre td {
 	padding: 8px 2px 8px 3px;			/* t r b l */
 }
-tr.box_titre .nobordernopadding td { padding: 0px ! important; }
-table.liste td, table.noborder td, div.noborder form, div.noborder form div {
-	padding: 5px 2px 5px 3px;			/* t r b l */
+table.liste td, table.noborder td, div.noborder form div {
+	padding: 8px 2px 8px 3px;			/* t r b l */
+}
+div.liste_titre_bydiv .divsearchfield {
+	padding: 2px 1px 2px 0px;			/* t r b l */
 }
 
+tr.box_titre .nobordernopadding td { 
+	padding: 0px ! important; 
+}
 table.nobordernopadding {
 	border-collapse: collapse !important;
 	border: 0px;
@@ -2718,7 +2747,7 @@ tr.even td, tr.pair td, tr.odd td, tr.impair td, form.odd div.tagtd, form.impair
     padding: 5px 2px 5px 3px;
     border-bottom: 1px solid #ddd;
 }
-tr.even:last-of-type td, tr.pair:last-of-type td, tr.odd:last-of-type td, tr.impair:last-of-type td {
+form.tagtr:last-of-type div.tagtd, tr.even:last-of-type td, tr.pair:last-of-type td, tr.odd:last-of-type td, tr.impair:last-of-type td {
     border-bottom: 0px !important;
 }
 tr.even td .nobordernopadding tr td, tr.pair td .nobordernopadding tr td, tr.impair td .nobordernopadding tr td, tr.odd td .nobordernopadding tr td {
@@ -2730,26 +2759,18 @@ td.nobottom, td.nobottom {
 div.liste_titre .tagtd {
 	vertical-align: middle;
 }
-div.liste_titre {
+/*div.liste_titre {
 	box-shadow: 2px 2px 4px #CCC;
-}
+}*/
 div.liste_titre {
 	min-height: 26px !important;	/* We cant use height because it's a div and it should be higher if content is more. but min-height does not work either for div */
 
 	padding-top: 2px;
 	padding-bottom: 2px;
 
-	/*border-right-width: 1px;
-	border-right-color: #BBB;
-	border-right-style: solid;
-
-	border-left-width: 1px;
-	border-left-color: #BBB;
-	border-left-style: solid;*/
-
-	border-top-width: 1px;
+/*	border-top-width: 1px;
 	border-top-color: #BBB;
-	border-top-style: solid;
+	border-top-style: solid;*/
 }
 div.liste_titre_bydiv {
 	border-top-width: <?php echo $borderwith ?>px;
@@ -2766,7 +2787,7 @@ tr.liste_titre, tr.liste_titre_sel, form.liste_titre, form.liste_titre_sel, tabl
 {
 	height: 26px !important;
 }
-div.liste_titre, tr.liste_titre, tr.liste_titre_sel, form.liste_titre, form.liste_titre_sel, table.dataTable thead tr
+div.liste_titre_bydiv, .liste_titre div.tagtr, tr.liste_titre, tr.liste_titre_sel, form.liste_titre, form.liste_titre_sel, table.dataTable thead tr
 {
 	<?php if ($usegradienttitle) { ?>
 	background-image: -o-linear-gradient(bottom, rgba(0,0,0,0.1) 0%, rgba(<?php echo $colorbacktitle1; ?>,0.4) 100%);
@@ -2784,11 +2805,11 @@ div.liste_titre, tr.liste_titre, tr.liste_titre_sel, form.liste_titre, form.list
     border-bottom: 1px solid #FDFFFF;
     text-align: <?php echo $left; ?>;
 }
-tr.liste_titre th, tr.liste_titre td, th.liste_titre, form.liste_titre div, div.liste_titre
+tr.liste_titre th, tr.liste_titre td, th.liste_titre
 {
 	border-bottom: 1px solid #<?php echo ($colorbacktitle1 == '255,255,255'?'BBBBBB':'FDFFFF'); ?>;
 }
-tr.liste_titre th, th.liste_titre, tr.liste_titre td, td.liste_titre, form.liste_titre div, div.liste_titre
+tr.liste_titre th, th.liste_titre, tr.liste_titre td, td.liste_titre, form.liste_titre div
 {
     font-family: <?php print $fontlist ?>;
     font-weight: <?php echo $useboldtitle?'bold':'normal'; ?>;
@@ -2811,6 +2832,9 @@ tr.liste_titre_topborder td {
 }
 .liste_titre td a.notasortlink:hover {
 	background: transparent;
+}
+tr.liste_titre td.liste_titre, form.liste_titre div.tagtd {				/* For last line of table headers only */
+    border-bottom: 1px solid rgb(<?php echo $colortopbordertitle1 ?>);
 }
 
 tr.liste_titre_sel th, th.liste_titre_sel, tr.liste_titre_sel td, td.liste_titre_sel, form.liste_titre_sel div
@@ -3048,7 +3072,7 @@ div.info {
   -moz-border-radius: 4px;
   -webkit-border-radius: 4px;
   border-radius: 4px;
-  background: #E0EAE4;
+  background: #EaE4Ea;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 

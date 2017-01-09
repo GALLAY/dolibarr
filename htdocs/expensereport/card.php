@@ -1350,9 +1350,9 @@ else
 					print '<input type="hidden" name="action" value="update">';
 				}
 
-				print '<table class="border" style="width:100%;">';
-
 				$linkback = '<a href="'.DOL_URL_ROOT.'/expensereport/list.php'.(! empty($socid)?'?socid='.$socid:'').'">'.$langs->trans("BackToList").'</a>';
+
+				print '<table class="border" style="width:100%;">';
 
 				print '<tr>';
 				print '<td>'.$langs->trans("User").'</td>';
@@ -1427,26 +1427,6 @@ else
 				// Other attributes
 				//$cols = 3;
 				//include DOL_DOCUMENT_ROOT . '/core/tpl/extrafields_edit.tpl.php';
-				
-				// Public note
-				print '<tr>';
-				print '<td class="border" valign="top">' . $langs->trans('NotePublic') . '</td>';
-				print '<td valign="top">';
-
-				$doleditor = new DolEditor('note_public', $object->note_public, '', 80, 'dolibarr_notes', 'In', 0, false, true, ROWS_3, '90%');
-				print $doleditor->Create(1);
-				print '</td></tr>';
-
-				// Private note
-				if (empty($user->societe_id)) {
-					print '<tr>';
-					print '<td class="border" valign="top">' . $langs->trans('NotePrivate') . '</td>';
-					print '<td valign="top">';
-
-					$doleditor = new DolEditor('note_private', $object->note_private, '', 80, 'dolibarr_notes', 'In', 0, false, true, ROWS_3, '90%');
-					print $doleditor->Create(1);
-					print '</td></tr>';
-				}
 
 				print '</table>';
 
@@ -1584,12 +1564,6 @@ else
 				
 				print '<table class="border centpercent">';
 
-            	// Ref
-            	/*
-            	print '<tr><td class="titlefield">'.$langs->trans("Ref").'</td><td colspan="2">';
-            	print $form->showrefnav($object, 'ref', $linkback, 1, 'ref', 'ref', '');
-            	print '</td></tr>';*/
-
 				// Author
 				print '<tr>';
 				print '<td class="titlefield">'.$langs->trans("User").'</td>';
@@ -1606,7 +1580,7 @@ else
 				print '<tr>';
 				print '<td class="titlefield">'.$langs->trans("Period").'</td>';
 				print '<td>';
-				print get_date_range($object->date_debut,$object->date_fin,'',$langs,0);
+				print get_date_range($object->date_debut,$object->date_fin,'day',$langs,0);
 				print '</td>';
 				print '</tr>';
 				if (! empty($conf->global->EXPENSEREPORT_ASK_PAYMENTMODE_ON_CREATION))
@@ -1616,22 +1590,7 @@ else
 					print '<td>'.$object->libelle_paiement.'</td>';
 					print '</tr>';
 				}
-				// Status
-				/*
-				print '<tr>';
-				print '<td>'.$langs->trans("Statut").'</td>';
-				print '<td colspan="2">'.$object->getLibStatut(4).'</td>';
-				print '</tr>';
-				*/
 
-				print '<tr>';
-				print '<td>'.$langs->trans("NotePublic").'</td>';
-				print '<td>'.$object->note_public.'</td>';
-				print '</tr>';
-				print '<tr>';
-				print '<td>'.$langs->trans("NotePrivate").'</td>';
-				print '<td>'.$object->note_private.'</td>';
-				print '</tr>';
 				// Amount
 				print '<tr>';
 				print '<td>'.$langs->trans("AmountHT").'</td>';
@@ -1658,17 +1617,17 @@ else
 				// Validation date
 				print '<tr>';
 				print '<td>'.$langs->trans("DATE_SAVE").'</td>';
-				print '<td>'.dol_print_date($object->date_create,'dayhour');
+				print '<td>'.dol_print_date($object->date_valid,'dayhour');
 				if ($object->status == 2 && $object->hasDelay('toapprove')) print ' '.img_warning($langs->trans("Late"));
 				if ($object->status == 5 && $object->hasDelay('topay')) print ' '.img_warning($langs->trans("Late"));
 				print '</td></tr>';
 				print '</tr>';
 
-				// User to inform
+				// User to inform for approval
 				if ($object->fk_statut < 3)	// informed
 				{
 					print '<tr>';
-					print '<td>'.$langs->trans("VALIDATOR").'</td>';
+					print '<td>'.$langs->trans("VALIDATOR").'</td>';   // approver
 					print '<td>';
 					if ($object->fk_user_validator > 0)
 					{
@@ -2280,7 +2239,7 @@ print '<div class="fichehalfleft">';
  * Generate documents
  */
 
-if($user->rights->expensereport->export && $action != 'edit')
+if($user->rights->expensereport->export && $action != 'create' && $action != 'edit')
 {
 	$filename	=	dol_sanitizeFileName($object->ref);
 	$filedir	=	$conf->expensereport->dir_output . "/" . dol_sanitizeFileName($object->ref);

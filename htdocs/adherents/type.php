@@ -91,10 +91,10 @@ if ($action == 'add' && $user->rights->adherent->configurer)
 		$object = new AdherentType($db);
 
 		$object->libelle        = trim($label);
-		$object->subscription   = trim($subscription);
+		$object->subscription   = (int) trim($subscription);
 		$object->note           = trim($comment);
-		$object->mail_valid     = trim($mail_valid);
-		$object->vote           = trim($vote);
+		$object->mail_valid     = (boolean) trim($mail_valid);
+		$object->vote           = (boolean) trim($vote);
 
 		// Fill array 'array_options' with data from add form
 		$ret = $extrafields->setOptionalsFromPost($extralabels,$object);
@@ -129,10 +129,10 @@ if ($action == 'update' && $user->rights->adherent->configurer)
 		$object = new AdherentType($db);
 		$object->id             = $rowid;
 		$object->libelle        = trim($label);
-		$object->subscription   = trim($subscription);
+		$object->subscription   = (int) trim($subscription);
 		$object->note           = trim($comment);
-		$object->mail_valid     = trim($mail_valid);
-		$object->vote           = trim($vote);
+		$object->mail_valid     = (boolean) trim($mail_valid);
+		$object->vote           = (boolean) trim($vote);
 
 		// Fill array 'array_options' with data from add form
 		$ret = $extrafields->setOptionalsFromPost($extralabels,$object);
@@ -298,20 +298,15 @@ if ($rowid > 0)
 
 		dol_fiche_head($head, 'card', $langs->trans("MemberType"), 0, 'group');
 
-		print '<table class="border" width="100%">';
-
 		$linkback = '<a href="'.DOL_URL_ROOT.'/adherents/type.php">'.$langs->trans("BackToList").'</a>';
 
-		// Ref
-		print '<tr><td class="titlefield">'.$langs->trans("Ref").'</td>';
-		print '<td>';
-		print $form->showrefnav($object, 'rowid', $linkback);
-		print '</td></tr>';
+		dol_banner_tab($object, 'rowid', $linkback);
+		
+		print '<div class="underbanner clearboth"></div>';
+		
+		print '<table class="border" width="100%">';
 
-		// Label
-		print '<tr><td>'.$langs->trans("Label").'</td><td>'.dol_escape_htmltag($object->libelle).'</td></tr>';
-
-		print '<tr><td>'.$langs->trans("SubscriptionRequired").'</td><td>';
+		print '<tr><td class="titlefield">'.$langs->trans("SubscriptionRequired").'</td><td>';
 		print yn($object->subscription);
 		print '</tr>';
 
@@ -378,9 +373,7 @@ if ($rowid > 0)
 		$sql.= " AND t.rowid = ".$object->id;
 		if ($sall)
 		{
-		    $sql.= " AND (d.firstname LIKE '%".$sall."%' OR d.lastname LIKE '%".$sall."%' OR d.societe LIKE '%".$sall."%'";
-		    $sql.= " OR d.email LIKE '%".$sall."%' OR d.login LIKE '%".$sall."%' OR d.address LIKE '%".$sall."%'";
-		    $sql.= " OR d.town LIKE '%".$sall."%' OR d.note_public LIKE '%".$sall."%' OR d.note_private LIKE '%".$sall."%')";
+			$sql.=natural_search(array("f.firstname","d.lastname","d.societe","d.email","d.login","d.address","d.town","d.note_public","d.note_private"), $sall);
 		}
 		if ($status != '')
 		{
@@ -388,22 +381,22 @@ if ($rowid > 0)
 		}
 		if ($action == 'search')
 		{
-		  if (isset($_POST['search']) && $_POST['search'] != '')
-		  {
-		    $sql.= " AND (d.firstname LIKE '%".$_POST['search']."%' OR d.lastname LIKE '%".$_POST['search']."%')";
-		  }
+			if (GETPOST('search'))
+			{
+		  		$sql.= natural_search(array("d.firstname","d.lastname"), GETPOST('search'));
+		  	}
 		}
 		if (! empty($search_lastname))
 		{
-			$sql.= " AND (d.firstname LIKE '%".$search_lastname."%' OR d.lastname LIKE '%".$search_lastname."%')";
+			$sql.= natural_search(array("d.firstname","d.lastname"), $search_lastname);
 		}
 		if (! empty($search_login))
 		{
-		    $sql.= " AND d.login LIKE '%".$search_login."%'";
+			$sql.= natural_search("d.login", $search_login);
 		}
 		if (! empty($search_email))
 		{
-		    $sql.= " AND d.email LIKE '%".$search_email."%'";
+			$sql.= natural_search("d.email", $search_email);
 		}
 		if ($filter == 'uptodate')
 		{
