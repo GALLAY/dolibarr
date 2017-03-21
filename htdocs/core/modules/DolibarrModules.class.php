@@ -216,11 +216,6 @@ class DolibarrModules           // Can not be abstract, because we need to insta
     public $descriptionlong;
     
     /**
-     * @var string[] Module language files
-     */
-    public $langfiles;
-
-    /**
      * @var string Module export code
      */
     public $export_code;
@@ -291,6 +286,7 @@ class DolibarrModules           // Can not be abstract, because we need to insta
 	 */
 	public $config_page_url;
 
+	
 	/**
 	 * @var string[] List of module class names that must be enabled if this module is enabled.
 	 *
@@ -309,6 +305,26 @@ class DolibarrModules           // Can not be abstract, because we need to insta
 	 */
 	public $conflictwith;
 
+    /**
+     * @var string[] Module language files
+     */
+    public $langfiles;
+    
+    /**
+     * @var string[] Array of warnings to show when we activate the module
+     * 
+     * array('always'='text') or array('FR'='text')
+     */
+    public $warnings_activation;
+    
+    /**
+     * @var string[] Array of warnings to show when we activate an external module
+     * 
+     * array('always'='text') or array('FR'='text')
+     */
+    public $warnings_activation_ext;
+    
+	
 	/**
 	 * @var array() Minimum version of PHP required by module.
 	 * e.g.: PHP ≥ 5.3 = array(5, 3)
@@ -326,6 +342,7 @@ class DolibarrModules           // Can not be abstract, because we need to insta
 	 */
 	public $hidden = false;
 
+	
 	/**
 	 * Constructor. Define names, constants, directories, boxes, permissions
 	 *
@@ -377,7 +394,7 @@ class DolibarrModules           // Can not be abstract, because we need to insta
         if (! $err) $err+=$this->insert_cronjobs();
 
         // Insert permission definitions of module into llx_rights_def. If user is admin, grant this permission to user.
-        if (! $err) $err+=$this->insert_permissions(1);
+        if (! $err) $err+=$this->insert_permissions(1, null, 1);
 
         // Insert specific menus entries into database
         if (! $err) $err+=$this->insert_menus();
@@ -1414,10 +1431,10 @@ class DolibarrModules           // Can not be abstract, because we need to insta
      *
      * @param   int $reinitadminperms   If 1, we also grant them to all admin users
      * @param   int $force_entity       Force current entity
-     *
+     * @param   int	$notrigger			1=Does not execute triggers, 0= execute triggers
      * @return  int                     Error count (0 if OK)
      */
-    function insert_permissions($reinitadminperms=0, $force_entity=null)
+    function insert_permissions($reinitadminperms=0, $force_entity=null, $notrigger=0)
     {
         global $conf,$user;
 
@@ -1523,7 +1540,7 @@ class DolibarrModules           // Can not be abstract, because we need to insta
                                 $tmpuser=new User($this->db);
                                 $tmpuser->fetch($obj2->rowid);
                                 if (!empty($tmpuser->id)) {
-                                    $tmpuser->addrights($r_id);
+                                    $tmpuser->addrights($r_id, '', '', 0, 1);
                                 }
                                 $i++;
                             }
@@ -1552,8 +1569,8 @@ class DolibarrModules           // Can not be abstract, because we need to insta
 
     /**
      * Removes access rights
-     *
-     * @return  int Error count (0 if OK)
+     * 
+     * @return  int                     Error count (0 if OK)
      */
     function delete_permissions()
     {

@@ -350,10 +350,10 @@ class CommandeFournisseur extends CommonOrder
 					$line->multicurrency_total_tva 	= $objp->multicurrency_total_tva;
 					$line->multicurrency_total_ttc 	= $objp->multicurrency_total_ttc;
 
-	                $this->special_code        = $objp->special_code;
-	                $this->fk_parent_line      = $objp->fk_parent_line;
+	                $line->special_code        = $objp->special_code;
+	                $line->fk_parent_line      = $objp->fk_parent_line;
 
-                    $this->rang                = $objp->rang;
+                    $line->rang                = $objp->rang;
 
                     $this->lines[$i]      = $line;
 
@@ -1399,7 +1399,7 @@ class CommandeFournisseur extends CommonOrder
                     if ($prod->fetch($fk_product) > 0)
                     {
                         $product_type = $prod->type;
-                        $label = $prod->libelle;
+                        $label = $prod->label;
                         
                         // We use 'none' instead of $fourn_ref, because fourn_ref may not exists anymore. So we will take the first supplier price ok.
                         // If we want a dedicated supplier price, we must provide $fk_prod_fourn_price.
@@ -1408,6 +1408,11 @@ class CommandeFournisseur extends CommonOrder
                         {
                             $pu           = $prod->fourn_pu;       // Unit price supplier price set by get_buyprice
                             $ref_supplier = $prod->ref_supplier;   // Ref supplier price set by get_buyprice
+			    // is remise percent not keyed but present for the product we add it
+                            if ($remise_percent == 0 && $prod->remise_percent !=0)
+                            	$remise_percent =$prod->remise_percent;
+
+				
                         }
                         if ($result == 0)                   // If result == 0, we failed to found the supplier reference price
                         {
@@ -1501,7 +1506,6 @@ class CommandeFournisseur extends CommonOrder
             $this->line->product_type=$product_type;
             $this->line->remise_percent=$remise_percent;
             $this->line->subprice=$pu_ht;
-            $this->line->rang=$this->rang;
             $this->line->info_bits=$info_bits;
             
             $this->line->vat_src_code=$vat_src_code;
@@ -2317,7 +2321,7 @@ class CommandeFournisseur extends CommonOrder
             if (preg_match('/\((.*)\)/', $txtva, $reg))
             {
                 $vat_src_code = $reg[1];
-                $vatrate = preg_replace('/\s*\(.*\)/', '', $txtva);    // Remove code into vatrate.
+                $txtva = preg_replace('/\s*\(.*\)/', '', $txtva);    // Remove code into vatrate.
             }
             
             $tabprice=calcul_price_total($qty, $pu, $remise_percent, $txtva, $txlocaltax1, $txlocaltax2, 0, $price_base_type, $info_bits, $type, $this->thirdparty, $localtaxes_type, 100, $this->multicurrency_tx, $pu_ht_devise);
@@ -2341,8 +2345,11 @@ class CommandeFournisseur extends CommonOrder
 
             $subprice = price2num($pu_ht,'MU');
 
+            //Fetch current line from the database and then clone the object and set it in $oldline property
             $this->line=new CommandeFournisseurLigne($this->db);
             $this->line->fetch($rowid);
+            $oldline = clone $this->line;
+            $this->line->oldline = $oldline;
 
             $this->line->context = $this->context;
 
@@ -2949,7 +2956,8 @@ class CommandeFournisseurLigne extends CommonOrderLine
         $sql.= ' cd.info_bits, cd.total_ht, cd.total_tva, cd.total_ttc,';
         $sql.= ' cd.total_localtax1, cd.total_localtax2,';
         $sql.= ' p.ref as product_ref, p.label as product_libelle, p.description as product_desc,';
-        $sql.= ' cd.date_start, cd.date_end, cd.fk_unit';
+        $sql.= ' cd.date_start, cd.date_end, cd.fk_unit,';
+		$sql.= ' cd.multicurrency_subprice, cd.multicurrency_total_ht, cd.multicurrency_total_tva, cd.multicurrency_total_ttc';
         $sql.= ' FROM '.MAIN_DB_PREFIX.'commande_fournisseurdet as cd';
         $sql.= ' LEFT JOIN '.MAIN_DB_PREFIX.'product as p ON cd.fk_product = p.rowid';
         $sql.= ' WHERE cd.rowid = '.$rowid;
@@ -2957,6 +2965,7 @@ class CommandeFournisseurLigne extends CommonOrderLine
         if ($result)
         {
             $objp = $this->db->fetch_object($result);
+
             $this->rowid            = $objp->rowid;
             $this->id               = $objp->rowid;
             $this->fk_commande      = $objp->fk_commande;
@@ -2984,10 +2993,15 @@ class CommandeFournisseurLigne extends CommonOrderLine
             $this->product_libelle  = $objp->product_libelle;
             $this->product_desc     = $objp->product_desc;
 
-            $this->date_start       = $this->db->jdate($objp->date_start);
-            $this->date_end         = $this->db->jdate($objp->date_end);
-	        $this->fk_unit          = $objp->fk_unit;
-
+            $this->date_start       		= $this->db->jdate($objp->date_start);
+            $this->date_end         		= $this->db->jdate($objp->date_end);
+	        $this->fk_unit          		= $objp->fk_unit;
+			
+			$this->multicurrency_subprice	= $objp->multicurrency_subprice;
+			$this->multicurrency_total_ht	= $objp->multicurrency_total_ht;
+			$this->multicurrency_total_tva	= $objp->multicurrency_total_tva;
+			$this->multicurrency_total_ttc	= $objp->multicurrency_total_ttc;
+			
             $this->db->free($result);
             return 1;
         }
@@ -3084,7 +3098,7 @@ class CommandeFournisseurLigne extends CommonOrderLine
         $sql.= " total_ht, total_tva, total_localtax1, total_localtax2, total_ttc, fk_unit,";
         $sql.= " fk_multicurrency, multicurrency_code, multicurrency_subprice, multicurrency_total_ht, multicurrency_total_tva, multicurrency_total_ttc";
         $sql.= ")";
-        $sql.= " VALUES (".$this->fk_commande.", '" . $this->db->escape($this->product_label) . "','" . $this->db->escape($this->desc) . "',";
+        $sql.= " VALUES (".$this->fk_commande.", '" . $this->db->escape($this->label) . "','" . $this->db->escape($this->desc) . "',";
         $sql.= " ".($this->date_start?"'".$this->db->idate($this->date_start)."'":"null").",";
         $sql.= " ".($this->date_end?"'".$this->db->idate($this->date_end)."'":"null").",";
         if ($this->fk_product) { $sql.= $this->fk_product.","; }

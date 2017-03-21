@@ -139,7 +139,13 @@ class Project extends CommonObject
             dol_syslog(get_class($this)."::create error -1 ref null", LOG_ERR);
             return -1;
         }
-
+        if (! empty($conf->global->PROJECT_THIRDPARTY_REQUIRED) && ! $this->socid > 0)
+        {
+            $this->error = 'ErrorFieldsRequired';
+            dol_syslog(get_class($this)."::create error -1 ref null", LOG_ERR);
+            return -1;
+        }
+        
         $this->db->begin();
 
         $sql = "INSERT INTO " . MAIN_DB_PREFIX . "projet (";
@@ -334,12 +340,19 @@ class Project extends CommonObject
             }
             else
 			{
-                $this->error = $this->db->lasterror();
-                $this->errors[] = $this->error;
-                $this->db->rollback();
-                dol_syslog(get_class($this)."::update error -2 " . $this->error, LOG_ERR);
-                $result = -2;
-            }
+		        $this->error = $this->db->lasterror();
+		        $this->errors[] = $this->error;
+		        $this->db->rollback();
+			    if ($this->db->lasterrno() == 'DB_ERROR_RECORD_ALREADY_EXISTS')
+			    {
+			        $result = -4;
+			    }
+			    else
+			    {
+			        $result = -2;
+			    }
+		        dol_syslog(get_class($this)."::update error " . $result . " " . $this->error, LOG_ERR);
+			}
         }
         else
         {
@@ -495,6 +508,10 @@ class Project extends CommonObject
 		elseif ($type == 'project_task_time')	// Case we want to duplicate line foreach user
 		{
 			$sql = "SELECT DISTINCT pt.rowid, ptt.fk_user FROM " . MAIN_DB_PREFIX . "projet_task as pt, " . MAIN_DB_PREFIX . "projet_task_time as ptt WHERE pt.rowid = ptt.fk_task AND pt.fk_projet=" . $this->id;
+		}
+		elseif ($type == 'stock_mouvement')
+		{
+			$sql = 'SELECT ms.rowid, ms.fk_user_author as fk_user FROM ' . MAIN_DB_PREFIX . 'stock_mouvement as ms WHERE ms.origintype = "project" AND ms.fk_origin = ' . $this->id . ' AND ms.type_mouvement = 1';
 		}
         else
 		{
@@ -773,7 +790,7 @@ class Project extends CommonObject
      * 		Close a project
      *
      * 		@param		User	$user		User that close project
-     * 		@return		int					<0 if KO, >0 if OK
+     * 		@return		int					<0 if KO, 0 if already closed, >0 if OK
      */
     function setClose($user)
     {
@@ -828,6 +845,8 @@ class Project extends CommonObject
                 return -1;
             }
         }
+        
+        return 0;
     }
 
     /**
@@ -1673,8 +1692,8 @@ class Project extends CommonObject
             $response->warning_delay = $conf->projet->warning_delay/60/60/24;
             $response->label = $langs->trans("OpenedProjects");
             if ($user->rights->projet->all->lire) $response->url = DOL_URL_ROOT.'/projet/list.php?search_status=1&mainmenu=project';
-            else $response->url = DOL_URL_ROOT.'/projet/list.php?mode=mine&search_status=1&mainmenu=project';
-            $response->img = img_object($langs->trans("Projects"),"project");
+            else $response->url = DOL_URL_ROOT.'/projet/list.php?search_project_user=-1&search_status=1&mainmenu=project';
+            $response->img = img_object($langs->trans("Projects"),"projectpub");
 
             // This assignment in condition is not a bug. It allows walking the results.
             while ($obj=$this->db->fetch_object($resql))
