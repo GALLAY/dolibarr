@@ -388,6 +388,8 @@ input[name=surface] { margin-right: 4px; }
 fieldset { border: 1px solid #AAAAAA !important; }
 .legendforfieldsetstep { padding-bottom: 10px; }
 
+hr { border: 0; border-top: 1px solid #ccc; }
+
 .button, .buttonDelete, input[name="sbmtConnexion"] {
     font-family: <?php print $fontlist ?>;
 	border-color: #c5c5c5;
@@ -519,6 +521,12 @@ textarea.centpercent {
 .nounderline {
     text-decoration: none;
 }
+.paddingleft {
+	padding-<?php print $left; ?>: 4px;
+}
+.paddingright {
+	padding-<?php print $right; ?>: 4px;
+}
 .cursorpointer {
 	cursor: pointer;
 }
@@ -632,6 +640,13 @@ div.myavailability {
 	margin-bottom: 12px;
 }
 
+/* For the long description of module */
+.moduledesclong p img, .moduledesclong p a img {
+    max-width: 90% !important;
+    height: auto !important;
+}
+
+
 /* DOL_XXX for future usage (when left menu has been removed). If we do not use datatable */
 /*.table-responsive {
     width: calc(100% - 330px);
@@ -662,6 +677,11 @@ div.fiche>form>div.div-table-responsive {
 }
 .thumbstat {
 	flex: 1 1 120px;
+}
+.thumbstat150 {
+	flex: 1 1 150px;
+}
+.thumbstat, thumbstat150 {
     /* flex-grow: 1; */
     /* flex-shrink: 1; */
     /* flex-basis: 140px; */
@@ -686,6 +706,7 @@ div.fiche>form>div.div-table-responsive {
     .minwidth400 { min-width: 400px; }
     .minwidth500 { min-width: 500px; }
     .minwidth50imp  { min-width: 50px !important; }
+    .minwidth75imp  { min-width: 75px !important; }
     .minwidth100imp { min-width: 100px !important; }
     .minwidth200imp { min-width: 200px !important; }
     .minwidth300imp { min-width: 300px !important; }
@@ -702,6 +723,7 @@ div.fiche>form>div.div-table-responsive {
 .maxwidth400 { max-width: 400px; }
 .maxwidth500 { max-width: 500px; }
 .maxwidth50imp  { max-width: 50px !important; }
+.maxwidth75imp  { max-width: 75px !important; }
 .minheight20 { min-height: 20px; }
 .minheight40 { min-height: 40px; }
 .titlefieldcreate { width: 20%; }
@@ -715,6 +737,7 @@ div.fiche>form>div.div-table-responsive {
 	.titlefield { width: 30% !important; }
 	.titlefieldcreate { width: 30% !important; }
 	.minwidth50imp  { min-width: 50px !important; }
+    .minwidth75imp  { min-width: 75px !important; }
     .minwidth100imp { min-width: 100px !important; }
     .minwidth200imp { min-width: 200px !important; }
     .minwidth300imp { min-width: 300px !important; }
@@ -727,7 +750,8 @@ div.fiche>form>div.div-table-responsive {
 {
     .maxwidthonsmartphone { max-width: 100px; }
 	.minwidth50imp  { min-width: 50px !important; }
-    .minwidth100imp { min-width: 50px !important; }
+    .minwidth75imp  { min-width: 70px !important; }
+    .minwidth100imp { min-width: 80px !important; }
     .minwidth200imp { min-width: 100px !important; }
     .minwidth300imp { min-width: 100px !important; }
     .minwidth400imp { min-width: 100px !important; }
@@ -778,11 +802,12 @@ div.fiche>form>div.div-table-responsive {
     .maxwidth300onsmartphone { max-width: 300px; }
     .maxwidth400onsmartphone { max-width: 400px; }
 	.minwidth50imp  { min-width: 50px !important; }
-    .minwidth100imp { min-width: 50px !important; }
-    .minwidth200imp { min-width: 50px !important; }
-    .minwidth300imp { min-width: 50px !important; }
-    .minwidth400imp { min-width: 50px !important; }
-    .minwidth500imp { min-width: 50px !important; }
+	.minwidth75imp  { min-width: 60px !important; }
+    .minwidth100imp { min-width: 60px !important; }
+    .minwidth200imp { min-width: 60px !important; }
+    .minwidth300imp { min-width: 60px !important; }
+    .minwidth400imp { min-width: 60px !important; }
+    .minwidth500imp { min-width: 60px !important; }
     .titlefield { width: auto; }
     .titlefieldcreate { width: auto; }
 
@@ -1041,7 +1066,7 @@ div.nopadding {
 	width: 44px;
 }
 div.attacharea {
-	padding-top: 10px;
+	padding-top: 18px;
 	padding-bottom: 10px;
 }
 
@@ -1090,7 +1115,8 @@ img.photorefnoborder {
 	height: 48px;
 	width: 48px;
     object-fit: contain;
-    border: 1px solid #CCC;
+    border: 1px solid #AAA;
+    border-radius: 100px;
 }
 .underrefbanner {
 }
@@ -1615,10 +1641,15 @@ img.login, img.printer, img.entity {
 	color: white;
 	font-weight: bold;
 }
-img.loginphoto {
-	border-radius: 2px;
+.userimgatoplogin img.userphoto {		/* size for user photo in login bar */
 	width: 16px;
     height: 16px;
+}
+img.userphoto {			/* size for user photo in lists */
+	border-radius: 2px;
+	width: 18px;
+    height: 18px;
+    vertical-align: middle;
 }
 .span-icon-user {
 	background-image: url(<?php echo dol_buildpath($path.'/theme/'.$theme.'/img/object_user.png',1); ?>);
@@ -2427,7 +2458,7 @@ div.refid  {
   	font-size: 160%;
 }
 div.refidno  {
-	padding-top: 2px;
+	padding-top: 8px;
 	font-weight: normal;
   	color: #444;
   	font-size: <?php print $fontsize ?>px;
@@ -2828,23 +2859,41 @@ div.tabBar .noborder {
 .ficheaddleft div.boxstats {
     border: none;
 }
-.boxstats {
+.boxstatsborder {
+    border: 1px solid #CCC !important;
+}
+.boxstats, .boxstats130 {
     display: inline-block;
     margin: 3px;
-    padding: 3px;
-	/*-moz-box-shadow: 3px 3px 4px #DDD;
-    -webkit-box-shadow: 3px 3px 4px #DDD;
-    box-shadow: 3px 3px 4px #DDD;
-    margin-bottom: 8px !important;*/
     border: 1px solid #CCC;
     text-align: center;
     border-radius: 2px;
-    
+}
+.boxstats, .boxstats130, .boxstatscontent {    
 	white-space: nowrap;
 	overflow: hidden;
     text-overflow: ellipsis;
+}
+.boxstats {
+    padding: 3px;
     width: 105px;    
 }
+.boxstats130 {
+    width: 135px; 
+    height: 48px;
+    padding: 3px  
+}
+.boxstatscontent {
+	padding: 3px;
+}
+
+@media only screen and (max-width: 767px)
+{
+    .boxstats, .boxstats130 {
+        width: 100px;    
+    }
+}
+
 .boxstats:hover {
 	box-shadow: 0px 0px 8px 0px rgba(0,0,0,0.20);
 }
@@ -2857,15 +2906,25 @@ span.boxstatsindicator {
 	font-weight: normal;
 }
 span.dashboardlineindicator, span.dashboardlineindicatorlate {
-	font-size: 120%;
+	font-size: 130%;
 	font-weight: normal;
+}
+.dashboardlineindicatorlate img {
+	width: 16px;
 }
 span.dashboardlineok {
 	color: #008800;
 }
 span.dashboardlineko {
 	color: #880000;
-	font-weight: bold;
+	/* font-weight: bold; */
+	font-size: 100%;	
+}
+.dashboardlinelatecoin {
+	float: right;
+	position: relative;
+    text-align: right;
+    top: -22px
 }
 .boxtable {
     margin-bottom: 8px !important;
@@ -2876,6 +2935,9 @@ span.dashboardlineko {
 }
 .tdboxstats {
 	text-align: center;
+}
+a.valignmiddle.dashboardlineindicator {
+    line-height: 30px;
 }
 
 .box {
@@ -2911,6 +2973,9 @@ tr.box_titre {
 
 tr.box_titre td.boxclose {
 	width: 30px;
+}
+img.boxhandle, img.boxclose {
+	padding-left: 5px;
 }
 
 .noborderbottom {
