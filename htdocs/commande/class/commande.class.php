@@ -3102,6 +3102,8 @@ class Commande extends CommonOrder
 
         $error = 0;
 
+        dol_syslog(get_class($this) . "::delete ".$this->id, LOG_DEBUG);
+        
         $this->db->begin();
 
         if (! $error && ! $notrigger)
@@ -3117,7 +3119,6 @@ class Commande extends CommonOrder
         {
         	// Delete order details
         	$sql = 'DELETE FROM '.MAIN_DB_PREFIX."commandedet WHERE fk_commande = ".$this->id;
-        	dol_syslog(get_class($this)."::delete", LOG_DEBUG);
         	if (! $this->db->query($sql) )
         	{
         		$error++;
@@ -3126,7 +3127,6 @@ class Commande extends CommonOrder
 
         	// Delete order
         	$sql = 'DELETE FROM '.MAIN_DB_PREFIX."commande WHERE rowid = ".$this->id;
-        	dol_syslog(get_class($this)."::delete", LOG_DEBUG);
         	if (! $this->db->query($sql) )
         	{
         		$error++;
@@ -3184,7 +3184,6 @@ class Commande extends CommonOrder
 
         if (! $error)
         {
-        	dol_syslog(get_class($this)."::delete $this->id by $user->id", LOG_DEBUG);
         	$this->db->commit();
         	return 1;
         }
@@ -3192,7 +3191,6 @@ class Commande extends CommonOrder
         {
 	        foreach($this->errors as $errmsg)
 	        {
-		        dol_syslog(get_class($this)."::delete ".$errmsg, LOG_ERR);
 		        $this->error.=($this->error?', '.$errmsg:$errmsg);
 	        }
 	        $this->db->rollback();
@@ -3233,7 +3231,7 @@ class Commande extends CommonOrder
 	        $response->warning_delay=$conf->commande->client->warning_delay/60/60/24;
 	        $response->label=$langs->trans("OrdersToProcess");
 	        $response->url=DOL_URL_ROOT.'/commande/list.php?viewstatut=-3&mainmenu=commercial&leftmenu=orders';
-	        $response->img=img_object($langs->trans("Orders"),"order");
+	        $response->img=img_object('',"order");
 
             $generic_commande = new Commande($this->db);
 
@@ -3543,25 +3541,26 @@ class Commande extends CommonOrder
             $line->qty=1;
             $line->subprice=100;
             $line->price=100;
-            $line->tva_tx=19.6;
+            $line->tva_tx=20;
             if ($xnbp == 2)
             {
                 $line->total_ht=50;
-                $line->total_ttc=59.8;
-                $line->total_tva=9.8;
+                $line->total_ttc=60;
+                $line->total_tva=10;
                 $line->remise_percent=50;
             }
             else
             {
                 $line->total_ht=100;
-                $line->total_ttc=119.6;
-                $line->total_tva=19.6;
+                $line->total_ttc=120;
+                $line->total_tva=20;
                 $line->remise_percent=0;
             }
             if ($num_prods > 0)
             {
             	$prodid = mt_rand(1, $num_prods);
             	$line->fk_product=$prodids[$prodid];
+				$line->product_ref='SPECIMEN';
             }
 
             $this->lines[$xnbp]=$line;
