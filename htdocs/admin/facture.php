@@ -29,6 +29,7 @@
 
 require '../main.inc.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/admin.lib.php';
+require_once DOL_DOCUMENT_ROOT.'/core/lib/pdf.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/invoice.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/compta/facture/class/facture.class.php';
 
@@ -49,6 +50,8 @@ $type='invoice';
 /*
  * Actions
  */
+
+include DOL_DOCUMENT_ROOT.'/core/actions_setmoduleoptions.inc.php';
 
 if ($action == 'updateMask')
 {
@@ -119,31 +122,6 @@ if ($action == 'specimen')
     {
     	setEventMessages($langs->trans("ErrorModuleNotFound"), null, 'errors');
     	dol_syslog($langs->trans("ErrorModuleNotFound"), LOG_ERR);
-    }
-}
-
-// define constants for models generator that need parameters
-if ($action == 'setModuleOptions')
-{
-    $post_size=count($_POST);
-    for($i=0;$i < $post_size;$i++)
-    {
-        if (array_key_exists('param'.$i,$_POST))
-        {
-            $param=GETPOST("param".$i,'alpha');
-            $value=GETPOST("value".$i,'alpha');
-            if ($param) $res = dolibarr_set_const($db,$param,$value,'chaine',0,'',$conf->entity);
-        }
-    }
-	if (! $res > 0) $error++;
-
- 	if (! $error)
-    {
-        setEventMessages($langs->trans("SetupSaved"), null, 'mesgs');
-    }
-    else
-    {
-        setEventMessages($langs->trans("Error"), null, 'errors');
     }
 }
 
@@ -228,7 +206,7 @@ if ($action == 'set_FACTURE_DRAFT_WATERMARK')
 
 if ($action == 'set_INVOICE_FREE_TEXT')
 {
-	$freetext = GETPOST('INVOICE_FREE_TEXT');	// No alpha here, we want exact string
+	$freetext = GETPOST('INVOICE_FREE_TEXT','none');	// No alpha here, we want exact string
 
     $res = dolibarr_set_const($db, "INVOICE_FREE_TEXT",$freetext,'chaine',0,'',$conf->entity);
 
@@ -638,7 +616,7 @@ if (! empty($conf->banque->enabled))
     $sql.= " FROM ".MAIN_DB_PREFIX."bank_account";
     $sql.= " WHERE clos = 0";
     $sql.= " AND courant = 1";
-    $sql.= " AND entity IN (".getEntity('bank_account', 1).")";
+    $sql.= " AND entity IN (".getEntity('bank_account').")";
     $resql=$db->query($sql);
     if ($resql)
     {
@@ -683,7 +661,7 @@ $sql = "SELECT rowid, label";
 $sql.= " FROM ".MAIN_DB_PREFIX."bank_account";
 $sql.= " WHERE clos = 0";
 $sql.= " AND courant = 1";
-$sql.= " AND entity IN (".getEntity('bank_account', 1).")";
+$sql.= " AND entity IN (".getEntity('bank_account').")";
 $var=True;
 $resql=$db->query($sql);
 if ($resql)
@@ -692,7 +670,7 @@ if ($resql)
     $i = 0;
     while ($i < $num)
     {
-        
+
         $row = $db->fetch_row($resql);
 
         print '<option value="'.$row[0].'"';
@@ -733,12 +711,18 @@ print '<input type="submit" class="button" value="'.$langs->trans("Modify").'" /
 print "</td></tr>\n";
 print '</form>';
 
+$substitutionarray=pdf_getSubstitutionArray($langs);
+$substitutionarray['__(AnyTranslationKey)__']=$langs->trans("Translation");
+$htmltext = '<i>'.$langs->trans("AvailableVariables").':<br>';
+foreach($substitutionarray as $key => $val)	$htmltext.=$key.'<br>';
+$htmltext.='</i>';
+
 $var=! $var;
 print '<form action="'.$_SERVER["PHP_SELF"].'" method="POST">';
 print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'" />';
 print '<input type="hidden" name="action" value="set_INVOICE_FREE_TEXT" />';
 print '<tr class="oddeven"><td colspan="2">';
-print $langs->trans("FreeLegalTextOnInvoices").' '.img_info($langs->trans("AddCRIfTooLong")).'<br>';
+print $form->textwithpicto($langs->trans("FreeLegalTextOnInvoices"), $langs->trans("AddCRIfTooLong").'<br><br>'.$htmltext).'<br>';
 $variablename='INVOICE_FREE_TEXT';
 if (empty($conf->global->PDF_ALLOW_HTML_FOR_FREE_TEXT))
 {
@@ -747,7 +731,7 @@ if (empty($conf->global->PDF_ALLOW_HTML_FOR_FREE_TEXT))
 else
 {
     include_once DOL_DOCUMENT_ROOT.'/core/class/doleditor.class.php';
-    $doleditor=new DolEditor($variablename, $conf->global->$variablename,'',80,'dolibarr_details');
+    $doleditor=new DolEditor($variablename, $conf->global->$variablename,'',80,'dolibarr_notes');
     print $doleditor->Create();
 }
 print '</td><td align="right">';
@@ -760,11 +744,6 @@ print '<form action="'.$_SERVER["PHP_SELF"].'" method="POST">';
 print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'" />';
 print '<input type="hidden" name="action" value="set_FACTURE_DRAFT_WATERMARK" />';
 print '<tr class="oddeven"><td>';
-$substitutionarray=pdf_getSubstitutionArray($langs);
-$substitutionarray['__(AnyTranslationKey)__']=$langs->trans("Translation");
-$htmltext = '<i>'.$langs->trans("AvailableVariables").':<br>';
-foreach($substitutionarray as $key => $val)	$htmltext.=$key.'<br>';
-$htmltext.='</i>';
 print $form->textwithpicto($langs->trans("WatermarkOnDraftBill"), $htmltext);
 print '</td>';
 print '<td><input size="50" class="flat" type="text" name="FACTURE_DRAFT_WATERMARK" value="'.$conf->global->FACTURE_DRAFT_WATERMARK.'" />';

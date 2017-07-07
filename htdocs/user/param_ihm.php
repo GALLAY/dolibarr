@@ -78,7 +78,7 @@ $searchformtitle=array($langs->trans("Companies"),$langs->trans("Contacts"),$lan
 $form = new Form($db);
 $formadmin=new FormAdmin($db);
 
-// Initialize technical object to manage hooks of thirdparties. Note that conf->hooks_modules contains array array
+// Initialize technical object to manage hooks of page. Note that conf->hooks_modules contains array of hook context
 $hookmanager->initHooks(array('usercard','globalcard'));
 
 
@@ -181,7 +181,7 @@ if ($action == 'edit')
 
 if ($action == 'edit')
 {
-    dol_fiche_head($head, 'guisetup', $title, 0, 'user');
+    dol_fiche_head($head, 'guisetup', $title, -1, 'user');
 
 	$linkback = '';
 

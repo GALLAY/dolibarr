@@ -54,7 +54,7 @@ if ($user->societe_id > 0)
 $sortfield = GETPOST("sortfield",'alpha');
 $sortorder = GETPOST("sortorder",'alpha');
 $page = GETPOST("page",'int');
-if ($page == -1) { $page = 0; }
+if (empty($page) || $page == -1) { $page = 0; }     // If $page is not defined, or '' or -1
 $offset = $conf->liste_limit * $page;
 $pageprev = $page - 1;
 $pagenext = $page + 1;
@@ -62,7 +62,7 @@ if (! $sortorder) $sortorder="ASC";
 if (! $sortfield) $sortfield="label";
 
 $cancel=GETPOST('cancel');
-$action=GETPOST('action');
+$action=GETPOST('action','aZ09');
 $section=GETPOST("section");
 if (! $section)
 {
@@ -221,7 +221,7 @@ while ($tmpecmdir && $result > 0)
 print img_picto('','object_dir').' <a href="'.DOL_URL_ROOT.'/ecm/index.php">'.$langs->trans("ECMRoot").'</a> -> ';
 print $s;
 print ' -> ';
-if (GETPOST('action') == 'edit') print '<input type="text" name="label" class="quatrevingtpercent" value="'.$urlfile.'">';
+if (GETPOST('action','aZ09') == 'edit') print '<input type="text" name="label" class="quatrevingtpercent" value="'.$urlfile.'">';
 else print $urlfile;
 print '</td></tr>';
 /*print '<tr><td class="tdtop">'.$langs->trans("Description").'</td><td>';

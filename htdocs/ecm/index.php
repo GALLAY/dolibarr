@@ -49,7 +49,7 @@ $result = restrictedArea($user, 'ecm', 0);
 
 // Get parameters
 $socid=GETPOST('socid','int');
-$action=GETPOST("action");
+$action=GETPOST('action','aZ09');
 $section=GETPOST("section")?GETPOST("section","int"):GETPOST("section_id","int");
 $module=GETPOST("module");
 if (! $section) $section=0;
@@ -58,7 +58,7 @@ $section_dir=GETPOST('section_dir');
 $sortfield = GETPOST("sortfield",'alpha');
 $sortorder = GETPOST("sortorder",'alpha');
 $page = GETPOST("page",'int');
-if ($page == -1) { $page = 0; }
+if (empty($page) || $page == -1) { $page = 0; }     // If $page is not defined, or '' or -1
 $offset = $conf->liste_limit * $page;
 $pageprev = $page - 1;
 $pagenext = $page + 1;

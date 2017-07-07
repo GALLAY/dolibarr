@@ -1,7 +1,7 @@
 --
 -- Be carefull to requests order.
 -- This file must be loaded by calling /install/index.php page
--- when current version is 4.0.0 or higher.
+-- when current version is 5.0.0 or higher.
 --
 -- To rename a table:       ALTER TABLE llx_table RENAME TO llx_table_new;
 -- To add a column:         ALTER TABLE llx_table ADD COLUMN newcol varchar(60) NOT NULL DEFAULT '0' AFTER existingcol;
@@ -33,6 +33,8 @@ UPDATE llx_const SET name = __ENCRYPT('THIRDPARTY_DEFAULT_CREATE_CONTACT')__ WHE
 ALTER TABLE llx_product_lot MODIFY COLUMN entity integer DEFAULT 1;
 UPDATE llx_product_lot SET entity = 1 WHERE entity IS NULL;
 
+ALTER TABLE llx_bank_account ADD COLUMN extraparams		varchar(255);	
+
 ALTER TABLE llx_societe ALTER COLUMN fk_stcomm SET DEFAULT 0;
 
 ALTER TABLE llx_c_actioncomm ADD COLUMN picto varchar(48);
@@ -44,6 +46,7 @@ ALTER TABLE llx_facture_fourn_det ADD INDEX idx_facture_fourn_det_fk_product (fk
 
 ALTER TABLE llx_facture_rec ADD COLUMN fk_user_modif integer;
 ALTER TABLE llx_expedition ADD COLUMN fk_user_modif integer;
+ALTER TABLE llx_projet ADD COLUMN fk_user_modif integer;
 
 ALTER TABLE llx_adherent ADD COLUMN model_pdf varchar(255);
 
@@ -162,6 +165,7 @@ ALTER TABLE llx_c_payment_term change fdm type_cdr tinyint;
 
 
 ALTER TABLE llx_facturedet ADD COLUMN vat_src_code varchar(10) DEFAULT '' AFTER tva_tx;
+ALTER TABLE llx_facturedet_rec ADD COLUMN vat_src_code varchar(10) DEFAULT '' AFTER tva_tx;
 ALTER TABLE llx_facture_fourn_det ADD COLUMN vat_src_code varchar(10) DEFAULT '' AFTER tva_tx;
 ALTER TABLE llx_commandedet ADD COLUMN vat_src_code varchar(10) DEFAULT '' AFTER tva_tx;
 ALTER TABLE llx_commande_fournisseurdet ADD COLUMN vat_src_code varchar(10) DEFAULT '' AFTER tva_tx;
@@ -215,7 +219,7 @@ create table llx_user_employment
   tms               timestamp,
   fk_user_creat     integer,
   fk_user_modif     integer,
-  job				varchar(128),				-- job position. may be a dictionnary
+  job				varchar(128),				-- job position. may be a dictionary
   status            integer NOT NULL,			-- draft, active, closed
   salary			double(24,8),				-- last and current value stored into llx_user
   salaryextra		double(24,8),				-- last and current value stored into llx_user
@@ -261,5 +265,14 @@ UPDATE llx_accounting_account set account_parent = 0 where account_parent = '';
 ALTER TABLE llx_product_price ALTER COLUMN date_price SET DEFAULT NULL;
  
 ALTER TABLE llx_product_price ADD COLUMN default_vat_code	varchar(10) after tva_tx;
+ALTER TABLE llx_product_customer_price ADD COLUMN default_vat_code	varchar(10) after tva_tx;
+ALTER TABLE llx_product_customer_price_log ADD COLUMN default_vat_code	varchar(10) after tva_tx;
 ALTER TABLE llx_product_fournisseur_price ADD COLUMN default_vat_code	varchar(10) after tva_tx;
+
+
+ALTER TABLE llx_events MODIFY COLUMN ip varchar(250);
+
+
+UPDATE llx_bank SET label= '(SupplierInvoicePayment)' WHERE label= 'Règlement fournisseur';
+UPDATE llx_bank SET label= '(CustomerInvoicePayment)' WHERE label= 'Règlement client';
 

@@ -1,5 +1,5 @@
 <?php
-/* Copyright (C) 2004-2015	Laurent Destailleur		<eldy@users.sourceforge.net>
+/* Copyright (C) 2004-2017	Laurent Destailleur		<eldy@users.sourceforge.net>
  * Copyright (C) 2006		Rodolphe Quiedeville	<rodolphe@quiedeville.org>
  * Copyright (C) 2007-2017	Regis Houssin			<regis.houssin@capnetworks.com>
  * Copyright (C) 2011		Philippe Grand			<philippe.grand@atoo-net.com>
@@ -36,6 +36,28 @@ if (! defined('NOLOGIN'))         define('NOLOGIN',1);          // File must be 
 if (! defined('NOREQUIREHTML'))   define('NOREQUIREHTML',1);
 if (! defined('NOREQUIREAJAX'))   define('NOREQUIREAJAX','1');
 
+// Colors
+$colorbackhmenu1='90,50,120';      // topmenu
+$colorbackvmenu1='255,255,255';      // vmenu
+$colortopbordertitle1='';           // top border of tables-lists title. not defined = default to colorbackhmenu1
+$colorbacktitle1='240,240,240';      // title of tables-lists
+$colorbacktabcard1='255,255,255';  // card
+$colorbacktabactive='234,234,234';
+$colorbacklineimpair1='255,255,255';    // line impair
+$colorbacklineimpair2='255,255,255';    // line impair
+$colorbacklinepair1='250,250,250';    // line pair
+$colorbacklinepair2='248,248,248';    // line pair
+$colorbacklinepairhover='244,244,244';    // line pair
+$colorbackbody='248,248,248';
+$colortexttitlenotab='90,90,90';
+$colortexttitle='20,20,20';
+$colortext='0,0,0';
+$colortextlink='0,0,120';
+$fontsize='13';
+$fontsizesmaller='11';
+
+if (defined('THEME_ONLY_CONSTANT')) return;
+
 session_cache_limiter(FALSE);
 
 require_once '../../main.inc.php';
@@ -46,7 +68,7 @@ if (empty($user->id) && ! empty($_SESSION['dol_login'])) $user->fetch('',$_SESSI
 
 
 // Define css type
-header('Content-type: text/css');
+top_httphead('text/css');
 // Important: Following code is to avoid page request by browser and PHP CPU at each Dolibarr page access.
 if (empty($dolibarr_nocache)) header('Cache-Control: max-age=3600, public, must-revalidate');
 else header('Cache-Control: no-cache');
@@ -54,8 +76,9 @@ else header('Cache-Control: no-cache');
 // On the fly GZIP compression for all pages (if browser support it). Must set the bit 3 of constant to 1.
 if (isset($conf->global->MAIN_OPTIMIZE_SPEED) && ($conf->global->MAIN_OPTIMIZE_SPEED & 0x04)) { ob_start("ob_gzhandler"); }
 
-if (GETPOST('lang')) $langs->setDefaultLang(GETPOST('lang'));	// If language was forced on URL
-if (GETPOST('theme')) $conf->theme=GETPOST('theme');  // If theme was forced on URL
+if (GETPOST('theme','alpha')) $conf->theme=GETPOST('theme','alpha');  // If theme was forced on URL
+if (GETPOST('lang', 'aZ09')) $langs->setDefaultLang(GETPOST('lang', 'aZ09'));	// If language was forced on URL
+
 $langs->load("main",0,1);
 $right=($langs->trans("DIRECTION")=='rtl'?'left':'right');
 $left=($langs->trans("DIRECTION")=='rtl'?'right':'left');
@@ -78,34 +101,14 @@ $dol_no_mouse_hover=$conf->dol_no_mouse_hover;
 //$user->conf->THEME_ELDY_ENABLE_PERSONALIZED=0;
 //var_dump($user->conf->THEME_ELDY_RGB);
 
-// Colors
-$colorbackhmenu1='90,50,120';      // topmenu
-$colorbackvmenu1='255,255,255';      // vmenu
-$colortopbordertitle1='';           // top border of tables-lists title. not defined = default to colorbackhmenu1
-$colorbacktitle1='240,240,240';      // title of tables-lists
-$colorbacktabcard1='255,255,255';  // card
-$colorbacktabactive='234,234,234';
-$colorbacklineimpair1='255,255,255';    // line impair
-$colorbacklineimpair2='255,255,255';    // line impair
-$colorbacklinepair1='250,250,250';    // line pair
-$colorbacklinepair2='248,248,248';    // line pair
-$colorbacklinepairhover='244,244,244';    // line pair
-$colorbackbody='240,240,240';
-$colortexttitlenotab='90,90,90';
-$colortexttitle='20,20,20';
-$colortext='0,0,0';
-$colortextlink='0,0,120';
-$fontsize='13';
-$fontsizesmaller='11';
-$usegradient=0;
 $useboldtitle=(isset($conf->global->THEME_ELDY_USEBOLDTITLE)?$conf->global->THEME_ELDY_USEBOLDTITLE:1);
 $borderwith=2;
 
 // Case of option always editable
 if (! isset($conf->global->THEME_ELDY_BACKBODY)) $conf->global->THEME_ELDY_BACKBODY=$colorbackbody;
-if (! isset($conf->global->THEME_ELDY_TOPMENU_BACK1)) $conf->global->THEME_ELDY_TOPMENU_BACK1='90,50,120';
+if (! isset($conf->global->THEME_ELDY_TOPMENU_BACK1)) $conf->global->THEME_ELDY_TOPMENU_BACK1=$colorbackhmenu1;
 if (! isset($conf->global->THEME_ELDY_BACKTITLE1)) $conf->global->THEME_ELDY_BACKTITLE1=$colorbacktitle1;
-if (! isset($conf->global->THEME_ELDY_USE_HOVER)) $conf->global->THEME_ELDY_USE_HOVER=='238,246,252';
+if (! isset($conf->global->THEME_ELDY_USE_HOVER)) $conf->global->THEME_ELDY_USE_HOVER==$colorbacklinepairhover;
 if (! isset($conf->global->THEME_ELDY_TEXTTITLENOTAB)) $conf->global->THEME_ELDY_TEXTTITLENOTAB=$colortexttitlenotab;
 if (! isset($conf->global->THEME_ELDY_TEXTLINK)) $conf->global->THEME_ELDY_TEXTLINK=$colortextlink;
 
@@ -116,12 +119,6 @@ if (empty($conf->global->THEME_ELDY_ENABLE_PERSONALIZED))
 	$conf->global->THEME_ELDY_VERMENU_BACK1='255,255,255';    // vmenu
     $conf->global->THEME_ELDY_BACKTABCARD1='255,255,255';     // card
     $conf->global->THEME_ELDY_BACKTABACTIVE='234,234,234';
-    $conf->global->THEME_ELDY_LINEIMPAIR1='255,255,255';
-    $conf->global->THEME_ELDY_LINEIMPAIR2='255,255,255';
-    $conf->global->THEME_ELDY_LINEPAIR1='250,250,250';
-    $conf->global->THEME_ELDY_LINEPAIR2='248,248,248';
-    $conf->global->THEME_ELDY_LINEPAIRHOVER='238,246,252';
-    $conf->global->THEME_ELDY_USE_HOVER='238,246,252';
     $conf->global->THEME_ELDY_TEXT='0,0,0';
     $conf->global->THEME_ELDY_FONT_SIZE1='13';
     $conf->global->THEME_ELDY_FONT_SIZE2='11';
@@ -139,7 +136,6 @@ $colorbacklineimpair1=empty($user->conf->THEME_ELDY_ENABLE_PERSONALIZED)?(empty(
 $colorbacklineimpair2=empty($user->conf->THEME_ELDY_ENABLE_PERSONALIZED)?(empty($conf->global->THEME_ELDY_LINEIMPAIR2)  ?$colorbacklineimpair2:$conf->global->THEME_ELDY_LINEIMPAIR2):(empty($user->conf->THEME_ELDY_LINEIMPAIR2)?$colorbacklineimpair2:$user->conf->THEME_ELDY_LINEIMPAIR2);
 $colorbacklinepair1  =empty($user->conf->THEME_ELDY_ENABLE_PERSONALIZED)?(empty($conf->global->THEME_ELDY_LINEPAIR1)    ?$colorbacklinepair1:$conf->global->THEME_ELDY_LINEPAIR1)    :(empty($user->conf->THEME_ELDY_LINEPAIR1)?$colorbacklinepair1:$user->conf->THEME_ELDY_LINEPAIR1);
 $colorbacklinepair2  =empty($user->conf->THEME_ELDY_ENABLE_PERSONALIZED)?(empty($conf->global->THEME_ELDY_LINEPAIR2)    ?$colorbacklinepair2:$conf->global->THEME_ELDY_LINEPAIR2)    :(empty($user->conf->THEME_ELDY_LINEPAIR2)?$colorbacklinepair2:$user->conf->THEME_ELDY_LINEPAIR2);
-$colorbacklinepairhover  =empty($user->conf->THEME_ELDY_ENABLE_PERSONALIZED)?(empty($conf->global->THEME_ELDY_LINEPAIRHOVER)    ?$colorbacklinepairhover:$conf->global->THEME_ELDY_LINEPAIRHOVER)    :(empty($user->conf->THEME_ELDY_LINEPAIRHOVER)?$colorbacklinepairhover:$user->conf->THEME_ELDY_LINEPAIRHOVER);
 $colorbackbody       =empty($user->conf->THEME_ELDY_ENABLE_PERSONALIZED)?(empty($conf->global->THEME_ELDY_BACKBODY)     ?$colorbackbody:$conf->global->THEME_ELDY_BACKBODY)          :(empty($user->conf->THEME_ELDY_BACKBODY)?$colorbackbody:$user->conf->THEME_ELDY_BACKBODY);
 $colortexttitlenotab =empty($user->conf->THEME_ELDY_ENABLE_PERSONALIZED)?(empty($conf->global->THEME_ELDY_TEXTTITLENOTAB)?$colortexttitlenotab:$conf->global->THEME_ELDY_TEXTTITLENOTAB)             :(empty($user->conf->THEME_ELDY_TEXTTITLENOTAB)?$colortexttitlenotab:$user->conf->THEME_ELDY_TEXTTITLENOTAB);
 $colortexttitle      =empty($user->conf->THEME_ELDY_ENABLE_PERSONALIZED)?(empty($conf->global->THEME_ELDY_TEXTTITLE)    ?$colortext:$conf->global->THEME_ELDY_TEXTTITLE)             :(empty($user->conf->THEME_ELDY_TEXTTITLE)?$colortexttitle:$user->conf->THEME_ELDY_TEXTTITLE);
@@ -147,6 +143,7 @@ $colortext           =empty($user->conf->THEME_ELDY_ENABLE_PERSONALIZED)?(empty(
 $colortextlink       =empty($user->conf->THEME_ELDY_ENABLE_PERSONALIZED)?(empty($conf->global->THEME_ELDY_TEXTLINK)     ?$colortext:$conf->global->THEME_ELDY_TEXTLINK)              :(empty($user->conf->THEME_ELDY_TEXTLINK)?$colortextlink:$user->conf->THEME_ELDY_TEXTLINK);
 $fontsize            =empty($user->conf->THEME_ELDY_ENABLE_PERSONALIZED)?(empty($conf->global->THEME_ELDY_FONT_SIZE1)   ?$fontsize:$conf->global->THEME_ELDY_FONT_SIZE1)             :(empty($user->conf->THEME_ELDY_FONT_SIZE1)?$fontsize:$user->conf->THEME_ELDY_FONT_SIZE1);
 $fontsizesmaller     =empty($user->conf->THEME_ELDY_ENABLE_PERSONALIZED)?(empty($conf->global->THEME_ELDY_FONT_SIZE2)   ?$fontsize:$conf->global->THEME_ELDY_FONT_SIZE2)             :(empty($user->conf->THEME_ELDY_FONT_SIZE2)?$fontsize:$user->conf->THEME_ELDY_FONT_SIZE2);
+
 // Hover color
 $colorbacklinepairhover=((! isset($conf->global->THEME_ELDY_USE_HOVER) || (string) $conf->global->THEME_ELDY_USE_HOVER === '0')?'':($conf->global->THEME_ELDY_USE_HOVER === '1'?'edf4fb':$conf->global->THEME_ELDY_USE_HOVER));
 if (! empty($user->conf->THEME_ELDY_ENABLE_PERSONALIZED))
@@ -154,30 +151,34 @@ if (! empty($user->conf->THEME_ELDY_ENABLE_PERSONALIZED))
     $colorbacklinepairhover=((! isset($user->conf->THEME_ELDY_USE_HOVER) || $user->conf->THEME_ELDY_USE_HOVER === '0')?'':($user->conf->THEME_ELDY_USE_HOVER === '1'?'edf4fb':$user->conf->THEME_ELDY_USE_HOVER));
 }
 
-if (empty($colortopbordertitle1)) $colortopbordertitle1=$colorbackhmenu1;
+//if (empty($colortopbordertitle1)) $colortopbordertitle1=$colorbackhmenu1;
 
 
 // Set text color to black or white
+$colorbackhmenu1=join(',',colorStringToArray($colorbackhmenu1));    // Normalize value to 'x,y,z'
 $tmppart=explode(',',$colorbackhmenu1);
-$tmpval=(! empty($tmppart[0]) ? $tmppart[0] : '')+(! empty($tmppart[1]) ? $tmppart[1] : '')+(! empty($tmppart[2]) ? $tmppart[2] : '');
+$tmpval=(! empty($tmppart[0]) ? $tmppart[0] : 0)+(! empty($tmppart[1]) ? $tmppart[1] : 0)+(! empty($tmppart[2]) ? $tmppart[2] : 0);
 if ($tmpval <= 460) $colortextbackhmenu='FFFFFF';
 else $colortextbackhmenu='000000';
 
+$colorbackvmenu1=join(',',colorStringToArray($colorbackvmenu1));    // Normalize value to 'x,y,z'
 $tmppart=explode(',',$colorbackvmenu1);
-$tmpval=(! empty($tmppart[0]) ? $tmppart[0] : '')+(! empty($tmppart[1]) ? $tmppart[1] : '')+(! empty($tmppart[2]) ? $tmppart[2] : '');
+$tmpval=(! empty($tmppart[0]) ? $tmppart[0] : 0)+(! empty($tmppart[1]) ? $tmppart[1] : 0)+(! empty($tmppart[2]) ? $tmppart[2] : 0);
 if ($tmpval <= 460) { $colortextbackvmenu='FFFFFF'; }
 else { $colortextbackvmenu='000000'; }
 
+$colorbacktitle1=join(',',colorStringToArray($colorbacktitle1));    // Normalize value to 'x,y,z'
 $tmppart=explode(',',$colorbacktitle1);
 if ($colortexttitle == '')
 {
-	$tmpval=(! empty($tmppart[0]) ? $tmppart[0] : '')+(! empty($tmppart[1]) ? $tmppart[1] : '')+(! empty($tmppart[2]) ? $tmppart[2] : '');
+	$tmpval=(! empty($tmppart[0]) ? $tmppart[0] : 0)+(! empty($tmppart[1]) ? $tmppart[1] : 0)+(! empty($tmppart[2]) ? $tmppart[2] : 0);
 	if ($tmpval <= 460) { $colortexttitle='FFFFFF'; $colorshadowtitle='888888'; }
 	else { $colortexttitle='101010'; $colorshadowtitle='FFFFFF'; }
 }
 
+$colorbacktabcard1=join(',',colorStringToArray($colorbacktabcard1));    // Normalize value to 'x,y,z'
 $tmppart=explode(',',$colorbacktabcard1);
-$tmpval=(! empty($tmppart[0]) ? $tmppart[0] : '')+(! empty($tmppart[1]) ? $tmppart[1] : '')+(! empty($tmppart[2]) ? $tmppart[2] : '');
+$tmpval=(! empty($tmppart[0]) ? $tmppart[0] : 0)+(! empty($tmppart[1]) ? $tmppart[1] : 0)+(! empty($tmppart[2]) ? $tmppart[2] : 0);
 if ($tmpval <= 460) { $colortextbacktab='FFFFFF'; }
 else { $colortextbacktab='111111'; }
 
@@ -234,14 +235,14 @@ print '*/'."\n";
 
 
 body {
-<?php if (GETPOST("optioncss") == 'print') {  ?>
+<?php if (GETPOST('optioncss','aZ09') == 'print') {  ?>
 	background-color: #FFFFFF;
 <?php } else { ?>
 	background: rgb(<?php print $colorbackbody; ?>);
 <?php } ?>
 	color: rgb(<?php echo $colortext; ?>);
 	font-size: <?php print $fontsize ?>px;
-	line-height: 130%;
+	line-height: 1.3;
 	font-family: <?php print $fontlist ?>;
     margin-top: 0;
     margin-bottom: 0;
@@ -281,7 +282,9 @@ textarea.cke_source:focus
 	box-shadow: none;
 }
 
-.liste_titre input[name=monthvalid], .liste_titre input[name=smonth], .liste_titre input[name=month], .liste_titre input[name=month_lim] {
+.liste_titre input[name=monthvalid], .liste_titre input[name=search_ordermonth], .liste_titre input[name=search_deliverymonth],
+.liste_titre input[name=search_smonth], .liste_titre input[name=search_month], .liste_titre input[name=search_emonth], .liste_titre input[name=smonth], .liste_titre input[name=month],
+.liste_titre input[name=month_lim] {
 	margin-right: 4px;
 }
 input, input.flat, textarea, textarea.flat, form.flat select, select, select.flat, .dataTables_length label select {
@@ -318,7 +321,7 @@ textarea {
 	border-left:solid 1px rgba(0,0,0,.1);
 	border-right:solid 1px rgba(0,0,0,.1);
 	border-bottom:solid 1px rgba(0,0,0,.2);
-		
+
 	background-color: #FFF;
 	padding:4px;
 	margin-left:1px;
@@ -338,9 +341,9 @@ input.buttongen {
 	vertical-align: middle;
 }
 span.timesheetalreadyrecorded input {
-    /*font-size: smaller;*/
     border: none;
-    /*background:	transparent;*/
+    border-bottom: solid 1px rgba(0,0,0,0.1);
+    margin-right: 1px !important;
 }
 
 select.flat, form.flat select {
@@ -545,7 +548,7 @@ textarea.centpercent {
 .cursorpointer {
 	cursor: pointer;
 }
-.cusormove {
+.cursormove {
 	cursor: move;
 }
 .badge {
@@ -666,10 +669,17 @@ div.myavailability {
 	margin-bottom: 12px;
 }
 
+
 /* For the long description of module */
 .moduledesclong p img,.moduledesclong p a img {
     max-width: 90% !important;
     height: auto !important;
+}
+.imgdoc {
+    margin: 18px;
+    border: 1px solid #ccc;
+    box-shadow: 1px 1px 25px #aaa;
+    max-width: calc(100% - 56px);
 }
 
 
@@ -693,7 +703,7 @@ div.fiche>form>div.div-table-responsive, div.fiche>form>div.div-table-responsive
     overflow-x: auto;
 }
 div.fiche>form>div.div-table-responsive {
-    min-height: 390px;
+    min-height: 392px;
 }
 
 .flexcontainer {
@@ -702,7 +712,7 @@ div.fiche>form>div.div-table-responsive {
     justify-content: flex-start;
 }
 .thumbstat {
-	flex: 1 1 114px;
+	flex: 1 1 116px;
 }
 .thumbstat150 {
 	flex: 1 1 150px;
@@ -795,6 +805,8 @@ div.fiche>form>div.div-table-responsive {
 /* Force values for small screen 570 */
 @media only screen and (max-width: 570px)
 {
+	.divmainbodylarge { margin-left: 20px; margin-right: 20px; }
+
     .tdoverflowonsmartphone {
         max-width: 0;
         overflow: hidden;
@@ -857,6 +869,7 @@ div.fiche>form>div.div-table-responsive {
 
 	div.divphotoref {
 		padding-right: 5px;
+	    padding-bottom: 5px;
 	}
     img.photoref, div.photoref {
     	border: none;
@@ -868,13 +881,13 @@ div.fiche>form>div.div-table-responsive {
     	width: 20px;
         object-fit: contain;
     }
-    
+
 	div.statusref {
     	padding-right: 10px;
-   	}    
+   	}
 }
 .linkobject { cursor: pointer; }
-<?php if (GETPOST("optioncss") == 'print') { ?>
+<?php if (GETPOST('optioncss','aZ09') == 'print') { ?>
 .hideonprint { display: none; }
 <?php } ?>
 
@@ -921,14 +934,14 @@ td.showDragHandle {
 #id-right {	/* This must stay id-right and not be replaced with echo $right */
 	width: 100%;
 	padding-bottom: 10px;
-<?php if (GETPOST("optioncss") != 'print') { ?>
+<?php if (GETPOST('optioncss','aZ09') != 'print') { ?>
 	padding-left: 229px;
 	padding-top: 12px;
 <?php } ?>
 }
 
 .side-nav {
-<?php if (GETPOST("optioncss") == 'print') { ?>
+<?php if (GETPOST('optioncss','aZ09') == 'print') { ?>
 	display: none;
 <?php } else { ?>
 	background: #FFF;
@@ -944,7 +957,7 @@ td.showDragHandle {
 	position: fixed;
 	top: 50px;
 <?php } ?>
-	z-index: 200;
+	z-index: 90;
 	-webkit-transform: translateZ(0);
 	-moz-transform: translateZ(0);
 	-ms-transform: translateZ(0);
@@ -1001,7 +1014,7 @@ div.login_block {
 
 	position: auto;
 	top: auto;
-	z-index: 200;
+	z-index: 90;
 }
 div.login_block {
 	/* position: initial !important;*/
@@ -1011,7 +1024,7 @@ div.login_block {
 	padding-left: 0 ! important;
 }
 #id-left {
-	z-index: 201;
+	z-index: 91;
 	background: #FFF;
 	border-right: 1px solid rgba(0,0,0,0.3);
 <?php if (in_array($conf->browser->layout, array('phone','tablet')) && ((GETPOST('testmenuhider') || ! empty($conf->global->MAIN_TESTMENUHIDER)) && empty($conf->global->MAIN_OPTIMIZEFORTEXTBROWSER))) { ?>
@@ -1027,8 +1040,8 @@ div.fiche {
 <?php } ?>
 
 div.fiche {
-	margin-<?php print $left; ?>: <?php print (GETPOST("optioncss") == 'print'?6:($dol_hide_leftmenu?'4':'20')); ?>px;
-	margin-<?php print $right; ?>: <?php print (GETPOST("optioncss") == 'print'?8:(empty($conf->dol_optimize_smallscreen)?'16':'4')); ?>px;
+	margin-<?php print $left; ?>: <?php print (GETPOST('optioncss','aZ09') == 'print'?6:($dol_hide_leftmenu?'4':'20')); ?>px;
+	margin-<?php print $right; ?>: <?php print (GETPOST('optioncss','aZ09') == 'print'?8:(empty($conf->dol_optimize_smallscreen)?'16':'12')); ?>px;
 	<?php if (! empty($conf->dol_hide_leftmenu) && ! empty($conf->dol_hide_topmenu)) print 'margin-top: 4px;'; ?>
 	margin-bottom: 15px;
 }
@@ -1065,8 +1078,8 @@ div.ficheaddleft {
 @media only screen and (max-width: 900px)
 {
     div.fiche {
-    	margin-<?php print $left; ?>: <?php print (GETPOST("optioncss") == 'print'?6:($dol_hide_leftmenu?'4':'20')); ?>px;
-    	margin-<?php print $right; ?>: <?php print (GETPOST("optioncss") == 'print'?8:16); ?>px;
+    	margin-<?php print $left; ?>: <?php print (GETPOST('optioncss','aZ09') == 'print'?6:($dol_hide_leftmenu?'4':'20')); ?>px;
+    	margin-<?php print $right; ?>: <?php print (GETPOST('optioncss','aZ09') == 'print'?8:16); ?>px;
     	<?php if (! empty($conf->dol_hide_leftmenu) && ! empty($conf->dol_hide_topmenu)) print 'margin-top: 4px;'; ?>
     	margin-bottom: 15px;
     }
@@ -1122,6 +1135,9 @@ table.noborder tr.liste_titre td {
 	margin-<?php echo $right; ?>: 8px;
 	margin-bottom: 4px;
 }
+.pictoobjectwidth {
+	width: 14px;
+}
 .pictosubstatus {
     padding-left: 2px;
     padding-right: 2px;
@@ -1137,12 +1153,16 @@ table.noborder tr.liste_titre td {
 .pictoedit, .pictowarning, .pictodelete {
     vertical-align: text-bottom;
 }
+img.hideonsmartphone.pictoactionview {
+    vertical-align: bottom;
+}
 .colorthumb {
 	padding-left: 1px !important;
 	padding-right: 1px;
 	padding-top: 1px;
 	padding-bottom: 1px;
 	width: 44px;
+	text-align:center;
 }
 div.attacharea {
 	padding-top: 18px;
@@ -1224,7 +1244,7 @@ if (! empty($conf->global->THEME_TOPMENU_DISABLE_IMAGE)) { $heightmenu = 30; $di
 ?>
 
 div#tmenu_tooltip {
-<?php if (GETPOST("optioncss") == 'print') {  ?>
+<?php if (GETPOST('optioncss','aZ09') == 'print') {  ?>
 	display:none;
 <?php } else { ?>
 	background: rgb(<?php echo $colorbackhmenu1 ?>);
@@ -1240,7 +1260,7 @@ div#tmenu_tooltip {
 }
 
 div#tmenu_tooltip {
-<?php if (GETPOST("optioncss") == 'print') {  ?>
+<?php if (GETPOST('optioncss','aZ09') == 'print') {  ?>
 	display:none;
 <?php } else { ?>
 	/* padding-<?php echo $right; ?>: <?php echo ($maxwidthloginblock - 10); ?>px; */
@@ -1254,7 +1274,7 @@ div.tmenusep {
 }
 
 div.tmenudiv {
-<?php if (GETPOST("optioncss") == 'print') {  ?>
+<?php if (GETPOST('optioncss','aZ09') == 'print') {  ?>
 	display:none;
 <?php } else { ?>
     position: relative;
@@ -1494,7 +1514,7 @@ $mainmenuusedarray=array_unique(explode(',',$mainmenuused));
 
 $generic=1;
 // Put here list of menu entries when the div.mainmenu.menuentry was previously defined
-$divalreadydefined=array('home','companies','products','commercial','externalsite','accountancy','project','tools','members','agenda','ftp','holiday','hrm','bookmark','cashdesk','ecm','geoipmaxmind','gravatar','clicktodial','paypal','webservices','websites');
+$divalreadydefined=array('home','companies','products','commercial','externalsite','accountancy','project','tools','members','agenda','ftp','holiday','hrm','bookmark','cashdesk','ecm','geoipmaxmind','gravatar','clicktodial','paypal','stripe','webservices','websites');
 // Put here list of menu entries we are sure we don't want
 $divnotrequired=array('multicurrency','salaries','margin','opensurvey','paybox','expensereport','incoterm','prelevement','propal','workflow','notification','supplier_proposal','cron','product','productbatch','expedition');
 foreach($mainmenuusedarray as $val)
@@ -1554,12 +1574,12 @@ foreach($mainmenuusedarray as $val)
 	display: table;
     position: absolute;
     height: 100%;
-    width: 100%;	
+    width: 100%;
 }
 .login_center {
 	display: table-cell;
     vertical-align: middle;
-}	
+}
 .login_vertical_align {
 	padding: 10px;
 	padding-bottom: 80px;
@@ -1669,8 +1689,8 @@ div.login_block {
 	vertical-align: middle;
 	background: #FFF;
 	width: 228px;
-	height: 42px;
-	<?php if (GETPOST("optioncss") == 'print') { ?>
+	height: 43px;
+	<?php if (GETPOST('optioncss','aZ09') == 'print') { ?>
 	display: none;
 	<?php } ?>
 }
@@ -1729,6 +1749,7 @@ img.login, img.printer, img.entity {
 	height: 16px;
     background-size: contain;
 	vertical-align: text-bottom;
+	background-color: #FFF;
 }
 img.userphoto {			/* size for user photo in lists */
     border-radius: 9px;
@@ -1774,7 +1795,7 @@ div.vmenu, td.vmenu {
 
 .vmenu {
 	margin-left: 4px;
-	<?php if (GETPOST("optioncss") == 'print') { ?>
+	<?php if (GETPOST('optioncss','aZ09') == 'print') { ?>
     display: none;
 	<?php } ?>
 }
@@ -1802,7 +1823,7 @@ font.vsmenudisabled { font-size:<?php print $fontsize ?>px; font-family: <?php p
 a.vsmenu:link, a.vsmenu:visited { color: #<?php echo $colortextbackvmenu; ?>; white-space: nowrap; }
 font.vsmenudisabledmargin { margin: 1px 1px 1px 8px; }
 
-a.help:link, a.help:visited, a.help:hover, a.help:active, span.help { font-size:<?php print $fontsizesmaller ?>px; font-family: <?php print $fontlist ?>; text-align: <?php print $left; ?>; font-weight: normal; color: #666666; text-decoration: none; }
+a.help:link, a.help:visited, a.help:hover, a.help:active, span.help { font-size:<?php print $fontsizesmaller ?>px; font-family: <?php print $fontlist ?>; text-align: <?php print $left; ?>; font-weight: normal; color: #999; text-decoration: none; }
 
 div.blockvmenulogo
 {
@@ -1976,9 +1997,10 @@ div.tabsElem { margin-top: 6px; }		/* To avoid overlap of tabs when not browser 
 
 div.tabBar {
     color: #<?php echo $colortextbacktab; ?>;
-    padding-top: <?php echo ($dol_optimize_smallscreen?'4':'16'); ?>px;
-    padding-left: <?php echo ($dol_optimize_smallscreen?'4':'16'); ?>px;
-    padding-right: <?php echo ($dol_optimize_smallscreen?'4':'16'); ?>px;
+    padding-top: 16px;
+    padding-left: 16px;
+    padding-right: 16px;
+	padding-bottom: 16px;
     margin: 0px 0px 16px 0px;
     -moz-border-radius:3px;
     -webkit-border-radius: 3px;
@@ -1988,13 +2010,14 @@ div.tabBar {
     border-top: 1px solid #CCC;
 	width: auto;
 	background: rgb(<?php echo $colorbacktabcard1; ?>);
-
-	padding-bottom: 12px;
-	border-bottom: 1px solid #aaa; 
+	border-bottom: 1px solid #aaa;
+}
+div.tabBar div.titre {
+	padding-top: 10px;
 }
 div.tabBarWithBottom {
 	padding-bottom: 18px;
-	border-bottom: 1px solid #aaa; 
+	border-bottom: 1px solid #aaa;
 }
 div.tabBar table.tableforservicepart2:last-child {
     border-bottom: 1px solid #aaa;
@@ -2004,6 +2027,9 @@ div.tabsAction {
     margin: 20px 0em 20px 0em;
     padding: 0em 0em;
     text-align: right;
+}
+div.tabsActionNoBottom {
+    margin-bottom: 0px;
 }
 div.tabsAction > a {
 	margin-bottom: 16px !important;
@@ -2512,7 +2538,6 @@ div.pagination li.noborder a:hover {
 div.pagination li a,
 div.pagination li span {
   background-color: #fff;
-  border: 1px solid #ddd;
 }
 div.pagination li:first-child a,
 div.pagination li:first-child span {
@@ -2560,6 +2585,9 @@ div.pagination .disabled a:focus {
 div.pagination li.pagination .active {
   text-decoration: underline;
   box-shadow: none;
+}
+.paginationafterarrows .nohover {
+  box-shadow: none !important;
 }
 div.pagination li.paginationafterarrows {
 	margin-left: 10px;
@@ -2697,15 +2725,7 @@ tr.liste_titre, tr.liste_titre_sel, form.liste_titre, form.liste_titre_sel, tabl
 }
 div.liste_titre, tr.liste_titre, tr.liste_titre_sel, form.liste_titre, form.liste_titre_sel, table.dataTable thead tr
 {
-	<?php if ($usegradient) { ?>
-	background-image: -o-linear-gradient(bottom, rgba(0,0,0,0.1) 0%, rgba(250,250,250,0.3) 100%);
-	background-image: -moz-linear-gradient(bottom, rgba(0,0,0,0.1) 0%, rgba(250,250,250,0.3) 100%);
-	background-image: -webkit-linear-gradient(bottom, rgba(0,0,0,0.1) 0%, rgba(250,250,250,0.3) 100%);
-	background-image: -ms-linear-gradient(bottom, rgba(0,0,0,0.1) 0%, rgba(250,250,250,0.3) 100%);
-	background-image: linear-gradient(bottom, rgba(0,0,0,0.1) 0%, rgba(250,250,250,0.3) 100%);
-	<?php } else { ?>
 	background: rgb(<?php echo $colorbacktitle1; ?>);
-	<?php } ?>
 	font-weight: <?php echo $useboldtitle?'bold':'normal'; ?>;
 
     color: rgb(<?php echo $colortexttitle; ?>);
@@ -2717,7 +2737,7 @@ tr.liste_titre th, tr.liste_titre td, th.liste_titre, form.liste_titre div, div.
 {
 	border-bottom: 1px solid #<?php echo ($colorbacktitle1 == '255,255,255'?'BBBBBB':'FDFFFF'); ?>;
 }
-/* TODO Once title line is moved under title search, make border bottom of all th black and force to whit when it's first tr */ 
+/* TODO Once title line is moved under title search, make border bottom of all th black and force to whit when it's first tr */
 tr:first-child th.liste_titre {
     border-bottom: 1px solid #FFF ! important;
 }
@@ -2766,7 +2786,7 @@ input.liste_titre {
 }
 
 .noborder tr.liste_total, .noborder tr.liste_total td, tr.liste_total, form.liste_total {
-	/* background: #F0F0F0; */
+	/* height: 32px; */
 }
 .noborder tr.liste_total td, tr.liste_total td, form.liste_total div {
     /* border-top: 1px solid #f4f4f4; */
@@ -2774,7 +2794,6 @@ input.liste_titre {
     font-weight: normal;
     white-space: nowrap;
     padding: 4px;
-    height: 20px;
 }
 tr.liste_sub_total, tr.liste_sub_total td {
 	border-bottom: 2px solid #aaa;
@@ -2797,9 +2816,6 @@ tr.liste_sub_total, tr.liste_sub_total td {
 {
 	padding-left: 2px;
 }
-.margintable td {
-	border: 0px !important;
-}
 
 /* Disable shadows */
 .noshadow {
@@ -2816,7 +2832,7 @@ div.tabBar .noborder {
 div .tdtop {
     vertical-align: top !important;
 	padding-top: 5px !important;
-	padding-bottom: 0px;
+	padding-bottom: 0px !important;
 }
 
 #tablelines tr.liste_titre td, .paymenttable tr.liste_titre td, .margintable tr.liste_titre td, .tableforservicepart1 tr.liste_titre td {
@@ -2826,7 +2842,7 @@ div .tdtop {
 
 /* Prepare to remove class pair - impair */
 
-.noborder > tbody > tr:nth-child(even):not(.liste_titre), .liste > tbody > tr:nth-child(even):not(.liste_titre) { 
+.noborder > tbody > tr:nth-child(even):not(.liste_titre), .liste > tbody > tr:nth-child(even):not(.liste_titre) {
 	background: linear-gradient(bottom, rgb(<?php echo $colorbacklineimpair1; ?>) 85%, rgb(<?php echo $colorbacklineimpair2; ?>) 100%);
 	background: -o-linear-gradient(bottom, rgb(<?php echo $colorbacklineimpair1; ?>) 85%, rgb(<?php echo $colorbacklineimpair2; ?>) 100%);
 	background: -moz-linear-gradient(bottom, rgb(<?php echo $colorbacklineimpair1; ?>) 85%, rgb(<?php echo $colorbacklineimpair2; ?>) 100%);
@@ -2852,7 +2868,7 @@ div .tdtop {
 /*
  *  Boxes
  */
- 
+
 .ficheaddleft div.boxstats {
     border: none;
 }
@@ -2866,31 +2882,37 @@ div .tdtop {
     text-align: center;
     border-radius: 2px;
 }
-.boxstats, .boxstats130, .boxstatscontent {    
+.boxstats, .boxstats130, .boxstatscontent {
 	white-space: nowrap;
 	overflow: hidden;
     text-overflow: ellipsis;
 }
 .boxstats {
     padding: 3px;
-    width: 105px;    
+    width: 105px;
 }
 .boxstats130 {
-    width: 135px; 
+    width: 135px;
     height: 48px;
-    padding: 3px  
+    padding: 3px
 }
 @media only screen and (max-width: 767px)
 {
+	.thumbstat {
+		flex: 1 1 110px;
+	}
 	.thumbstat150 {
 		flex: 1 1 110px;
 	}
 	.boxstats, .boxstats130 {
-        width: 90px;    
+        width: 90px;
     }
-    .dashboardlineindicator { 
+    .dashboardlineindicator {
         float: left;
     	padding-left: 5px;
+    }
+    .boxstats {
+        width: 100px;
     }
 }
 .boxstats:hover {
@@ -2927,7 +2949,7 @@ span.dashboardlineko {
     padding: 1px 6px 1px 6px;
     background-color: #8c4446;
     color: #FFFFFF ! important;
-    border-radius: .25em;    
+    border-radius: .25em;
 }
 .boxtable {
     margin-bottom: 8px !important;
@@ -2962,15 +2984,7 @@ tr.box_titre {
 	color: #000 !important; */
 
 	/* TO MATCH ELDY */
-	<?php if ($usegradient) { ?>
-	background-image: -o-linear-gradient(bottom, rgba(0,0,0,0.1) 0%, rgba(250,250,250,0.3) 100%);
-	background-image: -moz-linear-gradient(bottom, rgba(0,0,0,0.1) 0%, rgba(250,250,250,0.3) 100%);
-	background-image: -webkit-linear-gradient(bottom, rgba(0,0,0,0.1) 0%, rgba(250,250,250,0.3) 100%);
-	background-image: -ms-linear-gradient(bottom, rgba(0,0,0,0.1) 0%, rgba(250,250,250,0.3) 100%);
-	background-image: linear-gradient(bottom, rgba(0,0,0,0.1) 0%, rgba(250,250,250,0.3) 100%);
-	<?php } else { ?>
 	background: rgb(<?php echo $colorbacktitle1; ?>);
-	<?php } ?>
 
     background-repeat: repeat-x;
     color: rgb(<?php echo $colortexttitle; ?>);
@@ -3059,7 +3073,7 @@ div.info {
   -moz-border-radius: 4px;
   -webkit-border-radius: 4px;
   border-radius: 4px;
-  background: #EaE4Ea;
+  background: #868;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
@@ -3109,10 +3123,8 @@ td.legendLabel { padding: 2px 2px 2px 0 !important; }
 	margin-bottom: 2px;
 	margin-top: 2px;
 }
-.photowithmargin {
-/*	-webkit-box-shadow: 0px 0px 3px #777;
-	-moz-box-shadow: 0px 0px 3px #777;
-	box-shadow: 0px 0px 3px #777;*/
+.photowithborder {
+	border: 1px solid #f0f0f0;
 }
 .photointoolitp {
 	margin-top: 8px;
@@ -3142,9 +3154,12 @@ td.legendLabel { padding: 2px 2px 2px 0 !important; }
 
 div.titre {
 	font-family: <?php print $fontlist ?>;
-	font-weight: bold;
+	font-size: 14px;
+	/* font-weight: bold; */
 	color: rgb(<?php print $colortexttitlenotab; ?>);
 	text-decoration: none;
+	padding-top: 5px;
+    padding-bottom: 5px;
 	/* text-shadow: 1px 1px 2px #FFFFFF; */
 	<?php print (empty($conf->dol_optimize_smallscreen)?'':'margin-top: 4px;'); ?>
 }
@@ -3155,7 +3170,8 @@ div.titre {
 #tablepublicpayment tr.liste_total { border-bottom: 1px solid #CCCCCC !important; }
 #tablepublicpayment tr.liste_total td { border-top: none; }
 
-#divsubscribe { width: 700px; }
+.divmainbodylarge { margin-left: 40px; margin-right: 40px; }
+#divsubscribe { max-width: 900px; }
 #tablesubscribe { width: 100%; }
 
 
@@ -3365,16 +3381,12 @@ div.visible {
     display: block;
 }
 
-div.hidden {
+div.hidden, td.hidden, img.hidden {
     display: none;
 }
 
 tr.visible {
     display: block;
-}
-
-td.hidden {
-    display: none;
 }
 
 
@@ -4058,7 +4070,7 @@ div.dataTables_length select {
 	border-top: 1px solid #ccc;
 	border-bottom: 1px solid #ccc;
 }
-.select2-container-active .select2-choice, .select2-container-active .select2-choices 
+.select2-container-active .select2-choice, .select2-container-active .select2-choices
 {
 	outline: none;
 	border-top: none;
@@ -4126,11 +4138,14 @@ a span.select2-chosen
 .css-searchselectcombo ul.select2-results {
 	max-height:	none;
 }
-.select2-container-multi.select2-container-disabled .select2-choices {
+.select2-container.select2-container-disabled .select2-choice, .select2-container-multi.select2-container-disabled .select2-choices {
 	background-color: #FFFFFF;
 	background-image: none;
 	border: none;
 	cursor: default;
+}
+.select2-container-disabled .select2-choice .select2-arrow b {
+	opacity: 0.5;
 }
 .select2-container-multi .select2-choices .select2-search-choice {
   margin-bottom: 3px;
@@ -4235,7 +4250,7 @@ span.noborderoncategories {
 /* ============================================================================== */
 
 ul.ulselectedfields {
-    z-index: 100;			/* To have the select box appears on first plan even when near buttons are decorated by jmobile */
+    z-index: 90;			/* To have the select box appears on first plan even when near buttons are decorated by jmobile */
 }
 dl.dropdown {
     margin:0px;
@@ -4275,7 +4290,7 @@ dl.dropdown {
     position:absolute;
     top:2px;
     list-style:none;
-    max-height: 300px;
+    max-height: 270px;
     overflow: auto;
 }
 .dropdown span.value {
@@ -4637,8 +4652,8 @@ border-top-right-radius: 6px;
 	}
 
     div.tabBar {
-        padding-left: 0px;
-        padding-right: 0px;
+        padding-left: 8px;
+        padding-right: 8px;
         -moz-border-radius: 0;
         -webkit-border-radius: 0;
     	border-radius: 0px;
@@ -4673,7 +4688,7 @@ border-top-right-radius: 6px;
 	}
 	.mainmenuaspan {
     	/*display: none;*/
-  		font-size: 10px;
+  		font-size: 12px;
     }
     .topmenuimage {
     	background-size: 26px auto;
@@ -4709,7 +4724,7 @@ border-top-right-radius: 6px;
 @media only screen and (max-width: 570px)
 {
 	div#tmenu_tooltip {
-	<?php if (GETPOST("optioncss") == 'print') {  ?>
+	<?php if (GETPOST('optioncss','aZ09') == 'print') {  ?>
 		display:none;
 	<?php } else { ?>
 		/* padding-<?php echo $right; ?>: 78px; */

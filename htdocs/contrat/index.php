@@ -77,7 +77,6 @@ if (! empty($conf->global->MAIN_SEARCH_FORM_ON_HOME_AREAS))     // This is usele
     // Search contract
     if (! empty($conf->contrat->enabled))
     {
-    	$var=false;
     	print '<form method="post" action="'.DOL_URL_ROOT.'/contrat/list.php">';
     	print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
     	print '<table class="noborder nohover" width="100%">';
@@ -108,7 +107,7 @@ $sql.= ", ".MAIN_DB_PREFIX."contratdet as cd, ".MAIN_DB_PREFIX."contrat as c";
 if (!$user->rights->societe->client->voir && !$socid) $sql.= ", ".MAIN_DB_PREFIX."societe_commerciaux as sc";
 $sql.= " WHERE cd.fk_contrat = c.rowid AND c.fk_soc = s.rowid";
 $sql.= " AND (cd.statut != 4 OR (cd.statut = 4 AND (cd.date_fin_validite is null or cd.date_fin_validite >= '".$db->idate($now)."')))";
-$sql.= " AND c.entity IN (".getEntity('contract').")";
+$sql.= " AND c.entity IN (".getEntity('contract', 0).")";
 if ($user->societe_id) $sql.=' AND c.fk_soc = '.$user->societe_id;
 if (!$user->rights->societe->client->voir && !$socid) $sql.= " AND s.rowid = sc.fk_soc AND sc.fk_user = " .$user->id;
 $sql.= " GROUP BY cd.statut";
@@ -145,7 +144,7 @@ $sql.= ", ".MAIN_DB_PREFIX."contratdet as cd, ".MAIN_DB_PREFIX."contrat as c";
 if (!$user->rights->societe->client->voir && !$socid) $sql.= ", ".MAIN_DB_PREFIX."societe_commerciaux as sc";
 $sql.= " WHERE cd.fk_contrat = c.rowid AND c.fk_soc = s.rowid";
 $sql.= " AND (cd.statut = 4 AND cd.date_fin_validite < '".$db->idate($now)."')";
-$sql.= " AND c.entity IN (".getEntity('contract').")";
+$sql.= " AND c.entity IN (".getEntity('contract', 0).")";
 if ($user->societe_id) $sql.=' AND c.fk_soc = '.$user->societe_id;
 if (!$user->rights->societe->client->voir && !$socid) $sql.= " AND s.rowid = sc.fk_soc AND sc.fk_user = " .$user->id;
 $sql.= " GROUP BY cd.statut";
@@ -181,7 +180,6 @@ else
 
 print '<table class="noborder nohover" width="100%">';
 print '<tr class="liste_titre"><th colspan="2">'.$langs->trans("Statistics").' - '.$langs->trans("Services").'</th></tr>'."\n";
-$var=true;
 $listofstatus=array(0,4,4,5); $bool=false;
 foreach($listofstatus as $status)
 {
@@ -204,13 +202,11 @@ if (! empty($conf->use_javascript_ajax))
     dol_print_graph('stats',300,180,$data,1,'pie',1);
     print '</td></tr>';
 }
-$var=true;
 $listofstatus=array(0,4,4,5); $bool=false;
 foreach($listofstatus as $status)
 {
     if (empty($conf->use_javascript_ajax))
-    {
-        
+    {      
     	print '<tr class="oddeven">';
     	print '<td>'.$staticcontratligne->LibStatut($status,0,($bool?1:0)).'</td>';
     	print '<td align="right"><a href="services.php?mode='.$status.($bool?'&filter=expired':'').'">'.($nb[$status.$bool]?$nb[$status.$bool]:0).' '.$staticcontratligne->LibStatut($status,3,($bool?1:0)).'</a></td>';
@@ -234,7 +230,7 @@ if (! empty($conf->contrat->enabled) && $user->rights->contrat->lire)
 	$sql .= " FROM ".MAIN_DB_PREFIX."contrat as c, ".MAIN_DB_PREFIX."societe as s";
 	if (!$user->rights->societe->client->voir && !$socid) $sql.= ", ".MAIN_DB_PREFIX."societe_commerciaux as sc";
 	$sql.= " WHERE s.rowid = c.fk_soc";
-	$sql.= " AND c.entity IN (".getEntity('contract').")";
+	$sql.= " AND c.entity IN (".getEntity('contract', 0).")";
 	$sql.= " AND c.statut = 0";
 	if (!$user->rights->societe->client->voir && !$socid) $sql.= " AND s.rowid = sc.fk_soc AND sc.fk_user = " .$user->id;
 	if ($socid) $sql.= " AND c.fk_soc = ".$socid;
@@ -243,7 +239,6 @@ if (! empty($conf->contrat->enabled) && $user->rights->contrat->lire)
 
 	if ( $resql )
 	{
-		$var = false;
 		$num = $db->num_rows($resql);
 
 		print '<table class="noborder" width="100%">';
@@ -277,7 +272,7 @@ if (! empty($conf->contrat->enabled) && $user->rights->contrat->lire)
 		}
 		else
 		{
-			print '<tr '.$bc[$var].' class><td colspan="3" class="opacitymedium">'.$langs->trans("NoContracts").'</td></tr>';
+			print '<tr class="oddeven"><td colspan="3" class="opacitymedium">'.$langs->trans("NoContracts").'</td></tr>';
 		}
 		print "</table><br>";
 		$db->free($resql);
@@ -307,7 +302,7 @@ if (!$user->rights->societe->client->voir && !$socid) $sql.= " ".MAIN_DB_PREFIX.
 $sql.= " ".MAIN_DB_PREFIX."contrat as c";
 $sql.= " LEFT JOIN ".MAIN_DB_PREFIX."contratdet as cd ON c.rowid = cd.fk_contrat";
 $sql.= " WHERE c.fk_soc = s.rowid";
-$sql.= " AND c.entity IN (".getEntity('contract').")";
+$sql.= " AND c.entity IN (".getEntity('contract', 0).")";
 $sql.= " AND c.statut > 0";
 if (!$user->rights->societe->client->voir && !$socid) $sql.= " AND s.rowid = sc.fk_soc AND sc.fk_user = " .$user->id;
 if ($socid) $sql.= " AND s.rowid = ".$socid;
@@ -330,11 +325,9 @@ if ($result)
 	print '<th align="center" width="80" colspan="4">'.$langs->trans("Services").'</th>';
 	print "</tr>\n";
 
-	$var=True;
 	while ($i < $num)
 	{
-		$obj = $db->fetch_object($result);
-		
+		$obj = $db->fetch_object($result);		
 
 		print '<tr class="oddeven">';
 		print '<td width="110" class="nowrap">';
@@ -379,7 +372,7 @@ $sql.= ", ".MAIN_DB_PREFIX."societe as s";
 if (!$user->rights->societe->client->voir && !$socid) $sql.= ", ".MAIN_DB_PREFIX."societe_commerciaux as sc";
 $sql.= ", ".MAIN_DB_PREFIX."contratdet as cd";
 $sql.= ") LEFT JOIN ".MAIN_DB_PREFIX."product as p ON cd.fk_product = p.rowid";
-$sql.= " WHERE c.entity IN (".getEntity('contract').")";
+$sql.= " WHERE c.entity IN (".getEntity('contract', 0).")";
 $sql.= " AND cd.fk_contrat = c.rowid";
 $sql.= " AND c.fk_soc = s.rowid";
 if (!$user->rights->societe->client->voir && !$socid) $sql.= " AND s.rowid = sc.fk_soc AND sc.fk_user = " .$user->id;
@@ -397,7 +390,6 @@ if ($resql)
 	print '<tr class="liste_titre"><th colspan="4">'.$langs->trans("LastModifiedServices",$max).'</th>';
 	print "</tr>\n";
 
-	$var=True;
 	while ($i < min($num,$max))
 	{
 		$obj = $db->fetch_object($resql);
@@ -458,7 +450,7 @@ $sql.= ", ".MAIN_DB_PREFIX."societe as s";
 if (!$user->rights->societe->client->voir && !$socid) $sql.= ", ".MAIN_DB_PREFIX."societe_commerciaux as sc";
 $sql.= ", ".MAIN_DB_PREFIX."contratdet as cd";
 $sql.= " ) LEFT JOIN ".MAIN_DB_PREFIX."product as p ON cd.fk_product = p.rowid";
-$sql.= " WHERE c.entity IN (".getEntity('contract').")";
+$sql.= " WHERE c.entity IN (".getEntity('contract', 0).")";
 $sql.= " AND c.statut = 1";
 $sql.= " AND cd.statut = 0";
 $sql.= " AND cd.fk_contrat = c.rowid";
@@ -478,7 +470,6 @@ if ($resql)
 	print '<tr class="liste_titre"><th colspan="4">'.$langs->trans("NotActivatedServices").' <a href="'.DOL_URL_ROOT.'/contrat/services.php?mode=0"><span class="badge">'.$num.'</span></a></th>';
 	print "</tr>\n";
 
-	$var=True;
 	while ($i < $num)
 	{
 		$obj = $db->fetch_object($resql);
@@ -538,7 +529,7 @@ $sql.= ", ".MAIN_DB_PREFIX."societe as s";
 if (!$user->rights->societe->client->voir && !$socid) $sql.= ", ".MAIN_DB_PREFIX."societe_commerciaux as sc";
 $sql.= ", ".MAIN_DB_PREFIX."contratdet as cd";
 $sql.= " ) LEFT JOIN ".MAIN_DB_PREFIX."product as p ON cd.fk_product = p.rowid";
-$sql.= " WHERE c.entity IN (".getEntity('contract').")";
+$sql.= " WHERE c.entity IN (".getEntity('contract', 0).")";
 $sql.= " AND c.statut = 1";
 $sql.= " AND cd.statut = 4";
 $sql.= " AND cd.date_fin_validite < '".$db->idate($now)."'";
@@ -559,7 +550,6 @@ if ($resql)
 	print '<tr class="liste_titre"><th colspan="4">'.$langs->trans("ListOfExpiredServices").' <a href="'.DOL_URL_ROOT.'/contrat/services.php?mode=4&amp;filter=expired"><span class="badge">'.$num.'</span></a></th>';
 	print "</tr>\n";
 
-	$var=True;
 	while ($i < $num)
 	{
 		$obj = $db->fetch_object($resql);

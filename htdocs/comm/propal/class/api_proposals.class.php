@@ -16,9 +16,10 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
- use Luracast\Restler\RestException;
+use Luracast\Restler\RestException;
 
- require_once DOL_DOCUMENT_ROOT.'/comm/propal/class/propal.class.php';
+require_once DOL_DOCUMENT_ROOT.'/comm/propal/class/propal.class.php';
+
 
 /**
  * API class for orders
@@ -111,7 +112,7 @@ class Proposals extends DolibarrApi
         
         if ((!DolibarrApiAccess::$user->rights->societe->client->voir && !$socids) || $search_sale > 0) $sql.= ", ".MAIN_DB_PREFIX."societe_commerciaux as sc"; // We need this table joined to the select in order to filter by sale
 
-        $sql.= ' WHERE t.entity IN ('.getEntity('propal', 1).')';
+        $sql.= ' WHERE t.entity IN ('.getEntity('propal').')';
         if ((!DolibarrApiAccess::$user->rights->societe->client->voir && !$socids) || $search_sale > 0) $sql.= " AND t.fk_soc = sc.fk_soc";
         if ($socids) $sql.= " AND t.fk_soc IN (".$socids.")";
         if ($search_sale > 0) $sql.= " AND t.rowid = sc.fk_soc";		// Join for the needed table to filter by sale
@@ -147,7 +148,8 @@ class Proposals extends DolibarrApi
         if ($result)
         {
             $num = $db->num_rows($result);
-            while ($i < min($num, ($limit <= 0 ? $num : $limit)))
+            $min = min($num, ($limit <= 0 ? $num : $limit));
+            while ($i < $min)
             {
                 $obj = $db->fetch_object($result);
                 $propal_static = new Propal($db);
@@ -260,12 +262,9 @@ class Proposals extends DolibarrApi
                         $request_data->localtax2_tx,
                         $request_data->fk_product,
                         $request_data->remise_percent,
-                        $request_data->info_bits,
-                        $request_data->fk_remise_except,
                         'HT',
                         0,
-                        $request_data->date_start,
-                        $request_data->date_end,
+                        $request_data->info_bits,
                         $request_data->product_type,
                         $request_data->rang,
                         $request_data->special_code,
@@ -273,10 +272,14 @@ class Proposals extends DolibarrApi
                         $request_data->fk_fournprice,
                         $request_data->pa_ht,
                         $request_data->label,
+                        $request_data->date_start,
+                        $request_data->date_end,
                         $request_data->array_options,
                         $request_data->fk_unit,
                         $this->element,
-                        $request_data->id
+                        $request_data->id,
+                        $request_data->pu_ht_devise,
+                        $request_data->fk_remise_except
       );
 
       if ($updateRes > 0) {

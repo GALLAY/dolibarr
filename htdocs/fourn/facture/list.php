@@ -97,7 +97,7 @@ $toselect = GETPOST('toselect', 'array');
 $option = GETPOST('option');
 if ($option == 'late') $filter = 'paye:0';
 
-$search_all = GETPOST('sall');
+$search_all = GETPOST('sall', 'alphanohtml');
 $search_label = GETPOST("search_label","alpha");
 $search_company = GETPOST("search_company","alpha");
 $search_amount_no_tax = GETPOST("search_amount_no_tax","alpha");
@@ -109,14 +109,14 @@ $limit = GETPOST('limit')?GETPOST('limit','int'):$conf->liste_limit;
 $sortfield = GETPOST("sortfield",'alpha');
 $sortorder = GETPOST("sortorder",'alpha');
 $page=GETPOST("page",'int');
-if ($page == -1) { $page = 0 ; }
+if ($page == -1 || $page == null) { $page = 0 ; }
 $offset = $limit * $page ;
 $pageprev = $page - 1;
 $pagenext = $page + 1;
 if (! $sortorder) $sortorder="DESC";
 if (! $sortfield) $sortfield="f.datef,f.rowid";
 
-// Initialize technical object to manage hooks of thirdparties. Note that conf->hooks_modules contains array array
+// Initialize technical object to manage hooks of page. Note that conf->hooks_modules contains array of hook context
 $contextpage='supplierinvoicelist';
 
 $diroutputmassaction=$conf->fournisseur->facture->dir_output . '/temp/massgeneration/'.$user->id;
@@ -125,7 +125,7 @@ $object=new FactureFournisseur($db);
 
 $now=dol_now();
 
-// Initialize technical object to manage hooks of thirdparties. Note that conf->hooks_modules contains array array
+// Initialize technical object to manage hooks of page. Note that conf->hooks_modules contains array of hook context
 $hookmanager->initHooks(array('supplierinvoicelist'));
 $extrafields = new ExtraFields($db);
 
@@ -163,6 +163,8 @@ $arrayfields=array(
     'f.total_localtax1'=>array('label'=>$langs->transcountry("AmountLT1", $mysoc->country_code), 'checked'=>0, 'enabled'=>$mysoc->localtax1_assuj=="1"),
     'f.total_localtax2'=>array('label'=>$langs->transcountry("AmountLT2", $mysoc->country_code), 'checked'=>0, 'enabled'=>$mysoc->localtax2_assuj=="1"),
     'f.total_ttc'=>array('label'=>$langs->trans("AmountTTC"), 'checked'=>0),
+    'dynamount_payed'=>array('label'=>$langs->trans("Payed"), 'checked'=>0),
+    'rtp'=>array('label'=>$langs->trans("Rest"), 'checked'=>0),
     'f.datec'=>array('label'=>$langs->trans("DateCreation"), 'checked'=>0, 'position'=>500),
     'f.tms'=>array('label'=>$langs->trans("DateModificationShort"), 'checked'=>0, 'position'=>500),
     'f.fk_statut'=>array('label'=>$langs->trans("Status"), 'checked'=>1, 'position'=>1000),
@@ -191,7 +193,7 @@ if ($reshook < 0) setEventMessages($hookmanager->error, $hookmanager->errors, 'e
 if (empty($reshook))
 {
     include DOL_DOCUMENT_ROOT.'/core/actions_changeselectedfields.inc.php';
-    
+
     if (GETPOST("button_removefilter_x") || GETPOST("button_removefilter") || GETPOST("button_removefilter.x"))		// All test must be present to be compatible with all browsers
     {
         $search_all="";
@@ -230,7 +232,7 @@ if (empty($reshook))
         $filter='';
         $option='';
     }
-    
+
     // Mass actions
     $objectclass='FactureFournisseur';
     $objectlabel='SupplierInvoices';
@@ -240,7 +242,7 @@ if (empty($reshook))
     include DOL_DOCUMENT_ROOT.'/core/actions_massactions.inc.php';
 }
 
-    
+
 /*
  * View
  */
@@ -263,7 +265,9 @@ $sql.= " s.rowid as socid, s.nom as name, s.town, s.zip, s.fk_pays, s.client, s.
 $sql.= " typent.code as typent_code,";
 $sql.= " state.code_departement as state_code, state.nom as state_name,";
 $sql.= " p.rowid as project_id, p.ref as project_ref";
-if (!$user->rights->societe->client->voir && !$socid) $sql .= ", sc.fk_soc, sc.fk_user ";
+// We need dynamount_payed to be able to sort on status (value is surely wrong because we can count several lines several times due to other left join or link with contacts. But what we need is just 0 or > 0)
+// TODO Better solution to be able to sort on already payed or remain to pay is to store amount_payed in a denormalized field.
+if (! $search_all) $sql.= ', SUM(pf.amount) as dynamount_payed';
 // Add fields from extrafields
 foreach ($extrafields->attribute_label as $key => $val) $sql.=($extrafields->attribute_type[$key] != 'separate' ? ",ef.".$key.' as options_'.$key : '');
 // Add fields from hooks
@@ -276,6 +280,7 @@ $sql.= " LEFT JOIN ".MAIN_DB_PREFIX."c_typent as typent on (typent.id = s.fk_typ
 $sql.= " LEFT JOIN ".MAIN_DB_PREFIX."c_departements as state on (state.rowid = s.fk_departement)";
 $sql.= ', '.MAIN_DB_PREFIX.'facture_fourn as f';
 if (is_array($extrafields->attribute_label) && count($extrafields->attribute_label)) $sql.= " LEFT JOIN ".MAIN_DB_PREFIX."facture_fourn_extrafields as ef on (f.rowid = ef.fk_object)";
+if (! $search_all) $sql.= ' LEFT JOIN '.MAIN_DB_PREFIX.'paiementfourn_facturefourn as pf ON pf.fk_facturefourn = f.rowid';
 if ($search_all || $search_product_category > 0) $sql.= ' LEFT JOIN '.MAIN_DB_PREFIX.'facture_fourn_det as pd ON f.rowid=pd.fk_facture_fourn';
 if ($search_product_category > 0) $sql.= ' LEFT JOIN '.MAIN_DB_PREFIX.'categorie_product as cp ON cp.fk_product=pd.fk_product';
 $sql.= " LEFT JOIN ".MAIN_DB_PREFIX."projet as p ON p.rowid = f.fk_projet";
@@ -287,14 +292,10 @@ if ($search_user > 0)
     $sql.=", ".MAIN_DB_PREFIX."c_type_contact as tc";
 }
 $sql.= ' WHERE f.fk_soc = s.rowid';
-$sql.= " AND f.entity = ".$conf->entity;
+$sql.= ' AND f.entity IN ('.getEntity('facture_fourn').')';
 if (!$user->rights->societe->client->voir && !$socid) $sql .= " AND s.rowid = sc.fk_soc AND sc.fk_user = " .$user->id;
 if ($search_product_category > 0) $sql.=" AND cp.fk_categorie = ".$search_product_category;
 if ($socid > 0) $sql .= ' AND s.rowid = '.$socid;
-if ($search_all)
-{
-    $sql.= natural_search(array_keys($fieldstosearchall), $search_all);
-}
 if ($search_ref)
 {
 	if (is_numeric($search_ref)) $sql .= natural_search(array('f.ref'), $search_ref);
@@ -337,7 +338,7 @@ if ($month_lim > 0)
 	else if ($year_lim > 0 && ! empty($day_lim))
 		$sql.= " AND f.date_lim_reglement BETWEEN '".$db->idate(dol_mktime(0, 0, 0, $month_lim, $day_lim, $year_lim))."' AND '".$db->idate(dol_mktime(23, 59, 59, $month_lim, $day_lim, $year_lim))."'";
 	else
-		$sql.= " AND date_format(f.date_lim_reglement, '%m') = '".$month_lim."'";
+		$sql.= " AND date_format(f.date_lim_reglement, '%m') = '".$db->escape($month_lim)."'";
 }
 else if ($year_lim > 0)
 {
@@ -382,6 +383,26 @@ $parameters=array();
 $reshook=$hookmanager->executeHooks('printFieldListWhere',$parameters);    // Note that $action and $object may have been modified by hook
 $sql.=$hookmanager->resPrint;
 
+if (! $search_all)
+{
+    $sql.= " GROUP BY f.rowid, f.ref, f.ref_supplier, f.datef, f.date_lim_reglement, f.fk_mode_reglement,";
+    $sql.= " f.total_ht, f.total_ttc, f.total_tva, f.paye, f.fk_statut, f.libelle, f.datec, f.tms,";
+    $sql.= " f.localtax1, f.localtax2,";
+    $sql.= " s.rowid, s.nom, s.town, s.zip, s.fk_pays, s.client, s.code_client,";
+    $sql.= " typent.code,";
+    $sql.= " state.code_departement, state.nom,";
+    $sql.= " p.rowid, p.ref";
+
+    foreach ($extrafields->attribute_label as $key => $val) //prevent error with sql_mode=only_full_group_by
+    {
+        $sql.=($extrafields->attribute_type[$key] != 'separate' ? ",ef.".$key : '');
+    }
+}
+else
+{
+    $sql.= natural_search(array_keys($fieldstosearchall), $search_all);
+}
+
 $sql.= $db->order($sortfield,$sortorder);
 
 $nbtotalofrecords = '';
@@ -400,7 +421,7 @@ if ($resql)
 	$num = $db->num_rows($resql);
 
 	$arrayofselected=is_array($toselect)?$toselect:array();
-	
+
 	if ($socid)
 	{
 		$soc = new Societe($db);
@@ -410,7 +431,8 @@ if ($resql)
 	$param='&socid='.$socid;
     if (! empty($contextpage) && $contextpage != $_SERVER["PHP_SELF"]) $param.='&contextpage='.$contextpage;
     if ($limit > 0 && $limit != $conf->liste_limit) $param.='&limit='.$limit;
-	if ($day) 					$param.='&day='.urlencode($day);
+	if ($search_all)			$param.='&search_all='.urlencode($search_all);
+    if ($day) 					$param.='&day='.urlencode($day);
 	if ($month) 				$param.='&month='.urlencode($month);
 	if ($year)  				$param.='&year=' .urlencode($year);
 	if ($day_lim) 				$param.='&day_lim='.urlencode($day_lim);
@@ -428,6 +450,8 @@ if ($resql)
 	if ($search_amount_no_tax)	$param.='&search_amount_no_tax='.urlencode($search_amount_no_tax);
 	if ($search_amount_all_tax)	$param.='&search_amount_all_tax='.urlencode($search_amount_all_tax);
 	if ($search_status >= 0)  	$param.="&search_status=".urlencode($search_status);
+    if ($show_files)            $param.='&show_files=' .$show_files;
+	if ($option)                $param.="&option=".$option;
 	if ($optioncss != '')       $param.='&optioncss='.$optioncss;
 	// Add $param from extra fields
 	foreach ($search_array_options as $key => $val)
@@ -436,7 +460,7 @@ if ($resql)
 	    $tmpkey=preg_replace('/search_options_/','',$key);
 	    if ($val != '') $param.='&search_options_'.$tmpkey.'='.urlencode($val);
 	}
-	
+
 	// List of mass actions available
 	$arrayofmassactions =  array(
 	    //'presend'=>$langs->trans("SendByMail"),
@@ -446,7 +470,7 @@ if ($resql)
 	if ($user->rights->fournisseur->facture->supprimer) $arrayofmassactions['delete']=$langs->trans("Delete");
 	//if ($massaction == 'presend' || $massaction == 'createbills') $arrayofmassactions=array();
 	$massactionbutton=$form->selectMassAction('', $arrayofmassactions);
-	
+
 	$i = 0;
 	print '<form method="POST" name="searchFormList" action="'.$_SERVER["PHP_SELF"].'">'."\n";
     if ($optioncss != '') print '<input type="hidden" name="optioncss" value="'.$optioncss.'">';
@@ -455,18 +479,19 @@ if ($resql)
 	print '<input type="hidden" name="action" value="list">';
 	print '<input type="hidden" name="sortfield" value="'.$sortfield.'">';
 	print '<input type="hidden" name="sortorder" value="'.$sortorder.'">';
+    print '<input type="hidden" name="page" value="'.$page.'">';
 	print '<input type="hidden" name="viewstatut" value="'.$viewstatut.'">';
 	print '<input type="hidden" name="socid" value="'.$socid.'">';
 
-	print_barre_liste($langs->trans("BillsSuppliers").($socid?" - $soc->name":""), $page, $_SERVER["PHP_SELF"], $param, $sortfield, $sortorder, $massactionbutton, $num, $nbtotalofrecords, 'title_accountancy', 0, '', '', $limit);
-	
+	print_barre_liste($langs->trans("BillsSuppliers").($socid?' '.$soc->name:''), $page, $_SERVER["PHP_SELF"], $param, $sortfield, $sortorder, $massactionbutton, $num, $nbtotalofrecords, 'title_accountancy', 0, '', '', $limit);
+
 	if ($massaction == 'presend')
 	{
 	    $langs->load("mails");
-	
+
 	    if (! GETPOST('cancel'))
 	    {
-	        $objecttmp=new Commande($db);
+	        $objecttmp=new FactureFourn($db);
 	        $listofselectedid=array();
 	        $listofselectedthirdparties=array();
 	        $listofselectedref=array();
@@ -482,35 +507,35 @@ if ($resql)
 	            }
 	        }
 	    }
-	
+
 	    print '<input type="hidden" name="massaction" value="confirm_presend">';
-	
+
 	    include_once DOL_DOCUMENT_ROOT.'/core/class/html.formmail.class.php';
 	    $formmail = new FormMail($db);
-	
+
 	    dol_fiche_head(null, '', '');
-	
-	    $topicmail="SendOrderRef";
-	    $modelmail="order_send";
-	
+
+	    $topicmail="SendBillRef";
+	    $modelmail="supplier_invoice_send";
+
 	    // Cree l'objet formulaire mail
 	    include_once DOL_DOCUMENT_ROOT.'/core/class/html.formmail.class.php';
 	    $formmail = new FormMail($db);
 	    $formmail->withform=-1;
 	    $formmail->fromtype = (GETPOST('fromtype')?GETPOST('fromtype'):(!empty($conf->global->MAIN_MAIL_DEFAULT_FROMTYPE)?$conf->global->MAIN_MAIL_DEFAULT_FROMTYPE:'user'));
-	
+
 	    if($formmail->fromtype === 'user'){
 	        $formmail->fromid = $user->id;
-	
+
 	    }
 	    if (! empty($conf->global->MAIN_EMAIL_ADD_TRACK_ID) && ($conf->global->MAIN_EMAIL_ADD_TRACK_ID & 1))	// If bit 1 is set
 	    {
-	        $formmail->trackid='ord'.$object->id;
+	        $formmail->trackid='sinv'.$object->id;
 	    }
 	    if (! empty($conf->global->MAIN_EMAIL_ADD_TRACK_ID) && ($conf->global->MAIN_EMAIL_ADD_TRACK_ID & 2))	// If bit 2 is set
 	    {
 	        include DOL_DOCUMENT_ROOT.'/core/lib/functions2.lib.php';
-	        $formmail->frommail=dolAddEmailTrackId($formmail->frommail, 'ord'.$object->id);
+	        $formmail->frommail=dolAddEmailTrackId($formmail->frommail, 'sinv'.$object->id);
 	    }
 	    $formmail->withfrom=1;
 	    $liste=$langs->trans("AllRecipientSelected");
@@ -545,23 +570,23 @@ if ($resql)
 	    $formmail->substit['__REFCLIENT__']='__REFCLIENT__';	// We want to keep the tag
 	    $formmail->substit['__PERSONALIZED__']='';
 	    $formmail->substit['__CONTACTCIVNAME__']='';
-	
+
 	    // Tableau des parametres complementaires du post
 	    $formmail->param['action']=$action;
 	    $formmail->param['models']=$modelmail;
 	    $formmail->param['models_id']=GETPOST('modelmailselected','int');
 	    $formmail->param['id']=join(',',$arrayofselected);
 	    //$formmail->param['returnurl']=$_SERVER["PHP_SELF"].'?id='.$object->id;
-	
+
 	    print $formmail->get_form();
-	
+
 	    dol_fiche_end();
 	}
 	elseif ($massaction == 'createbills')
 	{
 	    //var_dump($_REQUEST);
 	    print '<input type="hidden" name="massaction" value="confirm_createbills">';
-	
+
 	    print '<table class="border" width="100%" >';
 	    print '<tr>';
 	    print '<td class="titlefieldmiddle">';
@@ -588,7 +613,7 @@ if ($resql)
 	    print '</td>';
 	    print '</tr>';
 	    print '</table>';
-	
+
 	    print '<br>';
 	    print '<div class="center">';
 	    print '<input type="submit" class="button" id="createbills" name="createbills" value="'.$langs->trans('CreateInvoiceForThisCustomer').'">  ';
@@ -596,13 +621,13 @@ if ($resql)
 	    print '</div>';
 	    print '<br>';
 	}
-	
+
 	if ($search_all)
     {
         foreach($fieldstosearchall as $key => $val) $fieldstosearchall[$key]=$langs->trans($val);
         print $langs->trans("FilterOnInto", $search_all) . join(', ',$fieldstosearchall);
     }
-    
+
  	// If the user can view prospects other than his'
     $moreforfilter='';
  	if ($user->rights->societe->client->voir || $socid)
@@ -610,7 +635,7 @@ if ($resql)
  		$langs->load("commercial");
  		$moreforfilter.='<div class="divsearchfield">';
  		$moreforfilter.=$langs->trans('ThirdPartiesOfSaleRepresentative'). ': ';
-		$moreforfilter.=$formother->select_salesrepresentatives($search_sale, 'search_sale', $user, 0, 1, 'maxwidth300');
+		$moreforfilter.=$formother->select_salesrepresentatives($search_sale, 'search_sale', $user, 0, 1, 'maxwidth200');
 	 	$moreforfilter.='</div>';
  	}
     // If the user can view prospects other than his'
@@ -618,7 +643,7 @@ if ($resql)
     {
 		$moreforfilter.='<div class="divsearchfield">';
     	$moreforfilter.=$langs->trans('LinkedToSpecificUsers'). ': ';
-        $moreforfilter.=$form->select_dolusers($search_user, 'search_user', 1, '', 0, '', '', 0, 0, 0, '', 0, '', 'maxwidth300');
+        $moreforfilter.=$form->select_dolusers($search_user, 'search_user', 1, '', 0, '', '', 0, 0, 0, '', 0, '', 'maxwidth200');
 	 	$moreforfilter.='</div>';
     }
 	// If the user can view prospects other than his'
@@ -628,7 +653,7 @@ if ($resql)
 		$moreforfilter.='<div class="divsearchfield">';
 		$moreforfilter.=$langs->trans('IncludingProductWithTag'). ': ';
 		$cate_arbo = $form->select_all_categories(Categorie::TYPE_PRODUCT, null, 'parent', null, null, 1);
-		$moreforfilter.=$form->selectarray('search_product_category', $cate_arbo, $search_product_category, 1, 0, 0, '', 0, 0, 0, 0, '', 1);
+		$moreforfilter.=$form->selectarray('search_product_category', $cate_arbo, $search_product_category, 1, 0, 0, '', 0, 0, 0, 0, 'maxwidth300', 1);
 		$moreforfilter.='</div>';
 	}
     $parameters=array();
@@ -646,7 +671,7 @@ if ($resql)
     $varpage=empty($contextpage)?$_SERVER["PHP_SELF"]:$contextpage;
     $selectedfields=$form->multiSelectArrayWithCheckbox('selectedfields', $arrayfields, $varpage);	// This also change content of $arrayfields
     if ($massactionbutton) $selectedfields.=$form->showCheckAddButtons('checkforselect', 1);
-    
+
     print '<div class="div-table-responsive">';
     print '<table class="tagtable liste'.($moreforfilter?" listwithfilterbefore":"").'">'."\n";
 
@@ -677,7 +702,7 @@ if ($resql)
 	if (! empty($arrayfields['f.datef']['checked']))
 	{
 	    print '<td class="liste_titre" align="center">';
-	    if (! empty($conf->global->MAIN_LIST_FILTER_ON_DAY)) print '<input class="flat" type="text" size="1" maxlength="2" name="day" value="'.$day.'">';
+	    if (! empty($conf->global->MAIN_LIST_FILTER_ON_DAY)) print '<input class="flat" type="text" size="1" maxlength="2" name="day" value="'.dol_escape_htmltag($day).'">';
 	    print '<input class="flat" type="text" size="1" maxlength="2" name="month" value="'.$month.'">';
 	    $formother->select_year($year?$year:-1,'year',1, 20, 5);
 	    print '</td>';
@@ -686,7 +711,7 @@ if ($resql)
 	if (! empty($arrayfields['f.date_lim_reglement']['checked']))
 	{
 	    print '<td class="liste_titre" align="center">';
-	    if (! empty($conf->global->MAIN_LIST_FILTER_ON_DAY)) print '<input class="flat" type="text" size="1" maxlength="2" name="day_lim" value="'.$day_lim.'">';
+	    if (! empty($conf->global->MAIN_LIST_FILTER_ON_DAY)) print '<input class="flat" type="text" size="1" maxlength="2" name="day_lim" value="'.dol_escape_htmltag($day_lim).'">';
 	    print '<input class="flat" type="text" size="1" maxlength="2" name="month_lim" value="'.$month_lim.'">';
 	    $formother->select_year($year_lim?$year_lim:-1,'year_lim',1, 20, 5);
 	    print '<br><input type="checkbox" name="option" value="late"'.($option == 'late'?' checked':'').'> '.$langs->trans("Late");
@@ -703,9 +728,9 @@ if ($resql)
 	    print '<td class="liste_titre" align="left"><input class="flat" type="text" size="6" name="search_societe" value="'.$search_societe.'"></td>';
 	}
 	// Town
-	if (! empty($arrayfields['s.town']['checked'])) print '<td class="liste_titre"><input class="flat" type="text" size="6" name="search_town" value="'.$search_town.'"></td>';
+	if (! empty($arrayfields['s.town']['checked'])) print '<td class="liste_titre"><input class="flat" type="text" size="6" name="search_town" value="'.dol_escape_htmltag($search_town).'"></td>';
 	// Zip
-	if (! empty($arrayfields['s.zip']['checked'])) print '<td class="liste_titre"><input class="flat" type="text" size="4" name="search_zip" value="'.$search_zip.'"></td>';
+	if (! empty($arrayfields['s.zip']['checked'])) print '<td class="liste_titre"><input class="flat" type="text" size="4" name="search_zip" value="'.dol_escape_htmltag($search_zip).'"></td>';
 	// State
 	if (! empty($arrayfields['state.nom']['checked']))
 	{
@@ -738,14 +763,14 @@ if ($resql)
 	{
 	    // Amount
 	    print '<td class="liste_titre" align="right">';
-	    print '<input class="flat" type="text" size="5" name="search_montant_ht" value="'.$search_montant_ht.'">';
+	    print '<input class="flat" type="text" size="5" name="search_montant_ht" value="'.dol_escape_htmltag($search_montant_ht).'">';
 	    print '</td>';
 	}
 	if (! empty($arrayfields['f.total_vat']['checked']))
 	{
 	    // Amount
 	    print '<td class="liste_titre" align="right">';
-	    print '<input class="flat" type="text" size="5" name="search_montant_vat" value="'.$search_montant_vat.'">';
+	    print '<input class="flat" type="text" size="5" name="search_montant_vat" value="'.dol_escape_htmltag($search_montant_vat).'">';
 	    print '</td>';
 	}
 	if (! empty($arrayfields['f.total_localtax1']['checked']))
@@ -766,9 +791,19 @@ if ($resql)
 	{
 	    // Amount
 	    print '<td class="liste_titre" align="right">';
-	    print '<input class="flat" type="text" size="5" name="search_montant_ttc" value="'.$search_montant_ttc.'">';
+	    print '<input class="flat" type="text" size="5" name="search_montant_ttc" value="'.dol_escape_htmltag($search_montant_ttc).'">';
 	    print '</td>';
 	}
+    if (! empty($arrayfields['dynamount_payed']['checked']))
+    {
+        print '<td class="liste_titre" align="right">';
+        print '</td>';
+    }
+    if (! empty($arrayfields['rtp']['checked']))
+    {
+        print '<td class="liste_titre" align="right">';
+        print '</td>';
+    }
 	// Extra fields
 	if (is_array($extrafields->attribute_label) && count($extrafields->attribute_label))
 	{
@@ -818,8 +853,8 @@ if ($resql)
 	}
 	// Action column
 	print '<td class="liste_titre" align="middle">';
-	$searchpitco=$form->showFilterButtons('checkforselect', 0);
-	print $searchpitco;
+	$searchpicto=$form->showFilterButtons();
+	print $searchpicto;
 	print '</td>';
 
 	print "</tr>\n";
@@ -843,6 +878,8 @@ if ($resql)
 	if (! empty($arrayfields['f.total_localtax1']['checked']))    print_liste_field_titre($arrayfields['f.total_localtax1']['label'],$_SERVER['PHP_SELF'],'f.localtax1','',$param,'align="right"',$sortfield,$sortorder);
 	if (! empty($arrayfields['f.total_localtax2']['checked']))    print_liste_field_titre($arrayfields['f.total_localtax2']['label'],$_SERVER['PHP_SELF'],'f.localtax2','',$param,'align="right"',$sortfield,$sortorder);
 	if (! empty($arrayfields['f.total_ttc']['checked']))          print_liste_field_titre($arrayfields['f.total_ttc']['label'],$_SERVER['PHP_SELF'],'f.total_ttc','',$param,'align="right"',$sortfield,$sortorder);
+    if (! empty($arrayfields['dynamount_payed']['checked']))      print_liste_field_titre($arrayfields['dynamount_payed']['label'],$_SERVER['PHP_SELF'],'','',$param,'align="right"',$sortfield,$sortorder);
+    if (! empty($arrayfields['rtp']['checked']))                  print_liste_field_titre($arrayfields['rtp']['label'],$_SERVER['PHP_SELF'],'','',$param,'align="right"',$sortfield,$sortorder);
 	// Extra fields
 	if (is_array($extrafields->attribute_label) && count($extrafields->attribute_label))
 	{
@@ -851,7 +888,9 @@ if ($resql)
 	        if (! empty($arrayfields["ef.".$key]['checked']))
 	        {
 	            $align=$extrafields->getAlignFlag($key);
-	            print_liste_field_titre($langs->trans($extralabels[$key]),$_SERVER["PHP_SELF"],"ef.".$key,"",$param,($align?'align="'.$align.'"':''),$sortfield,$sortorder);
+    			$sortonfield = "ef.".$key;
+    			if (! empty($extrafields->attribute_computed[$key])) $sortonfield='';
+    			print_liste_field_titre($langs->trans($extralabels[$key]),$_SERVER["PHP_SELF"],$sortonfield,"",$param,($align?'align="'.$align.'"':''),$sortfield,$sortorder);
 	        }
 	    }
 	}
@@ -863,12 +902,12 @@ if ($resql)
 	if (! empty($arrayfields['f.tms']['checked']))       print_liste_field_titre($arrayfields['f.tms']['label'],$_SERVER["PHP_SELF"],"f.tms","",$param,'align="center" class="nowrap"',$sortfield,$sortorder);
 	if (! empty($arrayfields['f.fk_statut']['checked'])) print_liste_field_titre($arrayfields['f.fk_statut']['label'],$_SERVER["PHP_SELF"],"fk_statut,paye","",$param,'align="right"',$sortfield,$sortorder);
 	print_liste_field_titre($selectedfields, $_SERVER["PHP_SELF"],"",'','','align="center"',$sortfield,$sortorder,'maxwidthsearch ');
-	print "</tr>\n";	
-	
+	print "</tr>\n";
+
     $facturestatic=new FactureFournisseur($db);
 	$supplierstatic=new Fournisseur($db);
 	$projectstatic=new Project($db);
-	
+
 	if ($num > 0)
     {
 		$i=0;
@@ -878,15 +917,21 @@ if ($resql)
 		while ($i < min($num,$limit))
 		{
 			$obj = $db->fetch_object($resql);
-			
-		
+
 			$datelimit=$db->jdate($obj->datelimite);
 			$facturestatic->id=$obj->facid;
 			$facturestatic->ref=$obj->ref;
+            $facturestatic->type=$obj->type;
 			$facturestatic->ref_supplier=$obj->ref_supplier;
 			$facturestatic->date_echeance = $db->jdate($obj->datelimite);
 			$facturestatic->statut = $obj->fk_statut;
-	
+
+			$paiement = $facturestatic->getSommePaiement();
+			$totalcreditnotes = $facturestatic->getSumCreditNotesUsed();
+			$totaldeposits = $facturestatic->getSumDepositsUsed();
+			$totalpay = $paiement + $totalcreditnotes + $totaldeposits;
+			$remaintopay = $obj->total_ttc - $totalpay;
+
             print '<tr class="oddeven">';
     		if (! empty($arrayfields['f.ref']['checked']))
     		{
@@ -907,11 +952,11 @@ if ($resql)
 				$subdir = get_exdir($obj->facid,2,0,0,$facturestatic,'invoice_supplier').dol_sanitizeFileName($obj->ref);
 				print $formfile->getDocumentsLink('facture_fournisseur', $subdir, $filedir);
 				print '</td></tr></table>';
-				
+
                 print "</td>\n";
 				if (! $i) $totalarray['nbfield']++;
     		}
-    		
+
 			// Customer ref
     		if (! empty($arrayfields['f.ref_supplier']['checked']))
     		{
@@ -920,7 +965,7 @@ if ($resql)
     			print '</td>';
     		    if (! $i) $totalarray['nbfield']++;
     		}
-    		
+
 			// Label
     		if (! empty($arrayfields['f.label']['checked']))
     		{
@@ -929,7 +974,7 @@ if ($resql)
     			print '</td>';
     		    if (! $i) $totalarray['nbfield']++;
     		}
-    		
+
 			// Date
     		if (! empty($arrayfields['f.datef']['checked']))
     		{
@@ -938,7 +983,7 @@ if ($resql)
                 print '</td>';
     		    if (! $i) $totalarray['nbfield']++;
     		}
-    		
+
             // Date limit
     		if (! empty($arrayfields['f.date_lim_reglement']['checked']))
     		{
@@ -950,7 +995,7 @@ if ($resql)
                 print '</td>';
     		    if (! $i) $totalarray['nbfield']++;
     		}
-    		
+
     		// Project
     		if (! empty($arrayfields['p.ref']['checked']))
     		{
@@ -964,11 +1009,11 @@ if ($resql)
     		    print '</td>';
     		    if (! $i) $totalarray['nbfield']++;
     		}
-    		
+
     		// Third party
     		if (! empty($arrayfields['s.nom']['checked']))
     		{
-                print '<td>';
+                print '<td class="tdoverflowmax200">';
                 $thirdparty=new Societe($db);
                 $thirdparty->id=$obj->socid;
                 $thirdparty->name=$obj->name;
@@ -1018,7 +1063,7 @@ if ($resql)
     		    print '</td>';
     		    if (! $i) $totalarray['nbfield']++;
     		}
-    		
+
             // Payment mode
     		if (! empty($arrayfields['f.fk_mode_reglement']['checked']))
     		{
@@ -1027,7 +1072,7 @@ if ($resql)
                 print '</td>';
     		    if (! $i) $totalarray['nbfield']++;
     		}
-    		
+
             // Amount HT
             if (! empty($arrayfields['f.total_ht']['checked']))
             {
@@ -1069,22 +1114,23 @@ if ($resql)
     		    $totalarray['totalttc'] += $obj->total_ttc;
             }
 
-            if (! empty($arrayfields['am']['checked']))
+		    if (! empty($arrayfields['dynamount_payed']['checked']))
             {
-                print '<td align="right">'.(! empty($paiement)?price($paiement,0,$langs):'&nbsp;').'</td>';
+                print '<td align="right">'.(! empty($totalpay)?price($totalpay,0,$langs):'&nbsp;').'</td>'; // TODO Use a denormalized field
                 if (! $i) $totalarray['nbfield']++;
     		    if (! $i) $totalarray['totalamfield']=$totalarray['nbfield'];
-    		    $totalarray['totalam'] += $paiement;
+    		    $totalarray['totalam'] += $totalpay;
             }
 
             if (! empty($arrayfields['rtp']['checked']))
             {
-                print '<td align="right">'.(! empty($remaintopay)?price($remaintopay,0,$langs):'&nbsp;').'</td>';
+                print '<td align="right">'.(! empty($remaintopay)?price($remaintopay,0,$langs):'&nbsp;').'</td>'; // TODO Use a denormalized field
                 if (! $i) $totalarray['nbfield']++;
     		    if (! $i) $totalarray['totalrtpfield']=$totalarray['nbfield'];
     		    $totalarray['totalrtp'] += $remaintopay;
             }
-            
+
+
             // Extra fields
             if (is_array($extrafields->attribute_label) && count($extrafields->attribute_label))
             {
@@ -1132,9 +1178,8 @@ if ($resql)
                 print "</td>";
                 if (! $i) $totalarray['nbfield']++;
             }
-            
+
     		// Action column
-            // Action column
             print '<td class="nowrap" align="center">';
             if ($massactionbutton || $massaction)   // If we are in select mode (massactionbutton defined) or if we have already selected and sent an action ($massaction) defined
             {
@@ -1144,12 +1189,12 @@ if ($resql)
             }
             print '</td>';
     		if (! $i) $totalarray['nbfield']++;
-    		
+
 			print "</tr>\n";
-			
+
 			$i++;
 		}
-		
+
 	    // Show total line
     	if (isset($totalarray['totalhtfield'])
  	   || isset($totalarray['totalvatfield'])
@@ -1167,12 +1212,12 @@ if ($resql)
     		   $i++;
     		   if ($i == 1)
     	       {
-            		if ($num < $limit) print '<td align="left">'.$langs->trans("Total").'</td>';
+            		if ($num < $limit && empty($offset)) print '<td align="left">'.$langs->trans("Total").'</td>';
             		else print '<td align="left">'.$langs->trans("Totalforthispage").'</td>';
     	       }
     		   elseif ($totalarray['totalhtfield'] == $i)  print '<td align="right">'.price($totalarray['totalht']).'</td>';
     		   elseif ($totalarray['totalvatfield'] == $i) print '<td align="right">'.price($totalarray['totalvat']).'</td>';
-    		   elseif ($totalarray['totallocaltax1field'] == $i) print '<td align="right">'.price($totalarray['totallocaltax1']).'</td>'; 
+    		   elseif ($totalarray['totallocaltax1field'] == $i) print '<td align="right">'.price($totalarray['totallocaltax1']).'</td>';
     		   elseif ($totalarray['totallocaltax2field'] == $i) print '<td align="right">'.price($totalarray['totallocaltax2']).'</td>';
     		   elseif ($totalarray['totalttcfield'] == $i) print '<td align="right">'.price($totalarray['totalttc']).'</td>';
     		   elseif ($totalarray['totalamfield'] == $i)  print '<td align="right">'.price($totalarray['totalam']).'</td>';
@@ -1180,19 +1225,39 @@ if ($resql)
     		   else print '<td></td>';
     		}
     		print '</tr>';
-    		
+
     	}
 	}
 
 	$db->free($resql);
-	
+
 	$parameters=array('arrayfields'=>$arrayfields, 'sql'=>$sql);
 	$reshook=$hookmanager->executeHooks('printFieldListFooter',$parameters);    // Note that $action and $object may have been modified by hook
 	print $hookmanager->resPrint;
-	
+
 	print "</table>\n";
     print '</div>';
+
 	print "</form>\n";
+
+    /*
+    if ($massaction == 'builddoc' || $action == 'remove_file' || $show_files)
+    {
+        // Show list of available documents
+        $urlsource=$_SERVER['PHP_SELF'].'?sortfield='.$sortfield.'&sortorder='.$sortorder;
+        $urlsource.=str_replace('&amp;','&',$param);
+
+        $filedir=$diroutputmassaction;
+        $genallowed=$user->rights->facture->lire;
+        $delallowed=$user->rights->facture->lire;
+
+        print $formfile->showdocuments('massfilesarea_invoices','',$filedir,$urlsource,0,$delallowed,'',1,1,0,48,1,$param,$title,'');
+    }
+    else
+    {
+        print '<br><a name="show_files"></a><a href="'.$_SERVER["PHP_SELF"].'?show_files=1'.$param.'#show_files">'.$langs->trans("ShowTempMassFilesArea").'</a>';
+    }
+    */
 }
 else
 {

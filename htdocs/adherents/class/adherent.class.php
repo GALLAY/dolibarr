@@ -345,7 +345,7 @@ class Adherent extends CommonObject
                 {
                     // Add link to user
                     $sql = "UPDATE ".MAIN_DB_PREFIX."user SET";
-                    $sql.= " fk_member = '".$this->id."'";
+                    $sql.= " fk_member = ".$this->id;
                     $sql.= " WHERE rowid = ".$this->user_id;
                     dol_syslog(get_class($this)."::create", LOG_DEBUG);
                     $resql = $this->db->query($sql);
@@ -449,18 +449,18 @@ class Adherent extends CommonObject
         $sql.= ", town="   .($this->town?"'".$this->db->escape($this->town)."'":"null");
         $sql.= ", country=".($this->country_id>0?"'".$this->country_id."'":"null");
         $sql.= ", state_id=".($this->state_id>0?"'".$this->state_id."'":"null");
-        $sql.= ", email='".$this->email."'";
-        $sql.= ", skype='".$this->skype."'";
+        $sql.= ", email='".$this->db->escape($this->email)."'";
+        $sql.= ", skype='".$this->db->escape($this->skype)."'";
         $sql.= ", phone="   .($this->phone?"'".$this->db->escape($this->phone)."'":"null");
         $sql.= ", phone_perso=" .($this->phone_perso?"'".$this->db->escape($this->phone_perso)."'":"null");
         $sql.= ", phone_mobile=" .($this->phone_mobile?"'".$this->db->escape($this->phone_mobile)."'":"null");
         $sql.= ", note_private=" .($this->note_private?"'".$this->db->escape($this->note_private)."'":"null");
         $sql.= ", note_public=" .($this->note_public?"'".$this->db->escape($this->note_public)."'":"null");
         $sql.= ", photo="   .($this->photo?"'".$this->photo."'":"null");
-        $sql.= ", public='".$this->public."'";
+        $sql.= ", public='".$this->db->escape($this->public)."'";
         $sql.= ", statut="  .$this->statut;
         $sql.= ", fk_adherent_type=".$this->typeid;
-        $sql.= ", morphy='".$this->morphy."'";
+        $sql.= ", morphy='".$this->db->escape($this->morphy)."'";
         $sql.= ", birth="   .($this->birth?"'".$this->db->idate($this->birth)."'":"null");
         if ($this->datefin)   $sql.= ", datefin='".$this->db->idate($this->datefin)."'";		// Must be modified only when deleting a subscription
         if ($this->datevalid) $sql.= ", datevalid='".$this->db->idate($this->datevalid)."'";	// Must be modified only when validating a member
@@ -659,7 +659,7 @@ class Adherent extends CommonObject
         // Search for last subscription id and end date
         $sql = "SELECT rowid, datec as dateop, dateadh as datedeb, datef as datefin";
         $sql.= " FROM ".MAIN_DB_PREFIX."subscription";
-        $sql.= " WHERE fk_adherent='".$this->id."'";
+        $sql.= " WHERE fk_adherent=".$this->id;
         $sql.= " ORDER by dateadh DESC";	// Sort by start subscription date
 
         dol_syslog(get_class($this)."::update_end_date", LOG_DEBUG);
@@ -705,11 +705,13 @@ class Adherent extends CommonObject
      *  Fonction qui supprime l'adherent et les donnees associees
      *
      *  @param	int		$rowid		Id of member to delete
+     *	@param	User	$user		User object
+     *	@param	int		$notrigger	1=Does not execute triggers, 0= execute triggers
      *  @return	int					<0 if KO, 0=nothing to do, >0 if OK
      */
-    function delete($rowid)
+    function delete($rowid, $user, $notrigger=0)
     {
-        global $conf, $langs, $user;
+        global $conf, $langs;
 
         $result = 0;
 		$error=0;
@@ -719,6 +721,14 @@ class Adherent extends CommonObject
 		if (empty($rowid)) $rowid=$this->id;
 
         $this->db->begin();
+
+        if (! $error && ! $notrigger)
+        {
+            // Call trigger
+            $result=$this->call_trigger('MEMBER_DELETE',$user);
+            if ($result < 0) $error++;
+            // End call triggers
+        }
 
         // Remove category
         $sql = "DELETE FROM ".MAIN_DB_PREFIX."categorie_member WHERE fk_member = ".$rowid;
@@ -786,16 +796,6 @@ class Adherent extends CommonObject
         		$errorflag=-5;
         	}
         }
-
-        if (! $error)
-        {
-            // Call trigger
-            $result=$this->call_trigger('MEMBER_DELETE',$user);
-            if ($result < 0) { $error++; }
-            // End call triggers
-        }
-
-
 
         if (! $error)
         {
@@ -1097,9 +1097,9 @@ class Adherent extends CommonObject
         $sql.= " WHERE d.fk_adherent_type = t.rowid";
         if ($rowid) $sql.= " AND d.rowid=".$rowid;
         elseif ($ref || $fk_soc) {
-        	$sql.= " AND d.entity IN (".getEntity().")";
+        	$sql.= " AND d.entity IN (".getEntity('adherent').")";
         	if ($ref) $sql.= " AND d.rowid='".$this->db->escape($ref)."'";
-        	elseif ($fk_soc) $sql.= " AND d.fk_soc='".$fk_soc."'";
+        	elseif ($fk_soc > 0) $sql.= " AND d.fk_soc=".$fk_soc;
         }
         elseif ($ref_ext)
         {
@@ -1592,7 +1592,7 @@ class Adherent extends CommonObject
         global $conf, $langs;
 
         if (! empty($conf->global->MAIN_OPTIMIZEFORTEXTBROWSER) && $withpictoimg) $withpictoimg=0;
-        
+
         $result=''; $label='';
         $link=''; $linkstart=''; $linkend='';
 
@@ -1602,7 +1602,7 @@ class Adherent extends CommonObject
             $label.= Form::showphoto('memberphoto', $this, 80, 0, 0, 'photowithmargin photologintooltip', 'small', 0, 1);
             $label.= '</div><div style="clear: both;"></div>';
         }
-        
+
         $label.= '<div class="centpercent">';
         $label.= '<u>' . $langs->trans("Member") . '</u>';
         if (! empty($this->ref))
@@ -1610,7 +1610,7 @@ class Adherent extends CommonObject
         if (! empty($this->firstname) || ! empty($this->lastname))
             $label.= '<br><b>' . $langs->trans('Name') . ':</b> ' . $this->getFullName($langs);
         $label.='</div>';
-        
+
         if ($option == 'card' || $option == 'category')
         {
             $link = '<a href="'.DOL_URL_ROOT.'/adherents/card.php?rowid='.$this->id.'"';
@@ -1619,7 +1619,7 @@ class Adherent extends CommonObject
         {
             $link = '<a href="'.DOL_URL_ROOT.'/adherents/subscription.php?rowid='.$this->id.'"';
         }
-        
+
         $linkclose="";
         if (empty($notooltip))
         {
@@ -1632,10 +1632,10 @@ class Adherent extends CommonObject
             $linkclose.= ' title="'.dol_escape_htmltag($label, 1).'"';
             $linkclose.= ' class="classfortooltip'.($morecss?' '.$morecss:'').'"';
         }
-        
+
         $link.=$linkclose.'>';
         $linkend='</a>';
-        
+
         //if ($withpictoimg == -1) $result.='<div class="nowrap">';
         $result.=$link;
         if ($withpictoimg)
@@ -1658,7 +1658,7 @@ class Adherent extends CommonObject
         }
         $result.=$linkend;
         //if ($withpictoimg == -1) $result.='</div>';
-        
+
         return $result;
     }
 
@@ -1780,7 +1780,7 @@ class Adherent extends CommonObject
         $sql = "SELECT count(a.rowid) as nb";
         $sql.= " FROM ".MAIN_DB_PREFIX."adherent as a";
         $sql.= " WHERE a.statut > 0";
-        $sql.= " AND a.entity IN (".getEntity('adherent', 1).")";
+        $sql.= " AND a.entity IN (".getEntity('adherent').")";
 
         $resql=$this->db->query($sql);
         if ($resql)
@@ -1818,7 +1818,7 @@ class Adherent extends CommonObject
         $sql = "SELECT a.rowid, a.datefin, a.statut";
         $sql.= " FROM ".MAIN_DB_PREFIX."adherent as a";
         $sql.= " WHERE a.statut = 1";
-        $sql.= " AND a.entity IN (".getEntity('adherent', 1).")";
+        $sql.= " AND a.entity IN (".getEntity('adherent').")";
         $sql.= " AND (a.datefin IS NULL or a.datefin < '".$this->db->idate($now)."')";
 
         $resql=$this->db->query($sql);
@@ -1883,7 +1883,7 @@ class Adherent extends CommonObject
 			    $modele = $conf->global->ADHERENT_ADDON_PDF;
 		    }
 	    }
-    
+
         $modelpath = "core/modules/member/doc/";
 
         return $this->commonGenerateDocument($modelpath, $modele, $outputlangs, $hidedetails, $hidedesc, $hideref);

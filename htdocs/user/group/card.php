@@ -1,7 +1,7 @@
 <?php
 /* Copyright (C) 2005      Rodolphe Quiedeville <rodolphe@quiedeville.org>
  * Copyright (C) 2005-2015 Laurent Destailleur  <eldy@users.sourceforge.net>
- * Copyright (C) 2005-2015 Regis Houssin        <regis.houssin@capnetworks.com>
+ * Copyright (C) 2005-2017 Regis Houssin        <regis.houssin@capnetworks.com>
  * Copyright (C) 2011      Herve Prot           <herve.prot@symeos.com>
  * Copyright (C) 2012	   Florian Henry		<florian.henry@open-concept.pro>
  *
@@ -54,7 +54,8 @@ $userid=GETPOST('user', 'int');
 // Security check
 $result = restrictedArea($user, 'user', $id, 'usergroup&usergroup', 'user');
 
-if (! empty($conf->multicompany->enabled) && $conf->entity > 1 && $conf->multicompany->transverse_mode)
+// Users/Groups management only in master entity if transverse mode
+if (! empty($conf->multicompany->enabled) && $conf->entity > 1 && $conf->global->MULTICOMPANY_TRANSVERSE_MODE)
 {
     accessforbidden();
 }
@@ -105,7 +106,7 @@ if ($action == 'add')
       		$ret = $extrafields->setOptionalsFromPost($extralabels,$object);
 			if ($ret < 0) $error++;
 
-      		if (! empty($conf->multicompany->enabled) && ! empty($conf->multicompany->transverse_mode)) $object->entity = 0;
+      		if (! empty($conf->multicompany->enabled) && ! empty($conf->global->MULTICOMPANY_TRANSVERSE_MODE)) $object->entity = 0;
 			else $object->entity = $_POST["entity"];
 
             $db->begin();
@@ -148,8 +149,8 @@ if ($action == 'adduser' || $action =='removeuser')
 
 			$edituser = new User($db);
 			$edituser->fetch($userid);
-			if ($action == 'adduser')    $result=$edituser->SetInGroup($object->id,(! empty($conf->multicompany->transverse_mode)?GETPOST('entity','int'):$object->entity));
-			if ($action == 'removeuser') $result=$edituser->RemoveFromGroup($object->id,(! empty($conf->multicompany->transverse_mode)?GETPOST('entity','int'):$object->entity));
+			if ($action == 'adduser')    $result=$edituser->SetInGroup($object->id,(! empty($conf->global->MULTICOMPANY_TRANSVERSE_MODE)?GETPOST('entity','int'):$object->entity));
+			if ($action == 'removeuser') $result=$edituser->RemoveFromGroup($object->id,(! empty($conf->global->MULTICOMPANY_TRANSVERSE_MODE)?GETPOST('entity','int'):$object->entity));
 
             if ($result > 0)
             {
@@ -188,7 +189,7 @@ if ($action == 'update')
       	$ret = $extrafields->setOptionalsFromPost($extralabels,$object);
 		if ($ret < 0) $error++;
 
-		if (! empty($conf->multicompany->enabled) && ! empty($conf->multicompany->transverse_mode)) $object->entity = 0;
+		if (! empty($conf->multicompany->enabled) && ! empty($conf->global->MULTICOMPANY_TRANSVERSE_MODE)) $object->entity = 0;
 		else $object->entity = $_POST["entity"];
 
         $ret=$object->update();
@@ -210,7 +211,7 @@ if ($action == 'update')
         setEventMessages($langs->trans('ErrorForbidden'), null, 'mesgs');
     }
 }
-					
+
 // Actions to build doc
 $upload_dir = $conf->usergroup->dir_output;
 $permissioncreate=$user->rights->user->user->creer;
@@ -250,7 +251,7 @@ if ($action == 'create')
 	// Multicompany
 	if (! empty($conf->multicompany->enabled) && is_object($mc))
 	{
-		if (empty($conf->multicompany->transverse_mode) && $conf->entity == 1 && $user->admin && ! $user->entity)
+		if (empty($conf->global->MULTICOMPANY_TRANSVERSE_MODE) && $conf->entity == 1 && $user->admin && ! $user->entity)
 		{
 			print "<tr>".'<td class="tdtop">'.$langs->trans("Entity").'</td>';
 			print "<td>".$mc->select_entities($conf->entity);
@@ -271,6 +272,7 @@ if ($action == 'create')
 	// Other attributes
     $parameters=array('object' => $object, 'colspan' => ' colspan="2"');
     $reshook=$hookmanager->executeHooks('formObjectOptions',$parameters,$object,$action);    // Note that $action and $object may have been modified by hook
+    print $hookmanager->resPrint;
     if (empty($reshook) && ! empty($extrafields->attribute_label))
     {
     	print $object->showOptionals($extrafields,'edit');
@@ -314,19 +316,17 @@ else
 
 		if ($action != 'edit')
 		{
-        	dol_fiche_head($head, 'group', $title, 0, 'group');
+        	dol_fiche_head($head, 'group', $title, -1, 'group');
 
-			print '<table class="border" width="100%">';
+			dol_banner_tab($object,'id','',$user->rights->user->user->lire || $user->admin);
 
-			// Ref
-			print '<tr><td class="titlefield">'.$langs->trans("Ref").'</td>';
-			print '<td>';
-			print $form->showrefnav($object,'id','',$user->rights->user->user->lire || $user->admin);
-			print '</td>';
-			print '</tr>';
+			print '<div class="fichecenter">';
+			print '<div class="underbanner clearboth"></div>';
+
+        	print '<table class="border" width="100%">';
 
 			// Name
-			print '<tr><td>'.$langs->trans("Name").'</td>';
+			print '<tr><td class="titlefield">'.$langs->trans("Name").'</td>';
 			print '<td class="valeur">'.$object->name;
 			if (empty($object->entity))
 			{
@@ -335,7 +335,7 @@ else
 			print "</td></tr>\n";
 
 			// Multicompany
-			if (! empty($conf->multicompany->enabled) && is_object($mc) && empty($conf->multicompany->transverse_mode) && $conf->entity == 1 && $user->admin && ! $user->entity)
+			if (! empty($conf->multicompany->enabled) && is_object($mc) && empty($conf->global->MULTICOMPANY_TRANSVERSE_MODE) && $conf->entity == 1 && $user->admin && ! $user->entity)
 			{
 				$mc->getInfo($object->entity);
 				print "<tr>".'<td class="tdtop">'.$langs->trans("Entity").'</td>';
@@ -350,13 +350,10 @@ else
 
 			// Other attributes
             $parameters=array('colspan' => ' colspan="2"');
-            $reshook=$hookmanager->executeHooks('formObjectOptions',$parameters,$object,$action);    // Note that $action and $object may have been modified by hook
-            if (empty($reshook) && ! empty($extrafields->attribute_label))
-            {
-            	print $object->showOptionals($extrafields);
-            }
+    		include DOL_DOCUMENT_ROOT . '/core/tpl/extrafields_view.tpl.php';
 
 			print "</table>\n";
+            print '</div>';
 
 			dol_fiche_end();
 
@@ -377,11 +374,8 @@ else
 			}
 
 			print "</div>\n";
-			print "<br>\n";
 
-            /*
-             * Liste des utilisateurs dans le groupe
-             */
+            // List users in group
 
             print load_fiche_titre($langs->trans("ListOfUsersInGroup"),'','');
 
@@ -390,7 +384,7 @@ else
 
             if (! empty($object->members))
             {
-                if (! (! empty($conf->multicompany->enabled) && ! empty($conf->multicompany->transverse_mode)))
+                if (! (! empty($conf->multicompany->enabled) && ! empty($conf->global->MULTICOMPANY_TRANSVERSE_MODE)))
                 {
                     foreach($object->members as $useringroup)
                     {
@@ -412,7 +406,7 @@ else
                 // Multicompany
                 if (! empty($conf->multicompany->enabled) && is_object($mc))
                 {
-                    if ($conf->entity == 1 && $conf->multicompany->transverse_mode)
+                    if ($conf->entity == 1 && $conf->global->MULTICOMPANY_TRANSVERSE_MODE)
                     {
                         print '</td><td class="tdtop">'.$langs->trans("Entity").'</td>';
                         print "<td>".$mc->select_entities($conf->entity);
@@ -450,11 +444,9 @@ else
 
             if (! empty($object->members))
             {
-            	$var=True;
-
             	foreach($object->members as $useringroup)
             	{
-            		
+
 
             		print '<tr class="oddeven">';
             		print '<td>';
@@ -464,7 +456,7 @@ else
             		print '</td>';
             		print '<td>'.$useringroup->lastname.'</td>';
             		print '<td>'.$useringroup->firstname.'</td>';
-            		if (! empty($conf->multicompany->enabled)  && is_object($mc) && ! empty($conf->multicompany->transverse_mode) && $conf->entity == 1 && $user->admin && ! $user->entity)
+            		if (! empty($conf->multicompany->enabled)  && is_object($mc) && ! empty($conf->global->MULTICOMPANY_TRANSVERSE_MODE) && $conf->entity == 1 && $user->admin && ! $user->entity)
             		{
             			print '<td class="valeur">';
             			if (! empty($useringroup->usergroup_entity))
@@ -503,7 +495,7 @@ else
             }
             print "</table>";
             print "<br>";
-			
+
 			/*
 	         * Documents generes
 	         */
@@ -512,27 +504,21 @@ else
 	        $urlsource = $_SERVER["PHP_SELF"] . "?id=" . $object->id;
 	        $genallowed = $user->rights->user->user->creer;
 	        $delallowed = $user->rights->user->user->supprimer;
-	
-	        $var = true;
-	
+
 	        $somethingshown = $formfile->show_documents('usergroup', $filename, $filedir, $urlsource, $genallowed, $delallowed, $object->modelpdf, 1, 0, 0, 28, 0, '', 0, '', $soc->default_lang);
-	
-			// Linked object block
-			$somethingshown = $form->showLinkedObjectBlock($object);
-	
-			// Show links to link elements
-			$linktoelem = $form->showLinkToObjectBlock($object);
-			if ($linktoelem) print '<br>'.$linktoelem;
-	
-	
+
+	        // Show links to link elements
+	        $linktoelem = $form->showLinkToObjectBlock($object, null, null);
+	        $somethingshown = $form->showLinkedObjectBlock($object, $linktoelem);
+
 	        print '</div><div class="fichehalfright"><div class="ficheaddleft">';
-	
+
 			// List of actions on element
 			include_once DOL_DOCUMENT_ROOT . '/core/class/html.formactions.class.php';
 			$formactions = new FormActions($db);
 			$somethingshown = $formactions->showactions($object, 'usergroup', $socid);
-	        
-	        
+
+
 	        print '</div></div></div>';
         }
 
@@ -555,7 +541,7 @@ else
             // Multicompany
             if (! empty($conf->multicompany->enabled) && is_object($mc))
             {
-                if (empty($conf->multicompany->transverse_mode) && $conf->entity == 1 && $user->admin && ! $user->entity)
+                if (empty($conf->global->MULTICOMPANY_TRANSVERSE_MODE) && $conf->entity == 1 && $user->admin && ! $user->entity)
                 {
                     print "<tr>".'<td class="tdtop">'.$langs->trans("Entity").'</td>';
                     print "<td>".$mc->select_entities($object->entity);
@@ -577,6 +563,7 @@ else
         	// Other attributes
             $parameters=array();
             $reshook=$hookmanager->executeHooks('formObjectOptions',$parameters,$object,$action);    // Note that $action and $object may have been modified by hook
+            print $hookmanager->resPrint;
             if (empty($reshook) && ! empty($extrafields->attribute_label))
             {
             	print $object->showOptionals($extrafields,'edit');

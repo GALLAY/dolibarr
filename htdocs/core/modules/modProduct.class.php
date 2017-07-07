@@ -53,7 +53,7 @@ class modProduct extends DolibarrModules
 		$this->module_position = 20;
 		// Module label (no space allowed), used if translation string 'ModuleXXXName' not found (where XXX is value of numeric property 'numero' of module)
 		$this->name = preg_replace('/^mod/i','',get_class($this));
-		$this->description = "Gestion des produits";
+		$this->description = "Product management";
 
 		// Possible values for version are: 'development', 'experimental', 'dolibarr' or version
 		$this->version = 'dolibarr';
@@ -83,7 +83,14 @@ class modProduct extends DolibarrModules
 		$this->const[$r][3] = 'Module to control product codes';
 		$this->const[$r][4] = 0;
 		$r++;
-
+		
+		/*$this->const[$r][0] = "PRODUCT_ADDON_PDF";
+		$this->const[$r][1] = "chaine";
+		$this->const[$r][2] = "standard";
+		$this->const[$r][3] = 'Default module for document generation';
+		$this->const[$r][4] = 0;
+		$r++;*/
+		
 		// Boxes
 		$this->boxes = array(
 			0=>array('file'=>'box_produits.php','enabledbydefaulton'=>'Home'),
@@ -180,7 +187,7 @@ class modProduct extends DolibarrModules
 		if (! empty($conf->global->MAIN_MULTILANGS)) $this->export_sql_end[$r] .=' LEFT JOIN '.MAIN_DB_PREFIX.'product_lang as l ON l.fk_product = p.rowid';
 		$this->export_sql_end[$r] .=' LEFT JOIN '.MAIN_DB_PREFIX.'product_extrafields as extra ON p.rowid = extra.fk_object';
 		if (! empty($conf->fournisseur->enabled)) $this->export_sql_end[$r] .=' LEFT JOIN '.MAIN_DB_PREFIX.'product_fournisseur_price as pf ON pf.fk_product = p.rowid LEFT JOIN '.MAIN_DB_PREFIX.'societe s ON s.rowid = pf.fk_soc';
-		$this->export_sql_end[$r] .=' WHERE p.fk_product_type = 0 AND p.entity IN ('.getEntity("product", 1).')';
+		$this->export_sql_end[$r] .=' WHERE p.fk_product_type = 0 AND p.entity IN ('.getEntity('product').')';
 		if (! empty($conf->global->EXPORTTOOL_CATEGORIES)) $this->export_sql_order[$r] =' GROUP BY p.rowid'; 	// FIXME The group by used a generic value to say "all fields in select except function fields"
 		    
 		if (! empty($conf->global->PRODUIT_MULTIPRICES))
@@ -208,7 +215,7 @@ class modProduct extends DolibarrModules
 			$this->export_sql_start[$r]='SELECT DISTINCT ';
 			$this->export_sql_end[$r]  =' FROM '.MAIN_DB_PREFIX.'product as p';
 			$this->export_sql_end[$r] .=' LEFT JOIN '.MAIN_DB_PREFIX.'product_price as pr ON p.rowid = pr.fk_product';
-			$this->export_sql_end[$r] .=' WHERE p.fk_product_type = 0 AND p.entity IN ('.getEntity("product", 1).')';
+			$this->export_sql_end[$r] .=' WHERE p.fk_product_type = 0 AND p.entity IN ('.getEntity('product').')';
 		}
 
 		if (! empty($conf->global->PRODUIT_SOUSPRODUITS))
@@ -237,7 +244,7 @@ class modProduct extends DolibarrModules
     		$this->export_sql_end[$r]  =' FROM '.MAIN_DB_PREFIX.'product as p';
     		$this->export_sql_end[$r] .=' LEFT JOIN '.MAIN_DB_PREFIX.'product_extrafields as extra ON p.rowid = extra.fk_object,';
     		$this->export_sql_end[$r] .=' '.MAIN_DB_PREFIX.'product_association as pa, '.MAIN_DB_PREFIX.'product as p2';
-    		$this->export_sql_end[$r] .=' WHERE p.fk_product_type = 0 AND p.entity IN ('.getEntity("product", 1).')';
+    		$this->export_sql_end[$r] .=' WHERE p.fk_product_type = 0 AND p.entity IN ('.getEntity('product').')';
     		$this->export_sql_end[$r] .=' AND p.rowid = pa.fk_product_pere AND p2.rowid = pa.fk_product_fils';
 		}		
 

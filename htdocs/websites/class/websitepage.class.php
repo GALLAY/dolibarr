@@ -181,7 +181,7 @@ class WebsitePage extends CommonObject
 	/**
 	 * Load object in memory from the database
 	 *
-	 * @param int    $id           Id object
+	 * @param int    $id           Id object. If this is 0, the default page of website_id will be used, if not defined, the first one. found
 	 * @param string $website_id   Web site id
 	 * @param string $page         Page name
 	 *
@@ -193,7 +193,6 @@ class WebsitePage extends CommonObject
 
 		$sql = 'SELECT';
 		$sql .= ' t.rowid,';
-
 		$sql .= " t.fk_website,";
 		$sql .= " t.pageurl,";
 		$sql .= " t.title,";
@@ -203,14 +202,16 @@ class WebsitePage extends CommonObject
 		$sql .= " t.status,";
 		$sql .= " t.date_creation,";
 		$sql .= " t.tms as date_modification";
-
 		$sql .= ' FROM ' . MAIN_DB_PREFIX . $this->table_element . ' as t';
+		//$sql .= ' WHERE entity IN ('.getEntity('website').')';       // entity is on website level
+		$sql .= ' WHERE 1 = 1';
 		if (null !== $website_id) {
-		    $sql .= ' WHERE t.fk_website = ' . '\'' . $website_id . '\'';
-		    $sql .= ' AND t.pageurl = ' . '\'' . $page . '\'';
+		    $sql .= " AND t.fk_website = '" . $this->db->escape($website_id) . "'";
+		    if ($page) $sql .= " AND t.pageurl = '" . $this->db->escape($page) . "'";
 		} else {
-			$sql .= ' WHERE t.rowid = ' . $id;
+			$sql .= ' AND t.rowid = ' . $id;
 		}
+        $sql .= $this->db->plimit(1);
 
 		$resql = $this->db->query($sql);
 		if ($resql) {
@@ -275,7 +276,7 @@ class WebsitePage extends CommonObject
 		$sql .= " t.date_creation,";
 		$sql .= " t.tms as date_modification";
 		$sql .= ' FROM ' . MAIN_DB_PREFIX . $this->table_element. ' as t';
-		$sql .= ' WHERE t.fk_website = '.$websiteid; 
+		$sql .= ' WHERE t.fk_website = '.$websiteid;
 		// Manage filter
 		$sqlwhere = array();
 		if (count($filter) > 0) {
@@ -396,9 +397,9 @@ class WebsitePage extends CommonObject
 		if ($this->old_object->pageurl != $this->pageurl)
 		{
 		      dol_syslog("The alias was changed, we must rename/recreate the page file into document");
-		      
+
 		}
-		
+
 		if (!$error && !$notrigger) {
 			// Uncomment this and change MYOBJECT to your own tag if you
 			// want this action calls a trigger.
@@ -625,7 +626,7 @@ class WebsitePage extends CommonObject
 		$this->id = 0;
 
 		$now=dol_now();
-		
+
 		$this->fk_website = '';
 		$this->pageurl = '';
 		$this->title = 'My Page';

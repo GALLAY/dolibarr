@@ -39,7 +39,7 @@ $socid=0;
 if ($user->societe_id > 0)
 	$socid = $user->societe_id;
 
-$sall=GETPOST('sall','alpha');
+$sall=GETPOST('sall', 'alphanohtml');
 $search_user=GETPOST('search_user','alpha');
 
 $userstatic=new User($db);
@@ -73,7 +73,7 @@ $user_arbo = $userstatic->get_full_tree(0, ($search_statut != '' && $search_stat
 
 if (! is_array($user_arbo) && $user_arbo < 0)
 {
-    setEventMessages($userstatic->error, $userstatic->errors, 'warnings');    
+    setEventMessages($userstatic->error, $userstatic->errors, 'warnings');
 }
 else
 {
@@ -97,24 +97,21 @@ foreach($fulltree as $key => $val)
 	$userstatic->admin=$val['admin'];
 	$userstatic->entity=$val['entity'];
 	$userstatic->photo=$val['photo'];
-	
+
 	$entity=$val['entity'];
 	$entitystring='';
 
 	// TODO Set of entitystring should be done with a hook
-	if (is_object($mc))
+	if (! empty($conf->multicompany->enabled) && is_object($mc))
 	{
-		if (! empty($conf->multicompany->enabled))
+		if (empty($entity))
 		{
-			if (empty($entity))
-			{
-				$entitystring=$langs->trans("AllEntities");
-			}
-			else
-			{
-				$mc->getInfo($entity);
-				$entitystring=$mc->label;
-			}
+			$entitystring=$langs->trans("AllEntities");
+		}
+		else
+		{
+			$mc->getInfo($entity);
+			$entitystring=$mc->label;
 		}
 	}
 
@@ -128,7 +125,7 @@ foreach($fulltree as $key => $val)
 		$li.=img_picto($langs->trans("Administrator"),'star');
 	}
 	$li.=' ('.$val['login'].($entitystring?' - '.$entitystring:'').')';
-	
+
 	$data[] = array(
 		'rowid'=>$val['rowid'],
 		'fk_menu'=>$val['fk_user'],
@@ -153,8 +150,8 @@ print '<td class="liste_titre" align="right">';
 print $form->selectarray('search_statut', array('-1'=>'','1'=>$langs->trans('Enabled')),$search_statut);
 print '</td>';
 print '<td class="liste_titre" align="right">';
-$searchpitco=$form->showFilterAndCheckAddButtons(0);
-print $searchpitco;
+$searchpicto=$form->showFilterAndCheckAddButtons(0);
+print $searchpicto;
 print '</td>';
 print '</tr>';
 

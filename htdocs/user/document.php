@@ -35,7 +35,7 @@ $langs->load("users");
 $langs->load('other');
 
 
-$action=GETPOST('action');
+$action=GETPOST('action','aZ09');
 $confirm=GETPOST('confirm');
 $id=(GETPOST('userid','int') ? GETPOST('userid','int') : GETPOST('id','int'));
 $ref = GETPOST('ref', 'alpha');
@@ -86,14 +86,14 @@ if (! $sortfield) $sortfield="name";
 $object = new User($db);
 if ($id > 0 || ! empty($ref))
 {
-	$result = $object->fetch($id, $ref);
+	$result = $object->fetch($id, $ref, '', 1);
 	$object->getrights();
 	$entitytouseforuserdir = $object->entity;
 	if (empty($entitytouseforuserdir)) $entitytouseforuserdir=1;
 	$upload_dir = $conf->user->multidir_output[$entitytouseforuserdir] . "/" . $object->id ;
 }
 
-// Initialize technical object to manage hooks of thirdparties. Note that conf->hooks_modules contains array array
+// Initialize technical object to manage hooks of page. Note that conf->hooks_modules contains array of hook context
 $hookmanager->initHooks(array('usercard','globalcard'));
 
 

@@ -56,7 +56,7 @@ $search_payment_num=GETPOST('search_payment_num','alpha');
 $sortfield = GETPOST("sortfield",'alpha');
 $sortorder = GETPOST("sortorder",'alpha');
 $page = GETPOST("page",'int');
-if ($page == -1) { $page = 0; }
+if (empty($page) || $page == -1) { $page = 0; }     // If $page is not defined, or '' or -1
 $offset = $conf->liste_limit * $page;
 $pageprev = $page - 1;
 $pagenext = $page + 1;
@@ -79,7 +79,7 @@ if ($user->societe_id > 0)
 }
 
 
-// Initialize technical object to manage hooks of thirdparties. Note that conf->hooks_modules contains array array
+// Initialize technical object to manage hooks of page. Note that conf->hooks_modules contains array of hook context
 $hookmanager->initHooks(array('paymentsupplier'));
 $extrafields = new ExtraFields($db);
 
@@ -601,7 +601,7 @@ if (empty($action))
     $sortfield = GETPOST("sortfield",'alpha');
     $sortorder = GETPOST("sortorder",'alpha');
     $page=GETPOST("page",'int');
-    if ($page == -1) { $page = 0 ; }
+    if ($page == -1 || $page == null) { $page = 0 ; }
     $offset = $limit * $page ;
     $pageprev = $page - 1;
     $pagenext = $page + 1;
@@ -679,7 +679,8 @@ if (empty($action))
         print '<input type="hidden" name="action" value="list">';
         print '<input type="hidden" name="sortfield" value="'.$sortfield.'">';
         print '<input type="hidden" name="sortorder" value="'.$sortorder.'">';
-
+        print '<input type="hidden" name="page" value="'.$page.'">';
+        
         $moreforfilter='';
         
         $parameters=array();
@@ -722,8 +723,8 @@ if (empty($action))
         print '<input class="flat" type="text" size="4" name="search_amount" value="'.dol_escape_htmltag($search_amount).'">';
         print '</td>';
         print '<td class="liste_titre" align="right">';
-        $searchpitco=$form->showFilterAndCheckAddButtons(0);
-        print $searchpitco;
+        $searchpicto=$form->showFilterAndCheckAddButtons(0);
+        print $searchpicto;
         print '</td>';
         print "</tr>\n";
 

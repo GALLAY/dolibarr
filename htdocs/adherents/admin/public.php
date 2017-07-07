@@ -92,8 +92,9 @@ $head = member_admin_prepare_head();
 
 print '<form action="'.$_SERVER["PHP_SELF"].'" method="post">';
 print '<input type="hidden" name="action" value="update">';
+print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
 
-dol_fiche_head($head, 'public', $langs->trans("Members"), 0, 'user');
+dol_fiche_head($head, 'public', $langs->trans("Members"), -1, 'user');
 
 if ($conf->use_javascript_ajax)
 {
@@ -114,16 +115,11 @@ if ($conf->use_javascript_ajax)
                 {
 					if (jQuery("#MEMBER_ENABLE_PUBLIC").val()==\'0\')
                     {
-                        jQuery("#tramount").hide();
-                        jQuery("#tredit").hide();
-                        jQuery("#trpayment").hide();
-                        jQuery("#tremail").hide();
+                        jQuery("#trforcetype, #tramount, #tredit, #trpayment, #tremail").hide();
                     }
                     if (jQuery("#MEMBER_ENABLE_PUBLIC").val()==\'1\')
                     {
-                        jQuery("#tramount").show();
-                        jQuery("#tredit").show();
-                        jQuery("#trpayment").show();
+                        jQuery("#trforcetype, #tramount, #tredit, #trpayment").show();
                         if (jQuery("#MEMBER_NEWFORM_PAYONLINE").val()==\'-1\') jQuery("#tremail").hide();
                         else jQuery("#tremail").show();
 					}
@@ -147,7 +143,6 @@ print '<td align="right">'.$langs->trans("Value").'</td>';
 print "</tr>\n";
 
 // Allow public form
-print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
 print '<tr class="oddeven"><td>';
 print $langs->trans("EnablePublicSubscriptionForm");
 print '</td><td align="right">';
@@ -156,10 +151,9 @@ print "</td></tr>\n";
 
 // Force Type
 $adht = new AdherentType($db);
-print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
-print '<tr class="oddeven drag"><td>';
+print '<tr class="oddeven drag" id="trforcetype"><td>';
 print $langs->trans("ForceMemberType");
-print '</td><td width="60" align="center">';
+print '</td><td width="60" align="right">';
 $listofval = array(-1 => $langs->trans("Undefined"));
 $listofval += $adht->liste_array();
 $forcetype = $conf->global->MEMBER_NEWFORM_FORCETYPE ?: -1;
@@ -167,7 +161,6 @@ print $form->selectarray("MEMBER_NEWFORM_FORCETYPE", $listofval, $forcetype, cou
 print "</td></tr>\n";
 
 // Amount
-print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
 print '<tr class="oddeven" id="tramount"><td>';
 print $langs->trans("DefaultAmount");
 print '</td><td align="right">';
@@ -175,14 +168,13 @@ print '<input type="text" id="MEMBER_NEWFORM_AMOUNT" name="MEMBER_NEWFORM_AMOUNT
 print "</td></tr>\n";
 
 // Can edit
-print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
 print '<tr class="oddeven" id="tredit"><td>';
 print $langs->trans("CanEditAmount");
 print '</td><td align="right">';
 print $form->selectyesno("MEMBER_NEWFORM_EDITAMOUNT",(! empty($conf->global->MEMBER_NEWFORM_EDITAMOUNT)?$conf->global->MEMBER_NEWFORM_EDITAMOUNT:0),1);
 print "</td></tr>\n";
 
-if (! empty($conf->paybox->enabled) || ! empty($conf->paypal->enabled))
+if (! empty($conf->paybox->enabled) || ! empty($conf->paypal->enabled) || ! empty($conf->stripe->enabled))
 {
 	// Jump to an online payment page
 	print '<tr class="oddeven" id="trpayment"><td>';
@@ -191,11 +183,12 @@ if (! empty($conf->paybox->enabled) || ! empty($conf->paypal->enabled))
 	$listofval=array();
 	if (! empty($conf->paybox->enabled)) $listofval['paybox']='Paybox';
 	if (! empty($conf->paypal->enabled)) $listofval['paypal']='PayPal';
+	if (! empty($conf->stripe->enabled)) $listofval['stripe']='Stripe';
 	print $form->selectarray("MEMBER_NEWFORM_PAYONLINE",$listofval,(! empty($conf->global->MEMBER_NEWFORM_PAYONLINE)?$conf->global->MEMBER_NEWFORM_PAYONLINE:''),1);
 	print "</td></tr>\n";
 }
 
-if (! empty($conf->paybox->enabled) || ! empty($conf->paypal->enabled))
+if (! empty($conf->paybox->enabled) || ! empty($conf->paypal->enabled) || ! empty($conf->stripe->enabled))
 {
     // Jump to an online payment page
     print '<tr class="oddeven" id="tremail"><td>';

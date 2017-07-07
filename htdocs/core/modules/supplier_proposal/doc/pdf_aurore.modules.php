@@ -167,9 +167,17 @@ class pdf_aurore extends ModelePDFSupplierProposal
 				$objphoto = new Product($this->db);
 				$objphoto->fetch($object->lines[$i]->fk_product);
 
-				$pdir = get_exdir($object->lines[$i]->fk_product,2,0,0,$objphoto,'product') . $object->lines[$i]->fk_product ."/photos/";
-				$dir = $conf->product->dir_output.'/'.$pdir;
-
+				if (! empty($conf->global->PRODUCT_USE_OLD_PATH_FOR_PHOTO))
+				{
+					$pdir = get_exdir($object->lines[$i]->fk_product,2,0,0,$objphoto,'product') . $object->lines[$i]->fk_product ."/photos/";
+					$dir = $conf->product->dir_output.'/'.$pdir;
+				}
+				else
+				{
+					$pdir = get_exdir(0,2,0,0,$objphoto,'product') . dol_sanitizeFileName($objphoto->ref).'/';
+					$dir = $conf->product->dir_output.'/'.$pdir;
+				}
+				
 				$realpath='';
 				foreach ($objphoto->liste_photos($dir,1) as $key => $obj)
 				{
@@ -635,16 +643,6 @@ class pdf_aurore extends ModelePDFSupplierProposal
 
 		$pdf->SetFont('','', $default_font_size - 1);
 
-		// If France, show VAT mention if not applicable
-		if ($this->emetteur->country_code == 'FR' && $this->franchise == 1)
-		{
-			$pdf->SetFont('','B', $default_font_size - 2);
-			$pdf->SetXY($this->marge_gauche, $posy);
-			$pdf->MultiCell(100, 3, $outputlangs->transnoentities("VATIsNotUsedForInvoice"), 0, 'L', 0);
-
-			$posy=$pdf->GetY()+4;
-		}
-
 		$posxval=52;
 
         // Show shipping date
@@ -723,7 +721,7 @@ class pdf_aurore extends ModelePDFSupplierProposal
 			$posy=$pdf->GetY()+3;
 		}
 
-		if (empty($conf->global->SUPPLIER_PROPOSAL_PDF_HIDE_PAYMENTTERMCOND))
+		if (! empty($conf->global->SUPPLIER_PROPOSAL_PDF_SHOW_PAYMENTTERMCOND))
 		{
 			// Show payment mode
 			if ($object->mode_reglement_code
@@ -1037,7 +1035,7 @@ class pdf_aurore extends ModelePDFSupplierProposal
 		$resteapayer = $object->total_ttc - $deja_regle;
 		if (! empty($object->paye)) $resteapayer=0;
 		*/
-
+        
 		if ($deja_regle > 0)
 		{
 			$index++;

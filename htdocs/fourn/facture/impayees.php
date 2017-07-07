@@ -57,7 +57,7 @@ $search_amount_no_tax = GETPOST('search_amount_no_tax','alpha');
 $search_amount_all_tax = GETPOST('search_amount_all_tax','alpha');
 
 $page = GETPOST("page",'int');
-if ($page == -1) { $page = 0; }
+if (empty($page) || $page == -1) { $page = 0; }     // If $page is not defined, or '' or -1
 $offset = $conf->liste_limit * $page;
 $pageprev = $page - 1;
 $pagenext = $page + 1;
@@ -216,8 +216,8 @@ if ($user->rights->fournisseur->facture->lire)
 		print '<input class="flat" type="text" size="8" name="search_amount_all_tax" value="'.$search_amount_all_tax.'">';
 		print '</td>';
         print '<td class="liste_titre" align="right">';
-        $searchpitco=$form->showFilterAndCheckAddButtons(0);
-        print $searchpitco;
+        $searchpicto=$form->showFilterAndCheckAddButtons(0);
+        print $searchpicto;
         print '</td>';
 		print "</tr>\n";
 

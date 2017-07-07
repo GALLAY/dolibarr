@@ -42,7 +42,7 @@ $result=restrictedArea($user,'produit|service');
 $action=GETPOST('action','alpha');
 $sref=GETPOST("sref");
 $snom=GETPOST("snom");
-$sall=GETPOST("sall");
+$sall=GETPOST('sall', 'alphanohtml');
 $type=GETPOST("type","int");
 $sbarcode=GETPOST("sbarcode");
 $catid=GETPOST('catid','int');
@@ -119,7 +119,7 @@ $sql.= ' FROM '.MAIN_DB_PREFIX.'product as p';
 $sql.= ' LEFT JOIN '.MAIN_DB_PREFIX.'product_stock as s on p.rowid = s.fk_product';
 // We'll need this table joined to the select in order to filter by categ
 if ($search_categ) $sql.= ", ".MAIN_DB_PREFIX."categorie_product as cp";
-$sql.= " WHERE p.entity IN (".getEntity('product', 1).")";
+$sql.= " WHERE p.entity IN (".getEntity('product').")";
 if ($search_categ) $sql.= " AND p.rowid = cp.fk_product";	// Join for the needed table to filter by categ
 if ($sall) $sql.=natural_search(array('p.ref', 'p.label', 'p.description', 'p.note'), $all);
 // if the type is not 1, we show all products (type = 0,2,3)
@@ -189,6 +189,7 @@ if ($resql)
 	print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
 	print '<input type="hidden" name="sortfield" value="'.$sortfield.'">';
 	print '<input type="hidden" name="sortorder" value="'.$sortorder.'">';
+    print '<input type="hidden" name="page" value="'.$page.'">';
 	print '<input type="hidden" name="type" value="'.$type.'">';
 
 	if ($sref || $snom || $sall || GETPOST('search'))
@@ -276,8 +277,8 @@ if ($resql)
 	print '<td class="liste_titre" colspan="'.$colspan_warehouse.'">&nbsp;</td>';
 	print '<td class="liste_titre"></td>';
 	print '<td class="liste_titre" align="right">';
-   	$searchpitco=$form->showFilterAndCheckAddButtons(0);
-   	print $searchpitco;
+   	$searchpicto=$form->showFilterAndCheckAddButtons(0);
+   	print $searchpicto;
 	print '</td>';
 	print '</tr>';
 
