@@ -120,10 +120,13 @@ $hookmanager->initHooks(array('agendalist'));
 if (GETPOST("viewcal") || GETPOST("viewweek") || GETPOST("viewday"))
 {
 	$param='';
-	foreach($_POST as $key => $val)
-	{
-		$param.='&'.$key.'='.urlencode($val);
-	}
+    if (is_array($_POST))
+    {
+    	foreach($_POST as $key => $val)
+    	{
+    		$param.='&'.$key.'='.urlencode($val);
+    	}
+    }
 	//print $param;
 	header("Location: ".DOL_URL_ROOT.'/comm/action/index.php?'.$param);
 	exit;
@@ -134,7 +137,7 @@ $reshook=$hookmanager->executeHooks('doActions',$parameters,$object,$action);   
 if ($reshook < 0) setEventMessages($hookmanager->error, $hookmanager->errors, 'errors');
 
 // Purge search criteria
-if (GETPOST("button_removefilter_x") || GETPOST("button_removefilter.x") || GETPOST("button_removefilter")) // All tests are required to be compatible with all browsers
+if (GETPOST('button_removefilter_x','alpha') || GETPOST('button_removefilter.x','alpha') || GETPOST('button_removefilter','alpha')) // All tests are required to be compatible with all browsers
 {
     $actioncode='';
     $search_title='';
@@ -347,11 +350,13 @@ if ($resql)
 
     if ($user->rights->agenda->myactions->create || $user->rights->agenda->allactions->create)
     {
-        $newparam.='&month='.str_pad($month, 2, "0", STR_PAD_LEFT).'&year='.$year;
+        $tmpforcreatebutton=dol_getdate(dol_now(), true);
+
+        $newparam.='&month='.str_pad($month, 2, "0", STR_PAD_LEFT).'&year='.$tmpforcreatebutton['year'];
 
         //$param='month='.$monthshown.'&year='.$year;
         $hourminsec='100000';
-        $link = '<a class="butAction" href="'.DOL_URL_ROOT.'/comm/action/card.php?action=create&datep='.sprintf("%04d%02d%02d",$year,$month,$day).$hourminsec.'&backtopage='.urlencode($_SERVER["PHP_SELF"].($newparam?'?'.$newparam:'')).'">';
+        $link = '<a class="butAction" href="'.DOL_URL_ROOT.'/comm/action/card.php?action=create&datep='.sprintf("%04d%02d%02d",$tmpforcreatebutton['year'],$tmpforcreatebutton['mon'],$tmpforcreatebutton['mday']).$hourminsec.'&backtopage='.urlencode($_SERVER["PHP_SELF"].($newparam?'?'.$newparam:'')).'">';
         $link.= $langs->trans("NewAction");
         $link.= '</a>';
     }
@@ -527,7 +532,7 @@ if ($resql)
 
 		// Status/Percent
 		$datep=$db->jdate($obj->datep);
-		print '<td align="center" class="nowrap">'.$actionstatic->LibStatut($obj->percent,3,1,$datep).'</td>';
+		print '<td align="center" class="nowrap">'.$actionstatic->LibStatut($obj->percent,3,0,$datep).'</td>';
 
 		print '<td></td>';
 
