@@ -8,6 +8,7 @@
  * Copyright (C) 2013       Florian Henry           <forian.henry@open-concept.pro>
  * Copyright (C) 2015       Charles-Fr BENKE        <charles.fr@benke.fr>
  * Copyright (C) 2016       Raphaël Doursenaud      <rdoursenaud@gpcsolutions.fr>
+ * Copyright (C) 2017       Nicolas ZABOURI         <info@inovea-conseil.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -528,7 +529,7 @@ class ExtraFields
 				$typedb=$type;
 				$lengthdb=$length;
 			}
-			$field_desc = array('type'=>$typedb, 'value'=>$lengthdb, 'null'=>($required?'NOT NULL':'NULL'));
+			$field_desc = array('type'=>$typedb, 'value'=>$lengthdb, 'null'=>($required?'NOT NULL':'NULL'), 'default'=>$default);
 
 			if ($type != 'separate') // No table update when separate type
 			{
@@ -660,7 +661,7 @@ class ExtraFields
 			$sql.= " '".$param."',";
 			$sql.= " ".$list.", ";
 			$sql.= " ".$ishidden.", ";
-			$sql.= " ".($default?"'".$this->db->escape($default)."'":"null").",";
+			$sql.= " ".(($default!='')?"'".$this->db->escape($default)."'":"null").",";
 			$sql.= " ".($computed?"'".$this->db->escape($computed)."'":"null").",";
 			$sql .= " " . $user->id . ",";
 			$sql .= " " . $user->id . ",";
@@ -769,8 +770,8 @@ class ExtraFields
 					$this->attributes[$tab->elementtype]['ishidden'][$tab->name]=$tab->ishidden;
 					$this->attributes[$tab->elementtype]['entityid'][$tab->name]=$tab->entity;
 
-
-					if (!empty($conf->multicompany->enabled)) {
+					if (!empty($conf->multicompany->enabled))
+					{
 						$sql_entity_name='SELECT label FROM '.MAIN_DB_PREFIX.'entity WHERE rowid='.$tab->entity;
 						$resql_entity_name=$this->db->query($sql_entity_name);
 						if ($resql_entity_name)
@@ -784,11 +785,6 @@ class ExtraFields
 								}
 							}
 						}
-					}
-					else
-					{
-						$this->error=$this->db->lasterror();
-						dol_syslog(get_class($this)."::fetch_name_optionals_label ".$this->error, LOG_ERR);
 					}
 				}
 			}
@@ -841,24 +837,24 @@ class ExtraFields
 
 		if (empty($showsize))
 		{
-    		if ($type == 'date')
+		    if ($type == 'date')
     		{
     			//$showsize=10;
     		    $showsize = 'minwidth100imp';
     		}
-    		elseif ($type == 'datetime')
+			elseif ($type == 'datetime')
     		{
     			//$showsize=19;
     			$showsize = 'minwidth200imp';
     		}
-    		elseif (in_array($type,array('int','double')))
+    		elseif (in_array($type,array('int','double','price')))
     		{
     			//$showsize=10;
-    			$showsize = 'minwidth100imp';
+    			$showsize = 'maxwidth75';
     		}
     		elseif ($type == 'url')
     		{
-    		    $showsize='minwidth400imp';
+    		    $showsize='minwidth400';
     		}
     		elseif ($type == 'boolean')
     		{
@@ -868,16 +864,16 @@ class ExtraFields
     		{
     			if (round($size) < 12)
     			{
-    			    $showsize = 'minwidth100imp';
+    			    $showsize = 'minwidth100';
     			}
     			else if (round($size) <= 48)
     			{
-    			    $showsize = 'minwidth200imp';
+    			    $showsize = 'minwidth200';
     			}
     			else
     			{
     			    //$showsize=48;
-    			    $showsize = 'minwidth400imp';
+    			    $showsize = 'minwidth400';
     			}
     		}
 		}
@@ -903,7 +899,7 @@ class ExtraFields
 		{
 			$tmp=explode(',',$size);
 			$newsize=$tmp[0];
-			$out='<input type="text" class="flat '.$showsize.' maxwidthonsmartphone" name="'.$keysuffix.'options_'.$key.$keyprefix.'" " maxlength="'.$newsize.'" value="'.$value.'"'.($moreparam?$moreparam:'').'>';
+			$out='<input type="text" class="flat '.$showsize.' maxwidthonsmartphone" name="'.$keysuffix.'options_'.$key.$keyprefix.'" maxlength="'.$newsize.'" value="'.$value.'"'.($moreparam?$moreparam:'').'>';
 		}
 		elseif ($type == 'varchar')
 		{
@@ -1133,13 +1129,13 @@ class ExtraFields
 			$form = new Form($db);
 
 			$value_arr=explode(',',$value);
-			$out=$form->multiselectarray($keysuffix.'options_'.$key.$keyprefix, $param['options'], $value_arr, '', 0, '', 0, '100%');
+			$out=$form->multiselectarray($keysuffix.'options_'.$key.$keyprefix, (empty($param['options'])?null:$param['options']), $value_arr, '', 0, '', 0, '100%');
 
 		}
 		elseif ($type == 'radio')
 		{
 			$out='';
-			foreach ($param['options'] as $keyopt=>$val )
+			foreach ($param['options'] as $keyopt => $val)
 			{
 				$out.='<input class="flat '.$showsize.'" type="radio" name="'.$keysuffix.'options_'.$key.$keyprefix.'" '.($moreparam?$moreparam:'');
 				$out.=' value="'.$keyopt.'"';
@@ -1713,7 +1709,7 @@ class ExtraFields
 				if (! empty($onlykey) && $key != $onlykey) continue;
 
 				$key_type = $this->attribute_type[$key];
-				if($this->attribute_required[$key] && !GETPOST("options_$key",2))
+				if ($this->attribute_required[$key] && empty($_POST["options_".$key])) // Check if empty without GETPOST, value can be alpha, int, array, etc...
 				{
 					$nofillrequired++;
 					$error_field_required[] = $value;
@@ -1726,7 +1722,7 @@ class ExtraFields
 				}
 				else if (in_array($key_type,array('checkbox','chkbxlst')))
 				{
-					$value_arr=GETPOST("options_".$key);
+					$value_arr=GETPOST("options_".$key, 'array'); // check if an array
 					if (!empty($value_arr)) {
 						$value_key=implode($value_arr,',');
 					}else {
@@ -1745,7 +1741,7 @@ class ExtraFields
 				$object->array_options["options_".$key]=$value_key;
 			}
 
-			if($nofillrequired) {
+			if ($nofillrequired) {
 				$langs->load('errors');
 				setEventMessages($langs->trans('ErrorFieldsRequired').' : '.implode(', ',$error_field_required), null, 'errors');
 				return -1;

@@ -344,31 +344,53 @@ input.buttongen {
 	vertical-align: middle;
 }
 input.buttonpayment {
-	width: 300px;
+	min-width: 280px;
 	margin-bottom: 15px;
 	background-image: none;
+	line-height: 24px;
+	padding: 8px;
+	background: none;
+	border: 2px solid #666666;
+}
+input.buttonpaymentcb {
+	background-image: url(<?php echo dol_buildpath($path.'/theme/common/credit_card.png',1) ?>);
+	background-size: 26px;
+	background-repeat: no-repeat;
+	background-position: 2px 11px;
+}
+input.buttonpaymentcheque {
+	background-image: url(<?php echo dol_buildpath($path.'/theme/common/cheque.png',1) ?>);
+	background-size: 24px;
+	background-repeat: no-repeat;
+	background-position: 2px 8px;
 }
 input.buttonpaymentpaypal {
 	background-image: url(<?php echo dol_buildpath($path.'/paypal/img/object_paypal.png',1) ?>);
 	background-repeat: no-repeat;
-	background-position: 5px 4px;
+	background-position: 8px 11px;
 }
 input.buttonpaymentpaybox {
 	background-image: url(<?php echo dol_buildpath($path.'/paybox/img/object_paybox.png',1) ?>);
 	background-repeat: no-repeat;
-	background-position: 5px 4px;
+	background-position: 8px 11px;
 }
 input.buttonpaymentstripe {
 	background-image: url(<?php echo dol_buildpath($path.'/stripe/img/object_stripe.png',1) ?>);
 	background-repeat: no-repeat;
-	background-position: 5px 3px;
+	background-position: 8px 11px;
 }
+/* Used by timesheets */
 span.timesheetalreadyrecorded input {
     border: none;
     border-bottom: solid 1px rgba(0,0,0,0.4);
     margin-right: 1px !important;
 }
-
+td.onholidaymorning, td.onholidayafternoon {
+	background-color: #fdf6f2;
+}
+td.onholidayallday {
+	background-color: #f4eede;
+}
 select.flat, form.flat select {
 	font-weight: normal;
 }
@@ -461,9 +483,10 @@ hr { border: 0; border-top: 1px solid #ccc; }
 	box-shadow: 0px 0px 6px 1px rgba(0, 0, 60, 0.2), 0px 0px 0px rgba(60,60,60,0.1);
 }
 .button:hover, .buttonDelete:hover   {
-	-moz-box-shadow: 0px 0px 6px 1px rgba(0, 0, 0, 0.2), 0px 0px 0px rgba(60,60,60,0.1);
-	-webkit-box-shadow: 0px 0px 6px 1px rgba(0, 0, 0, 0.2), 0px 0px 0px rgba(60,60,60,0.1);
-	box-shadow: 0px 0px 6px 1px rgba(0, 0, 0, 0.2), 0px 0px 0px rgba(60,60,60,0.1);
+	/* warning: having a larger shadow has side effect when button is completely on left of a table */
+	-moz-box-shadow: 0px 0px 1px 1px rgba(0, 0, 0, 0.2), 0px 0px 0px rgba(60,60,60,0.1);
+	-webkit-box-shadow: 0px 0px 1px 1px rgba(0, 0, 0, 0.2), 0px 0px 0px rgba(60,60,60,0.1);
+	box-shadow: 0px 0px 1px 1px rgba(0, 0, 0, 0.2), 0px 0px 0px rgba(60,60,60,0.1);
 }
 .button:disabled, .buttonDelete:disabled {
 	opacity: 0.4;
@@ -666,6 +689,12 @@ div.myavailability {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+.tdoverflowmax200 {			/* For tdoverflow, the max-midth become a minimum ! */
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 .tdoverflowmax300 {			/* For tdoverflow, the max-midth become a minimum ! */
     max-width: 300px;
     overflow: hidden;
@@ -696,7 +725,9 @@ div.myavailability {
 	margin-top: 6px;
 	margin-bottom: 12px;
 }
-
+#builddoc_form ~ .showlinkedobjectblock {
+    margin-top: 20px;
+}
 
 /* For the long description of module */
 .moduledesclong p img, .moduledesclong p a img {
@@ -803,6 +834,16 @@ div.fiche>form>div.div-table-responsive {
 .titlefieldmiddle { width: 50%; }
 .imgmaxwidth180 { max-width: 180px; }
 
+.width20p { width:20%; }
+.width25p { width:25%; }
+.width40p { width:40%; }
+.width50p { width:50%; }
+.width60p { width:60%; }
+.width75p { width:75%; }
+.width80p { width:80%; }
+.width100p { width:100%; }
+
+
 /* Force values for small screen 1400 */
 @media only screen and (max-width: 1400px)
 {
@@ -830,9 +871,21 @@ div.fiche>form>div.div-table-responsive {
     .minwidth500imp { min-width: 250px !important; }
 }
 
+/* Force values for small screen 767 */
+@media only screen and (max-width: 767px)
+{
+	body {
+		font-size: <?php print $fontsize+3; ?>px;
+	}
+}
+
 /* Force values for small screen 570 */
 @media only screen and (max-width: 570px)
 {
+	body {
+		font-size: <?php print $fontsize+3; ?>px;
+	}
+
 	.divmainbodylarge { margin-left: 20px !important; margin-right: 20px !important; }
 
     .tdoverflowonsmartphone {
@@ -1039,7 +1092,7 @@ div.fiche {
 	<?php if (! empty($conf->dol_hide_leftmenu)) print 'margin-bottom: 12px;'."\n"; ?>
 }
 body.onlinepaymentbody div.fiche {	/* For online payment page */
-	margin: 40px !important;
+	margin: 20px !important;
 }
 div.fiche>table:first-child {
 	margin-bottom: 15px !important;
@@ -1992,7 +2045,9 @@ div.tabs {
 div.tabsElem {
 	margin-top: 1px;
 }	/* To avoid overlap of tabs when not browser */
-
+div.tabsElem a {
+    font-weight: normal !important;
+}
 div.tabBar {
     color: #<?php echo $colortextbacktab; ?>;
     padding-top: 16px;
@@ -2704,13 +2759,15 @@ input.liste_titre {
 	line-height: 24px;
 }
 
-.noborder tr.liste_total, .noborder tr.liste_total td, tr.liste_total, form.liste_total {
-	/* height: 32px; */
+.noborder tr.liste_total td, tr.liste_total td, form.liste_total div, .noborder tr.liste_total_wrap td, tr.liste_total_wrap td, form.liste_total_wrap div {
+    color: #551188;
+    font-weight: normal;
 }
 .noborder tr.liste_total td, tr.liste_total td, form.liste_total div {
-    color: #552266;
-    font-weight: normal;
     white-space: nowrap;
+}
+.noborder tr.liste_total_wrap td, tr.liste_total_wrap td, form.liste_total_wrap div {
+	white-space: normal;
 }
 form.liste_total div {
     border-top: 1px solid #DDDDDD;
@@ -2980,11 +3037,12 @@ div.warning {
   color: #302020;
   padding: 0.3em 0.3em 0.3em 0.3em;
   margin: 0.5em 0em 0.5em 0em;
-  border: 1px solid #e0d0b0;
+  /* border: 1px solid #e0d0b0; */
+  border: 2px solid #805000;
   -moz-border-radius: 4px;
   -webkit-border-radius: 4px;
   border-radius: 4px;
-  background: #EFDF9A;
+  /* background: #EFDF9A; */
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
@@ -3086,16 +3144,15 @@ td.legendLabel { padding: 2px 2px 2px 0 !important; }
 div.titre {
 	font-family: <?php print $fontlist ?>;
 	font-size: 14px;
-	font-weight: bold;
+	/* font-weight: bold; */
 	color: rgb(<?php print $colortexttitlenotab; ?>);
 	text-decoration: none;
 	padding-top: 5px;
     padding-bottom: 5px;
-	/* text-shadow: 1px 1px 2px #FFFFFF; */
 }
 
-#dolpaymenttable { width: 600px; font-size: 13px; }
-#tablepublicpayment { border: 1px solid #CCCCCC !important; width: 100%; }
+#dolpaymenttable { min-width: 310px; font-size: 16px; }	/* Width must have min to make stripe input area visible */
+#tablepublicpayment { border: 1px solid #CCCCCC !important; width: 100%; padding: 20px; }
 #tablepublicpayment .CTableRow1  { background-color: #F0F0F0 !important; }
 #tablepublicpayment tr.liste_total { border-bottom: 1px solid #CCCCCC !important; }
 #tablepublicpayment tr.liste_total td { border-top: none; }
@@ -3764,6 +3821,58 @@ pre#editfilecontentaceeditorid {
 }
 
 
+/* ============================================================================== */
+/*  Comments                                                                   	  */
+/* ============================================================================== */
+
+#comment div {
+	box-sizing:border-box;
+}
+#comment .comment {
+    border-radius:7px;
+    margin-bottom:10px;
+    overflow:hidden;
+}
+#comment .comment-table {
+    display:table;
+    height:100%;
+}
+#comment .comment-cell {
+    display:table-cell;
+}
+#comment .comment-info {
+    font-size:0.8em;
+    border-right:1px solid #dedede;
+    margin-right:10px;
+    width:160px;
+    text-align:center;
+    background:rgba(255,255,255,0.5);
+    vertical-align:middle;
+    padding:10px 2px;
+}
+#comment .comment-info a {
+    color:inherit;
+}
+#comment .comment-right {
+    vertical-align:top;
+}
+#comment .comment-description {
+    padding:10px;
+    vertical-align:top;
+}
+#comment .comment-delete {
+    width: 100px;
+    text-align:center;
+    vertical-align:middle;
+}
+#comment .comment-delete:hover {
+    background:rgba(250,20,20,0.8);
+}
+#comment textarea {
+    width: 100%;
+}
+
+
 
 /* ============================================================================== */
 /*  JSGantt                                                                       */
@@ -3886,6 +3995,12 @@ div#ecm-layout-center {
 	max-width: 1024px;
 	padding-left: 10px !important;
 	padding-right: 10px !important;
+}
+.jnotify-container .jnotify-notification .jnotify-message {
+	font-weight: normal;
+}
+.jnotify-container .jnotify-notification-warning .jnotify-close, .jnotify-container .jnotify-notification-warning .jnotify-message {
+    color: #a28918 !important;
 }
 
 /* use or not ? */

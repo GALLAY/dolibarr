@@ -140,7 +140,7 @@ class Website extends CommonObject
 		$sql .= ' '.(! isset($this->description)?'NULL':"'".$this->db->escape($this->description)."'").',';
 		$sql .= ' '.(! isset($this->status)?'NULL':$this->status).',';
 		$sql .= ' '.(! isset($this->fk_default_home)?'NULL':$this->fk_default_home).',';
-		$sql .= ' '.(! isset($this->virtualhost)?'NULL':"'".$this->virtualhost)."',";
+		$sql .= ' '.(! isset($this->virtualhost)?'NULL':"'".$this->db->escape($this->virtualhost)."'").",";
 		$sql .= ' '.(! isset($this->fk_user_create)?$user->id:$this->fk_user_create).',';
 		$sql .= ' '.(! isset($this->date_creation) || dol_strlen($this->date_creation)==0?'NULL':"'".$this->db->idate($this->date_creation)."'").",";
 		$sql .= ' '.(! isset($this->date_modification) || dol_strlen($this->date_modification)==0?'NULL':"'".$this->db->idate($this->date_creation)."'");
@@ -480,7 +480,8 @@ class Website extends CommonObject
 	}
 
 	/**
-	 * Load an object from its id and create a new one in database
+	 * Load an object from its id and create a new one in database.
+	 * This copy website directories, regenerate all the pages + alias pages and recreate the medias link.
 	 *
 	 * @param	User	$user		User making the clone
 	 * @param 	int 	$fromid 	Id of object to clone

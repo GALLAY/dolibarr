@@ -1369,8 +1369,8 @@ function dol_meta_create($object)
 			DATE=\"" . dol_print_date($object->date,'') . "\"
 			NB_ITEMS=\"" . $nblignes . "\"
 			CLIENT=\"" . $client . "\"
-			AMOUNT_WO_TAX=\"" . $object->total_ht . "\"
-			AMOUNT_INC_TAX=\"" . $object->total_ttc . "\"\n";
+			AMOUNT_EXCL_TAX=\"" . $object->total_ht . "\"
+			AMOUNT=\"" . $object->total_ttc . "\"\n";
 
 			for ($i = 0 ; $i < $nblignes ; $i++)
 			{
@@ -1537,7 +1537,7 @@ function dol_add_file_process($upload_dir, $allowoverwrite=0, $donotupdatesessio
     					    $ecmfile=new EcmFiles($db);
     					    $ecmfile->filepath = $rel_dir;
     					    $ecmfile->filename = $filename;
-    					    $ecmfile->label = md5_file(dol_osencode($destfull));
+    					    $ecmfile->label = md5_file(dol_osencode($destfull));	// MD5 of file content
     					    $ecmfile->fullpath_orig = $TFile['name'][$i];
     					    $ecmfile->gen_or_uploaded = 'uploaded';
     					    $ecmfile->description = '';    // indexed content
@@ -1648,40 +1648,52 @@ function dol_remove_file_process($filenb,$donotupdatesession=0,$donotdeletefile=
 }
 
 /**
- * 	Convert an image file into anoher format.
+ * 	Convert an image file into another format.
  *  This need Imagick php extension.
  *
  *  @param	string	$fileinput  Input file name
  *  @param  string	$ext        Format of target file (It is also extension added to file if fileoutput is not provided).
  *  @param	string	$fileoutput	Output filename
- *  @return	int					<0 if KO, >0 if OK
+ *  @return	int					<0 if KO, 0=Nothing done, >0 if OK
  */
-function dol_convert_file($fileinput,$ext='png',$fileoutput='')
+function dol_convert_file($fileinput, $ext='png', $fileoutput='')
 {
 	global $langs;
 
-	$image=new Imagick();
-	$ret = $image->readImage($fileinput);
-	if ($ret)
+	if (class_exists('Imagick'))
 	{
-		$ret = $image->setImageFormat($ext);
+		$image=new Imagick();
+		try {
+			$ret = $image->readImage($fileinput);
+		} catch(Exception $e) {
+			dol_syslog("Failed to read image using Imagick. Try to install package 'apt-get install ghostscript'.", LOG_WARNING);
+			return 0;
+		}
 		if ($ret)
 		{
-			if (empty($fileoutput)) $fileoutput=$fileinput.".".$ext;
+			$ret = $image->setImageFormat($ext);
+			if ($ret)
+			{
+				if (empty($fileoutput)) $fileoutput=$fileinput.".".$ext;
 
-			$count = $image->getNumberImages();
-			$ret = $image->writeImages($fileoutput, true);
-			if ($ret) return $count;
-			else return -3;
+				$count = $image->getNumberImages();
+				$ret = $image->writeImages($fileoutput, true);
+				if ($ret) return $count;
+				else return -3;
+			}
+			else
+			{
+				return -2;
+			}
 		}
 		else
 		{
-			return -2;
+			return -1;
 		}
 	}
 	else
 	{
-		return -1;
+		return 0;
 	}
 }
 
@@ -1957,7 +1969,7 @@ function dol_check_secure_access_document($modulepart, $original_file, $entity, 
 	if ($modulepart == 'medias' && !empty($dolibarr_main_data_root))
 	{
 	    $accessallowed=1;
-	    $original_file=$dolibarr_main_data_root.'/medias/'.$original_file;
+	    $original_file=$conf->medias->multidir_output[$entity].'/'.$original_file;
 	}
 	// Wrapping for *.log files, like when used with url http://.../document.php?modulepart=logs&file=dolibarr.log
 	elseif ($modulepart == 'logs' && !empty($dolibarr_main_data_root))
@@ -2275,6 +2287,14 @@ function dol_check_secure_access_document($modulepart, $original_file, $entity, 
 	        $accessallowed=1;
 	    }
 	    $original_file=$conf->fournisseur->facture->dir_output.'/temp/massgeneration/'.$user->id.'/'.$original_file;
+	}
+	else if ($modulepart == 'massfilesarea_contract' && !empty($conf->contrat->dir_output))
+	{
+		if ($fuser->rights->contrat->{$lire} || preg_match('/^specimen/i',$original_file))
+		{
+			$accessallowed=1;
+		}
+		$original_file=$conf->contrat->dir_output.'/temp/massgeneration/'.$user->id.'/'.$original_file;
 	}
 
 	// Wrapping for interventions

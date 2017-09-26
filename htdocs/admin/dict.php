@@ -67,7 +67,7 @@ $actl[0] = img_picto($langs->trans("Disabled"),'switch_off');
 $actl[1] = img_picto($langs->trans("Activated"),'switch_on');
 
 $listoffset=GETPOST('listoffset');
-$listlimit=GETPOST('listlimit')>0?GETPOST('listlimit'):1000;
+$listlimit=GETPOST('listlimit')>0?GETPOST('listlimit'):1000;	// To avoid too long dictionaries
 $active = 1;
 
 $sortfield = GETPOST("sortfield",'alpha');
@@ -620,7 +620,8 @@ if (GETPOST('actionadd') || GETPOST('actionmodify'))
         if ($value == 'localtax2' && empty($_POST['localtax2_type'])) continue;
         if ($value == 'color' && empty($_POST['color'])) continue;
 		if ($value == 'formula' && empty($_POST['formula'])) continue;
-        if ((! isset($_POST[$value]) || $_POST[$value]=='')
+		if ($value == 'sortorder') continue;		// For a column name 'sortorder', we use the field name 'position'
+		if ((! isset($_POST[$value]) || $_POST[$value]=='')
         	&& (! in_array($listfield[$f], array('decalage','module','accountancy_code','accountancy_code_sell','accountancy_code_buy'))  // Fields that are not mandatory
         	&& (! ($id == 10 && $listfield[$f] == 'code')) // Code is mandatory fir table 10
         	)
@@ -662,7 +663,7 @@ if (GETPOST('actionadd') || GETPOST('actionmodify'))
         /*if (!is_numeric($_POST['code']))	// disabled, code may not be in numeric base
     	{
 	    	$ok = 0;
-	    	$msg .= $langs->transnoentities('ErrorFieldFormat', $langs->transnoentities('Code')).'<br />';
+	    	$msg .= $langs->transnoentities('ErrorFieldFormat', $langs->transnoentities('Code')).'<br>';
 	    }*/
     }
     if (isset($_POST["country"]) && ($_POST["country"]=='0') && ($id != 2))
@@ -735,7 +736,11 @@ if (GETPOST('actionadd') || GETPOST('actionmodify'))
             	$_POST[$listfieldvalue[$i]] = $conf->entity;
             }
             if ($i) $sql.=",";
-            if ($_POST[$listfieldvalue[$i]] == '' && ! ($listfieldvalue[$i] == 'code' && $id == 10)) $sql.="null";  // For vat, we want/accept code = ''
+            if ($listfieldvalue[$i] == 'sortorder')		// For column name 'sortorder', we use the field name 'position'
+            {
+            	$sql.="'".(int) $db->escape($_POST['position'])."'";
+            }
+            elseif ($_POST[$listfieldvalue[$i]] == '' && ! ($listfieldvalue[$i] == 'code' && $id == 10)) $sql.="null";  // For vat, we want/accept code = ''
             else $sql.="'".$db->escape($_POST[$listfieldvalue[$i]])."'";
             $i++;
         }
@@ -784,7 +789,11 @@ if (GETPOST('actionadd') || GETPOST('actionmodify'))
             }
             if ($i) $sql.=",";
             $sql.= $field."=";
-            if ($_POST[$listfieldvalue[$i]] == '' && ! ($listfieldvalue[$i] == 'code' && $id == 10)) $sql.="null";  // For vat, we want/accept code = ''
+            if ($listfieldvalue[$i] == 'sortorder')		// For column name 'sortorder', we use the field name 'position'
+            {
+            	$sql.="'".(int) $db->escape($_POST['position'])."'";
+            }
+            elseif ($_POST[$listfieldvalue[$i]] == '' && ! ($listfieldvalue[$i] == 'code' && $id == 10)) $sql.="null";  // For vat, we want/accept code = ''
             else $sql.="'".$db->escape($_POST[$listfieldvalue[$i]])."'";
             $i++;
         }
@@ -1010,6 +1019,7 @@ if ($id)
 
         $fieldlist=explode(',',$tabfield[$id]);
 
+	    print '<div class="div-table-responsive-no-min">';
         print '<table class="noborder" width="100%">';
 
         // Line for title
@@ -1141,7 +1151,7 @@ if ($id)
         }
 
         if ($id == 4) print '<td></td>';
-        print '<td colspan="3" align="right">';
+        print '<td colspan="3" align="center">';
         if ($action != 'edit')
         {
         	print '<input type="submit" class="button" name="actionadd" value="'.$langs->trans("Add").'">';
@@ -1153,11 +1163,7 @@ if ($id)
         if ($id == 4) $colspan++;
 
         print '</table>';
-
-        /*if (! empty($alabelisused) && $id != 25)  // If there is one label among fields, we show legend of *
-        {
-        	print '* '.$langs->trans("LabelUsedByDefault").'.<br>';
-        }*/
+		print '</div>';
     }
 
     print '</form>';
@@ -1177,11 +1183,13 @@ if ($id)
         $i = 0;
 
         // There is several pages
-        if ($num > $listlimit)
+        if ($num > $listlimit || $page)
         {
             print_fleche_navigation($page, $_SERVER["PHP_SELF"], $paramwithsearch, ($num > $listlimit), '<li class="pagination"><span>'.$langs->trans("Page").' '.($page+1).'</span></li>');
+            print '<div class="clearboth"></div>';
         }
 
+	    print '<div class="div-table-responsive">';
         print '<table class="noborder" width="100%">';
 
         // Title line with search boxes
@@ -1626,6 +1634,7 @@ if ($id)
         }
 
         print '</table>';
+        print '</div>';
     }
     else {
         dol_print_error($db);
@@ -1641,6 +1650,8 @@ else
      */
 
     $lastlineisempty=false;
+
+	print '<div class="div-table-responsive-no-min">';
     print '<table class="noborder" width="100%">';
     print '<tr class="liste_titre">';
     //print '<td>'.$langs->trans("Module").'</td>';
@@ -1693,6 +1704,7 @@ else
         }
     }
     print '</table>';
+    print '</div>';
 }
 
 print '<br>';
@@ -1900,6 +1912,8 @@ function fieldList($fieldlist, $obj='', $tabname='', $context='')
 		}
 		else
 		{
+			if ($fieldlist[$field]=='sortorder') $fieldlist[$field]='position';
+
 			$classtd=''; $class='';
 			if ($fieldlist[$field]=='code') $classtd='width100';
 			if ($fieldlist[$field]=='affect') $class='maxwidth50';
