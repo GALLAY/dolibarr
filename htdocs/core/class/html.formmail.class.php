@@ -271,16 +271,6 @@ class FormMail extends Form
 
         	$disablebademails=1;
 
-        	// Define list of attached files
-        	$listofpaths=array();
-        	$listofnames=array();
-        	$listofmimes=array();
-            $keytoavoidconflict = empty($this->trackid)?'':'-'.$this->trackid;   // this->trackid must be defined
-
-        	if (! empty($_SESSION["listofpaths".$keytoavoidconflict])) $listofpaths=explode(';',$_SESSION["listofpaths".$keytoavoidconflict]);
-        	if (! empty($_SESSION["listofnames".$keytoavoidconflict])) $listofnames=explode(';',$_SESSION["listofnames".$keytoavoidconflict]);
-        	if (! empty($_SESSION["listofmimes".$keytoavoidconflict])) $listofmimes=explode(';',$_SESSION["listofmimes".$keytoavoidconflict]);
-
        		// Define output language
 			$outputlangs = $langs;
 			$newlang = '';
@@ -301,11 +291,35 @@ class FormMail extends Form
         		{
 	        		$model_id=$this->param["models_id"];
         		}
-	        	$arraydefaultmessage=$this->getEMailTemplate($this->db, $this->param["models"], $user, $outputlangs, $model_id);
+        		$arraydefaultmessage=$this->getEMailTemplate($this->db, $this->param["models"], $user, $outputlangs, ($model_id ? $model_id : -1));		// we set -1 if model_id empty
 			}
         	//var_dump($this->param["models"]);
         	//var_dump($model_id);
         	//var_dump($arraydefaultmessage);
+
+
+        	// Define list of attached files
+        	$listofpaths=array();
+        	$listofnames=array();
+        	$listofmimes=array();
+            $keytoavoidconflict = empty($this->trackid)?'':'-'.$this->trackid;   // this->trackid must be defined
+
+            if (GETPOST('mode','alpha') == 'init' || (GETPOST('modelmailselected','alpha') && GETPOST('modelmailselected','alpha') != '-1'))
+            {
+	            $this->clear_attached_files();
+            	if (! empty($arraydefaultmessage['joinfiles']) && is_array($this->param['fileinit']))
+	            {
+	            	foreach($this->param['fileinit'] as $file)
+	            	{
+						$this->add_attached_files($file, basename($file), dol_mimetype($file));
+	            	}
+	            }
+            }
+
+       		if (! empty($_SESSION["listofpaths".$keytoavoidconflict])) $listofpaths=explode(';',$_SESSION["listofpaths".$keytoavoidconflict]);
+       		if (! empty($_SESSION["listofnames".$keytoavoidconflict])) $listofnames=explode(';',$_SESSION["listofnames".$keytoavoidconflict]);
+       		if (! empty($_SESSION["listofmimes".$keytoavoidconflict])) $listofmimes=explode(';',$_SESSION["listofmimes".$keytoavoidconflict]);
+
 
         	$out.= "\n".'<!-- Begin form mail type='.$this->param["models"].' --><div id="mailformdiv"></div>'."\n";
         	if ($this->withform == 1)
@@ -329,6 +343,7 @@ class FormMail extends Form
         		$out.= '<input type="hidden" id="'.$key.'" name="'.$key.'" value="'.$value.'" />'."\n";
         	}
 
+	        $modelmail_array=array();
         	if ($this->param['models'] != 'none')
         	{
 	        	$result = $this->fetchAllEMailTemplate($this->param["models"], $user, $outputlangs);
@@ -336,7 +351,6 @@ class FormMail extends Form
 	        	{
 	        		setEventMessages($this->error, $this->errors, 'errors');
 	        	}
-	        	$modelmail_array=array();
 	        	foreach($this->lines_model as $line)
 	        	{
 	        		$langs->trans("members");
@@ -369,7 +383,7 @@ class FormMail extends Form
         	elseif (! empty($this->param['models']) && in_array($this->param['models'], array(
         	        'propal_send','order_send','facture_send',
         	        'shipping_send','fichinter_send','supplier_proposal_send','order_supplier_send',
-        	        'invoice_supplier_send','thirdparty','contract','all'
+        	        'invoice_supplier_send','thirdparty','contract','user','all'
            	    )))
         	{
         		// If list of template is empty
@@ -914,7 +928,7 @@ class FormMail extends Form
 	 * 		@param	string		$type_template	Get message for type=$type_template, type='all' also included.
 	 *      @param	string		$user			Use template public or limited to this user
 	 *      @param	Translate	$outputlangs	Output lang object
-	 *      @param	int			$id				Id template to find
+	 *      @param	int			$id				Id of template to find, or -1 for first found with position = 0, or 0 for all
 	 *      @param  int         $active         1=Only active template, 0=Only disabled, -1=All
 	 *      @return array						array('topic'=>,'content'=>,..)
 	 */
@@ -922,15 +936,17 @@ class FormMail extends Form
 	{
 		$ret=array();
 
-		$sql = "SELECT label, topic, content, content_lines, lang";
+		$sql = "SELECT label, topic, joinfiles, content, content_lines, lang";
 		$sql.= " FROM ".MAIN_DB_PREFIX.'c_email_templates';
 		$sql.= " WHERE (type_template='".$db->escape($type_template)."' OR type_template='all')";
 		$sql.= " AND entity IN (".getEntity('c_email_templates', 0).")";
 		$sql.= " AND (private = 0 OR fk_user = ".$user->id.")";				// Get all public or private owned
 		if ($active >= 0) $sql.=" AND active = ".$active;
 		if (is_object($outputlangs)) $sql.= " AND (lang = '".$outputlangs->defaultlang."' OR lang IS NULL OR lang = '')";
-		if (!empty($id)) $sql.= " AND rowid=".$id;
+		if ($id > 0)   $sql.= " AND rowid=".$id;
+		if ($id == -1) $sql.= " AND position=0";
 		$sql.= $db->order("position,lang,label","ASC");
+		if ($id == -1) $sql.= $db->plimit(1);
 		//print $sql;
 
 		$resql = $db->query($sql);
@@ -940,10 +956,11 @@ class FormMail extends Form
 			if ($obj)
 			{
 				$ret['label']=$obj->label;
+				$ret['lang']=$obj->lang;
 				$ret['topic']=$obj->topic;
+				$ret['joinfiles']=$obj->joinfiles;
 				$ret['content']=$obj->content;
 				$ret['content_lines']=$obj->content_lines;
-				$ret['lang']=$obj->lang;
 			}
 			else								// If there is no template at all
 			{
@@ -961,10 +978,11 @@ class FormMail extends Form
 	        	elseif ($type_template=='user')				        { $defaultmessage=$outputlangs->transnoentities("PredefinedMailContentUser"); }
 
 	        	$ret['label']='default';
+	        	$ret['lang']=$outputlangs->defaultlang;
 	        	$ret['topic']='';
+	        	$ret['joinfiles']=1;
 	        	$ret['content']=$defaultmessage;
 				$ret['content_lines']='';
-	        	$ret['lang']=$outputlangs->defaultlang;
 			}
 
 			$db->free($resql);
@@ -1076,11 +1094,11 @@ class FormMail extends Form
 	 * @return	void
 	 * @see getCommonSubstitutionArray
 	 */
-	function setSubstitFromObject($object, $outputlangs=null)
+	function setSubstitFromObject($object, $outputlangs)
 	{
 		global $conf, $user;
 
-		$parameters=array('mode'=>$mode);
+		$parameters=array();
 		$tmparray=getCommonSubstitutionArray($outputlangs, 0, null, $object);
 		complete_substitutions_array($tmparray, $outputlangs, null, $parameters);
 
@@ -1135,6 +1153,7 @@ class FormMail extends Form
 	{
 		global $conf, $langs;
 
+		$tmparray=array();
 		if ($mode == 'formemail' || $mode == 'formemailwithlines' || $mode == 'formemailforlines')
 		{
 			$parameters=array('mode'=>$mode);

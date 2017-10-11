@@ -38,6 +38,7 @@
 require '../../main.inc.php';
 require_once DOL_DOCUMENT_ROOT . '/compta/facture/class/facture.class.php';
 require_once DOL_DOCUMENT_ROOT . '/compta/facture/class/facture-rec.class.php';
+require_once DOL_DOCUMENT_ROOT . '/compta/bank/class/account.class.php';
 require_once DOL_DOCUMENT_ROOT . '/compta/paiement/class/paiement.class.php';
 require_once DOL_DOCUMENT_ROOT . '/core/modules/facture/modules_facture.php';
 require_once DOL_DOCUMENT_ROOT . '/core/class/discount.class.php';
@@ -604,27 +605,30 @@ if (empty($reshook))
 			$ventilExportCompta = $object->getVentilExportCompta();
 
 			// On verifie si aucun paiement n'a ete effectue
-			if ($resteapayer == $object->total_ttc && $object->paye == 0 && $ventilExportCompta == 0)
+			if ($ventilExportCompta == 0)
 			{
-				$result=$object->set_draft($user, $idwarehouse);
-				if ($result<0) setEventMessages($object->error, $object->errors, 'errors');
-
-
-				// Define output language
-				if (empty($conf->global->MAIN_DISABLE_PDF_AUTOUPDATE))
+				if (! empty($conf->global->INVOICE_CAN_ALWAYS_BE_EDITED) || ($resteapayer == $object->total_ttc && empty($object->paye)))
 				{
-					$outputlangs = $langs;
-					$newlang = '';
-					if ($conf->global->MAIN_MULTILANGS && empty($newlang) && GETPOST('lang_id','aZ09')) $newlang = GETPOST('lang_id','aZ09');
-					if ($conf->global->MAIN_MULTILANGS && empty($newlang))	$newlang = $object->thirdparty->default_lang;
-					if (! empty($newlang)) {
-						$outputlangs = new Translate("", $conf);
-						$outputlangs->setDefaultLang($newlang);
-					}
-					$model=$object->modelpdf;
-					$ret = $object->fetch($id); // Reload to get new records
+					$result=$object->set_draft($user, $idwarehouse);
+					if ($result<0) setEventMessages($object->error, $object->errors, 'errors');
 
-					$object->generateDocument($model, $outputlangs, $hidedetails, $hidedesc, $hideref);
+
+					// Define output language
+					if (empty($conf->global->MAIN_DISABLE_PDF_AUTOUPDATE))
+					{
+						$outputlangs = $langs;
+						$newlang = '';
+						if ($conf->global->MAIN_MULTILANGS && empty($newlang) && GETPOST('lang_id','aZ09')) $newlang = GETPOST('lang_id','aZ09');
+						if ($conf->global->MAIN_MULTILANGS && empty($newlang))	$newlang = $object->thirdparty->default_lang;
+						if (! empty($newlang)) {
+							$outputlangs = new Translate("", $conf);
+							$outputlangs->setDefaultLang($newlang);
+						}
+						$model=$object->modelpdf;
+						$ret = $object->fetch($id); // Reload to get new records
+
+						$object->generateDocument($model, $outputlangs, $hidedetails, $hidedesc, $hideref);
+					}
 				}
 			}
 		}
@@ -713,9 +717,13 @@ if (empty($reshook))
 			if ($object->type == Facture::TYPE_STANDARD || $object->type == Facture::TYPE_REPLACEMENT || $object->type == Facture::TYPE_SITUATION)
 			{
 				// If we're on a standard invoice, we have to get excess received to create a discount in TTC without VAT
-				$sql = 'SELECT SUM(pf.amount) as total_paiements
-						FROM llx_c_paiement as c, llx_paiement_facture as pf, llx_paiement as p
-						WHERE pf.fk_facture = '.$object->id.' AND p.fk_paiement = c.id AND pf.fk_paiement = p.rowid';
+
+				$sql = 'SELECT SUM(pf.amount) as total_paiements';
+				$sql.= ' FROM '.MAIN_DB_PREFIX.'c_paiement as c, '.MAIN_DB_PREFIX.'paiement_facture as pf, '.MAIN_DB_PREFIX.'paiement as p';
+				$sql.= ' WHERE pf.fk_facture = '.$object->id;
+				$sql.= ' AND p.fk_paiement = c.id AND pf.fk_paiement = p.rowid';
+				$sql.= ' AND c.entity IN (' . getEntity('c_paiement').')';
+				$sql.= ' ORDER BY p.datep, p.tms';
 
 				$resql = $db->query($sql);
 				if (! $resql) dol_print_error($db);
@@ -1436,7 +1444,7 @@ if (empty($reshook))
 
 				$object->situation_counter = $object->situation_counter + 1;
 				$id = $object->createFromCurrent($user);
-				if ($id <= 0) 
+				if ($id <= 0)
 				{
 					$mesg = $object->error;
 				}
@@ -3795,6 +3803,7 @@ else if ($id > 0 || ! empty($ref))
     $sql .= ' LEFT JOIN ' . MAIN_DB_PREFIX . 'bank as b ON p.fk_bank = b.rowid';
     $sql .= ' LEFT JOIN ' . MAIN_DB_PREFIX . 'bank_account as ba ON b.fk_account = ba.rowid';
     $sql .= ' WHERE pf.fk_facture = ' . $object->id . ' AND p.fk_paiement = c.id AND pf.fk_paiement = p.rowid';
+    $sql .= ' AND c.entity IN (' . getEntity('c_paiement').')';
     $sql .= ' ORDER BY p.datep, p.tms';
 
     $result = $db->query($sql);
@@ -3807,18 +3816,21 @@ else if ($id > 0 || ! empty($ref))
         if ($num > 0) {
             while ($i < $num) {
                 $objp = $db->fetch_object($result);
-                print '<tr class="oddeven"><td>';
+
                 $paymentstatic->id = $objp->rowid;
                 $paymentstatic->datepaye = $db->jdate($objp->dp);
                 $paymentstatic->ref = $objp->ref;
                 $paymentstatic->num_paiement = $objp->num_paiement;
                 $paymentstatic->payment_code = $objp->payment_code;
+
+                print '<tr class="oddeven"><td>';
                 print $paymentstatic->getNomUrl(1);
                 print '</td>';
                 print '<td>' . dol_print_date($db->jdate($objp->dp), 'day') . '</td>';
                 $label = ($langs->trans("PaymentType" . $objp->payment_code) != ("PaymentType" . $objp->payment_code)) ? $langs->trans("PaymentType" . $objp->payment_code) : $objp->payment_label;
                 print '<td>' . $label . ' ' . $objp->num_paiement . '</td>';
-                if (! empty($conf->banque->enabled)) {
+                if (! empty($conf->banque->enabled))
+                {
                     $bankaccountstatic->id = $objp->baid;
                     $bankaccountstatic->ref = $objp->baref;
                     $bankaccountstatic->label = $objp->baref;
@@ -4115,27 +4127,34 @@ else if ($id > 0 || ! empty($ref))
 		$reshook = $hookmanager->executeHooks('addMoreActionsButtons', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
 		if (empty($reshook)) {
 			// Editer une facture deja validee, sans paiement effectue et pas exporte en compta
-			if ($object->statut == 1)
+			if ($object->statut == Facture::STATUS_VALIDATED)
 			{
 				// On verifie si les lignes de factures ont ete exportees en compta et/ou ventilees
 				$ventilExportCompta = $object->getVentilExportCompta();
 
-				if ($resteapayer == $object->total_ttc && empty($object->paye) && $ventilExportCompta == 0)
+				if ($ventilExportCompta == 0)
 				{
-					if (! $objectidnext && $object->is_last_in_cycle())
+					if (! empty($conf->global->INVOICE_CAN_ALWAYS_BE_EDITED) || ($resteapayer == $object->total_ttc && empty($object->paye)))
 					{
-					    if ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->facture->creer))
-       						|| (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->facture->invoice_advance->unvalidate)))
+						if (! $objectidnext && $object->is_last_in_cycle())
 						{
-							print '<div class="inline-block divButAction"><a class="butAction" href="' . $_SERVER['PHP_SELF'] . '?facid=' . $object->id . '&amp;action=modif">' . $langs->trans('Modify') . '</a></div>';
+						    if ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->facture->creer))
+	       						|| (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->facture->invoice_advance->unvalidate)))
+							{
+								print '<div class="inline-block divButAction"><a class="butAction" href="' . $_SERVER['PHP_SELF'] . '?facid=' . $object->id . '&amp;action=modif">' . $langs->trans('Modify') . '</a></div>';
+							} else {
+								print '<div class="inline-block divButAction"><span class="butActionRefused" title="' . $langs->trans("NotEnoughPermissions") . '">' . $langs->trans('Modify') . '</span></div>';
+							}
+						} else if (!$object->is_last_in_cycle()) {
+							print '<div class="inline-block divButAction"><span class="butActionRefused" title="' . $langs->trans("NotLastInCycle") . '">' . $langs->trans('Modify') . '</span></div>';
 						} else {
-							print '<div class="inline-block divButAction"><span class="butActionRefused" title="' . $langs->trans("NotEnoughPermissions") . '">' . $langs->trans('Modify') . '</span></div>';
+							print '<div class="inline-block divButAction"><span class="butActionRefused" title="' . $langs->trans("DisabledBecauseReplacedInvoice") . '">' . $langs->trans('Modify') . '</span></div>';
 						}
-					} else if (!$object->is_last_in_cycle()) {
-						print '<div class="inline-block divButAction"><span class="butActionRefused" title="' . $langs->trans("NotLastInCycle") . '">' . $langs->trans('Modify') . '</span></div>';
-					} else {
-						print '<div class="inline-block divButAction"><span class="butActionRefused" title="' . $langs->trans("DisabledBecauseReplacedInvoice") . '">' . $langs->trans('Modify') . '</span></div>';
 					}
+				}
+				else
+				{
+					print '<div class="inline-block divButAction"><span class="butActionRefused" title="' . $langs->trans("DisabledBecauseDispatchedInAccounting") . '">' . $langs->trans('Modify') . '</span></div>';
 				}
 			}
 
@@ -4158,7 +4177,7 @@ else if ($id > 0 || ! empty($ref))
 			}
 
 			// Validate
-			if ($object->statut == 0 && count($object->lines) > 0 && ((($object->type == Facture::TYPE_STANDARD || $object->type == Facture::TYPE_REPLACEMENT || $object->type == Facture::TYPE_DEPOSIT || $object->type == Facture::TYPE_PROFORMA || $object->type == Facture::TYPE_SITUATION) && (! empty($conf->global->FACTURE_ENABLE_NEGATIVE) || $object->total_ttc >= 0)) || ($object->type == Facture::TYPE_CREDIT_NOTE && $object->total_ttc <= 0))) {
+			if ($object->statut == Facture::STATUS_DRAFT && count($object->lines) > 0 && ((($object->type == Facture::TYPE_STANDARD || $object->type == Facture::TYPE_REPLACEMENT || $object->type == Facture::TYPE_DEPOSIT || $object->type == Facture::TYPE_PROFORMA || $object->type == Facture::TYPE_SITUATION) && (! empty($conf->global->FACTURE_ENABLE_NEGATIVE) || $object->total_ttc >= 0)) || ($object->type == Facture::TYPE_CREDIT_NOTE && $object->total_ttc <= 0))) {
 				if ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->facture->creer))
           	    || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->facture->invoice_advance->validate)))
 				{
@@ -4314,7 +4333,7 @@ else if ($id > 0 || ! empty($ref))
 			// Delete
 			if ($user->rights->facture->supprimer)
 			{
-				if (! $object->is_erasable()) {
+				if ($object->is_erasable() <= 0) {
 					print '<div class="inline-block divButAction"><a class="butActionRefused" href="#" title="' . $langs->trans("DisabledBecauseNotErasable") . '">' . $langs->trans('Delete') . '</a></div>';
 				} else if ($objectidnext) {
 					print '<div class="inline-block divButAction"><a class="butActionRefused" href="#" title="' . $langs->trans("DisabledBecauseReplacedInvoice") . '">' . $langs->trans('Delete') . '</a></div>';
