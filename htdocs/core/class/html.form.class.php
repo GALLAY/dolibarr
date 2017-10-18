@@ -1232,6 +1232,12 @@ class Form
 						$disabled=' disabled';
 					}
 
+					if (!empty($conf->global->MAIN_SHOW_FACNUMBER_IN_DISCOUNT_LIST) && !empty($obj->fk_facture_source))
+					{
+						$tmpfac = new Facture($this->db);
+						if ($tmpfac->fetch($obj->fk_facture_source) > 0) $desc=$desc.' - '.$tmpfac->ref;
+					}
+
 					print '<option value="'.$obj->rowid.'"'.$selectstring.$disabled.'>'.$desc.' ('.price($obj->amount_ht).' '.$langs->trans("HT").' - '.price($obj->amount_ttc).' '.$langs->trans("TTC").')</option>';
 					$i++;
 				}
@@ -4736,6 +4742,7 @@ class Form
 			{
 				$shour = dol_print_date($set_time, "%H");
 				$smin = dol_print_date($set_time, "%M");
+				$ssec = dol_print_date($set_time, "%S");
 			}
 		}
 		else
@@ -4746,6 +4753,7 @@ class Form
 			$sday = '';
 			$shour = !isset($conf->global->MAIN_DEFAULT_DATE_HOUR) ? '' : $conf->global->MAIN_DEFAULT_DATE_HOUR;
 			$smin = !isset($conf->global->MAIN_DEFAULT_DATE_MIN) ? '' : $conf->global->MAIN_DEFAULT_DATE_MIN;
+			$ssec = !isset($conf->global->MAIN_DEFAULT_DATE_SEC) ? '' : $conf->global->MAIN_DEFAULT_DATE_SEC;
 		}
 
 		// You can set MAIN_POPUP_CALENDAR to 'eldy' or 'jquery'
@@ -4797,8 +4805,10 @@ class Form
 					{
 						$retstring.="<script type='text/javascript'>";
 						$retstring.="$(function(){ $('#".$prefix."').datepicker({
-                			autoclose: true,
+            				dateFormat: '".$langs->trans("FormatDateShortJQueryInput")."',
+							autoclose: true,
                 			todayHighlight: true,";
+							// Note: We don't need monthNames, monthNamesShort, dayNames, dayNamesShort, dayNamesMin, they are set globally on datepicker component in lib_head.js.php
 						if (empty($conf->global->MAIN_POPUP_CALENDAR_ON_FOCUS))
 						{
 						$retstring.="
@@ -4924,6 +4934,8 @@ class Form
 				$retstring.='<option value="'.$min.'"'.(($min == $smin)?' selected':'').'>'.$min.(empty($conf->dol_optimize_smallscreen)?'':'').'</option>';
 			}
 			$retstring.='</select>';
+
+			$retstring.='<input type="hidden" name="'.$prefix.'sec" value="'.$ssec.'">';
 		}
 
 		// Add a "Now" link

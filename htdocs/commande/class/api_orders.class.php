@@ -286,7 +286,7 @@ class Orders extends DolibarrApi
       );
 
       if ($updateRes > 0) {
-        return $this->get($id)->line->rowid;
+        return $updateRes;
 
       }
       return false;
@@ -387,7 +387,7 @@ class Orders extends DolibarrApi
     /**
      * Update order general fields (won't touch lines of order)
      *
-     * @param int   $id             Id of commande to update
+     * @param int   $id             Id of order to update
      * @param array $request_data   Datas
      *
      * @return int
@@ -499,6 +499,47 @@ class Orders extends DolibarrApi
     }
 
     /**
+     * Close an order (Classify it as "Delivered")
+     *
+     * @param   int     $id             Order ID
+     * @param   int     $notrigger      Disabled triggers
+     *
+     * @url POST    {id}/close
+     *
+     * @return  array
+     */
+    function close($id, $notrigger=0)
+    {
+    	if(! DolibarrApiAccess::$user->rights->commande->creer) {
+    		throw new RestException(401);
+    	}
+    	$result = $this->commande->fetch($id);
+    	if( ! $result ) {
+    		throw new RestException(404, 'Order not found');
+    	}
+
+    	if( ! DolibarrApi::_checkAccessToResource('commande',$this->commande->id)) {
+    		throw new RestException(401, 'Access not allowed for login '.DolibarrApiAccess::$user->login);
+    	}
+
+    	$result = $this->commande->cloture(DolibarrApiAccess::$user, $notrigger);
+    	if ($result == 0) {
+    		throw new RestException(500, 'Error nothing done. May be object is already closed');
+    	}
+    	if ($result < 0) {
+    		throw new RestException(500, 'Error when closing Order: '.$this->commande->error);
+    	}
+
+    	return array(
+    	'success' => array(
+	    	'code' => 200,
+	    	'message' => 'Order closed (Ref='.$this->commande->ref.')'
+	    	)
+    	);
+    }
+
+
+    /**
      * Clean sensible object datas
      *
      * @param   object  $object    Object to clean
@@ -509,6 +550,10 @@ class Orders extends DolibarrApi
         $object = parent::_cleanObjectDatas($object);
 
         unset($object->address);
+        unset($object->barcode_type);
+        unset($object->barcode_type_code);
+        unset($object->barcode_type_label);
+        unset($object->barcode_type_coder);
 
         return $object;
     }
