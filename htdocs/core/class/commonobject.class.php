@@ -340,6 +340,15 @@ abstract class CommonObject
 
 	// No constructor as it is an abstract class
 
+	/**
+	 * Return if an object manage the multicompany field and how.
+	 *
+	 * @return	int				0=No entity field managed, 1=Test with field entity, 2=Test with link to thirdparty (and sales representative)
+	 */
+	function getIsmultientitymanaged()
+	{
+		return $this->ismultientitymanaged;
+	}
 
 	/**
 	 * Check an object id/ref exists
@@ -1338,16 +1347,16 @@ abstract class CommonObject
 
 		$sql = "SELECT MAX(te.".$fieldid.")";
 		$sql.= " FROM ".(empty($nodbprefix)?MAIN_DB_PREFIX:'').$this->table_element." as te";
-		if (isset($this->ismultientitymanaged) && $this->ismultientitymanaged == 2 || ($this->element != 'societe' && empty($this->isnolinkedbythird) && empty($user->rights->societe->client->voir))) $sql.= ", ".MAIN_DB_PREFIX."societe as s";	// If we need to link to societe to limit select to entity
-		if (empty($this->isnolinkedbythird) && !$user->rights->societe->client->voir) $sql.= " LEFT JOIN ".MAIN_DB_PREFIX."societe_commerciaux as sc ON ".$alias.".rowid = sc.fk_soc";
+		if (isset($this->ismultientitymanaged) && $this->ismultientitymanaged == 2) $sql.= ", ".MAIN_DB_PREFIX."societe as s";	// If we need to link to societe to limit select to entity
+		if (isset($this->ismultientitymanaged) && $this->ismultientitymanaged == 2 && !$user->rights->societe->client->voir) $sql.= " LEFT JOIN ".MAIN_DB_PREFIX."societe_commerciaux as sc ON ".$alias.".rowid = sc.fk_soc";
 		$sql.= " WHERE te.".$fieldid." < '".$this->db->escape($this->ref)."'";  // ->ref must always be defined (set to id if field does not exists)
-		if (empty($this->isnolinkedbythird) && !$user->rights->societe->client->voir) $sql.= " AND sc.fk_user = " .$user->id;
+		if (isset($this->ismultientitymanaged) && $this->ismultientitymanaged == 2 && !$user->rights->societe->client->voir) $sql.= " AND sc.fk_user = " .$user->id;
 		if (! empty($filter))
 		{
 			if (! preg_match('/^\s*AND/i', $filter)) $sql.=" AND ";   // For backward compatibility
 			$sql.=$filter;
 		}
-		if (isset($this->ismultientitymanaged) && $this->ismultientitymanaged == 2 || ($this->element != 'societe' && empty($this->isnolinkedbythird) && !$user->rights->societe->client->voir)) $sql.= ' AND te.fk_soc = s.rowid';			// If we need to link to societe to limit select to entity
+		if (isset($this->ismultientitymanaged) && $this->ismultientitymanaged == 2) $sql.= ' AND te.fk_soc = s.rowid';			// If we need to link to societe to limit select to entity
 		if (isset($this->ismultientitymanaged) && $this->ismultientitymanaged == 1) $sql.= ' AND te.entity IN ('.getEntity($this->element, 1).')';
 
 		//print $filter.' '.$sql."<br>";
@@ -1363,16 +1372,16 @@ abstract class CommonObject
 
 		$sql = "SELECT MIN(te.".$fieldid.")";
 		$sql.= " FROM ".(empty($nodbprefix)?MAIN_DB_PREFIX:'').$this->table_element." as te";
-		if (isset($this->ismultientitymanaged) && $this->ismultientitymanaged == 2 || ($this->element != 'societe' && empty($this->isnolinkedbythird) && !$user->rights->societe->client->voir)) $sql.= ", ".MAIN_DB_PREFIX."societe as s";	// If we need to link to societe to limit select to entity
-		if (empty($this->isnolinkedbythird) && !$user->rights->societe->client->voir) $sql.= " LEFT JOIN ".MAIN_DB_PREFIX."societe_commerciaux as sc ON ".$alias.".rowid = sc.fk_soc";
+		if (isset($this->ismultientitymanaged) && $this->ismultientitymanaged == 2) $sql.= ", ".MAIN_DB_PREFIX."societe as s";	// If we need to link to societe to limit select to entity
+		if (isset($this->ismultientitymanaged) && $this->ismultientitymanaged == 2 && !$user->rights->societe->client->voir) $sql.= " LEFT JOIN ".MAIN_DB_PREFIX."societe_commerciaux as sc ON ".$alias.".rowid = sc.fk_soc";
 		$sql.= " WHERE te.".$fieldid." > '".$this->db->escape($this->ref)."'";  // ->ref must always be defined (set to id if field does not exists)
-		if (empty($this->isnolinkedbythird) && !$user->rights->societe->client->voir) $sql.= " AND sc.fk_user = " .$user->id;
+		if (isset($this->ismultientitymanaged) && $this->ismultientitymanaged == 2 && !$user->rights->societe->client->voir) $sql.= " AND sc.fk_user = " .$user->id;
 		if (! empty($filter))
 		{
 			if (! preg_match('/^\s*AND/i', $filter)) $sql.=" AND ";   // For backward compatibility
 			$sql.=$filter;
 		}
-		if (isset($this->ismultientitymanaged) && $this->ismultientitymanaged == 2 || ($this->element != 'societe' && empty($this->isnolinkedbythird) && !$user->rights->societe->client->voir)) $sql.= ' AND te.fk_soc = s.rowid';			// If we need to link to societe to limit select to entity
+		if (isset($this->ismultientitymanaged) && $this->ismultientitymanaged == 2) $sql.= ' AND te.fk_soc = s.rowid';			// If we need to link to societe to limit select to entity
 		if (isset($this->ismultientitymanaged) && $this->ismultientitymanaged == 1) $sql.= ' AND te.entity IN ('.getEntity($this->element, 1).')';
 		// Rem: Bug in some mysql version: SELECT MIN(rowid) FROM llx_socpeople WHERE rowid > 1 when one row in database with rowid=1, returns 1 instead of null
 
@@ -4047,13 +4056,14 @@ abstract class CommonObject
 
 			if (in_array(get_class($this), array('Adherent')))
 			{
-				$arrayofrecords = array();   // The write_file of templates of adherent class need this
+				$arrayofrecords = array();   // The write_file of templates of adherent class need this var
 				$resultwritefile = $obj->write_file($this, $outputlangs, $srctemplatepath, 'member', 1, $moreparams);
 			}
 			else
 			{
 				$resultwritefile = $obj->write_file($this, $outputlangs, $srctemplatepath, $hidedetails, $hidedesc, $hideref, $moreparams);
 			}
+			// After call of write_file $obj->result['fullpath'] is set with generated file. It will be used to update the ECM database index.
 
 			if ($resultwritefile > 0)
 			{
@@ -4080,9 +4090,19 @@ abstract class CommonObject
 						include_once DOL_DOCUMENT_ROOT.'/ecm/class/ecmfiles.class.php';
 						$ecmfile=new EcmFiles($this->db);
 						$result = $ecmfile->fetch(0, '', ($rel_dir?$rel_dir.'/':'').$filename);
+
+						if (! empty($conf->global->PROPOSAL_USE_ONLINE_SIGN))
+						{
+							if (empty($ecmfile->share))	// Because object not found or share not set yet
+							{
+								require_once DOL_DOCUMENT_ROOT.'/core/lib/security2.lib.php';
+								$ecmfile->share = getRandomPassword(true);
+							}
+						}
+
 						if ($result > 0)
 						{
-							$ecmfile->label = md5_file(dol_osencode($destfull));
+							$ecmfile->label = md5_file(dol_osencode($destfull));	// hash of file content
 							$ecmfile->fullpath_orig = '';
 							$ecmfile->gen_or_uploaded = 'generated';
 							$ecmfile->description = '';    // indexed content
@@ -4097,7 +4117,7 @@ abstract class CommonObject
 						{
 							$ecmfile->filepath = $rel_dir;
 							$ecmfile->filename = $filename;
-							$ecmfile->label = md5_file(dol_osencode($destfull));
+							$ecmfile->label = md5_file(dol_osencode($destfull));	// hash of file content
 							$ecmfile->fullpath_orig = '';
 							$ecmfile->gen_or_uploaded = 'generated';
 							$ecmfile->description = '';    // indexed content
@@ -4107,6 +4127,21 @@ abstract class CommonObject
 							{
 								setEventMessages($ecmfile->error, $ecmfile->errors, 'warnings');
 							}
+						}
+
+						/*$this->result['fullname']=$destfull;
+						$this->result['filepath']=$ecmfile->filepath;
+						$this->result['filename']=$ecmfile->filename;*/
+
+						// Update the last_main_doc field into main object
+						$update_main_doc_field=0;
+						if (! empty($obj->update_main_doc_field)) $update_main_doc_field=1;
+						if ($update_main_doc_field && ! empty($this->table_element))
+						{
+							$sql = 'UPDATE '.MAIN_DB_PREFIX.$this->table_element." SET last_main_doc = '".($ecmfile->filepath.'/'.$ecmfile->filename)."'";
+							$sql.= ' WHERE rowid = '.$this->id;
+							$resql = $this->db->query($sql);
+							if (! $resql) dol_print_error($this->db);
 						}
 					}
 				}

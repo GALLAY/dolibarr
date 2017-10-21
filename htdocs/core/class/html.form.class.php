@@ -438,8 +438,11 @@ class Form
 
 		$s='';$textfordialog='';
 
-		$htmltext=str_replace('"',"&quot;",$htmltext);
-		if ($tooltiptrigger != '')
+		if ($tooltiptrigger == '')
+		{
+			$htmltext=str_replace('"',"&quot;",$htmltext);
+		}
+		else
 		{
 			$classfortooltip='classfortooltiponclick';
 			$textfordialog.='<div style="display: none;" id="idfortooltiponclick_'.$tooltiptrigger.'" class="classfortooltiponclicktext">'.$htmltext.'</div>';
@@ -4519,6 +4522,8 @@ class Form
 	{
 		global $langs,$conf,$mysoc;
 
+		$langs->load('errors');
+
 		$return='';
 
 		// Define defaultnpr, defaultttx and defaultcode
@@ -4687,7 +4692,7 @@ class Form
 	 *
 	 *	@param	timestamp	$set_time 		Pre-selected date (must be a local PHP server timestamp), -1 to keep date not preselected, '' to use current date (emptydate must be 0).
 	 *	@param	string		$prefix			Prefix for fields name
-	 *	@param	int			$h				1=Show also hours
+	 *	@param	int			$h				1=Show also hours (-1 has same effect, but hour and minutes are prefilled with 23:59 if $set_time = -1)
 	 *	@param	int			$m				1=Show also minutes
 	 *	@param	int			$empty			0=Fields required, 1=Empty inputs are allowed, 2=Empty inputs are allowed for hours only
 	 *	@param	string		$form_name 		Not used
@@ -4751,9 +4756,9 @@ class Form
 			$syear = '';
 			$smonth = '';
 			$sday = '';
-			$shour = !isset($conf->global->MAIN_DEFAULT_DATE_HOUR) ? '' : $conf->global->MAIN_DEFAULT_DATE_HOUR;
-			$smin = !isset($conf->global->MAIN_DEFAULT_DATE_MIN) ? '' : $conf->global->MAIN_DEFAULT_DATE_MIN;
-			$ssec = !isset($conf->global->MAIN_DEFAULT_DATE_SEC) ? '' : $conf->global->MAIN_DEFAULT_DATE_SEC;
+			$shour = !isset($conf->global->MAIN_DEFAULT_DATE_HOUR) ? ($h == -1 ? '23' : '') : $conf->global->MAIN_DEFAULT_DATE_HOUR;
+			$smin = !isset($conf->global->MAIN_DEFAULT_DATE_MIN) ? ($h == -1 ? '59' : '') : $conf->global->MAIN_DEFAULT_DATE_MIN;
+			$ssec = !isset($conf->global->MAIN_DEFAULT_DATE_SEC) ? ($h == -1 ? '59' : '') : $conf->global->MAIN_DEFAULT_DATE_SEC;
 		}
 
 		// You can set MAIN_POPUP_CALENDAR to 'eldy' or 'jquery'
@@ -6446,7 +6451,7 @@ class Form
 	 */
 	function selectExpenseCategories($selected='', $htmlname='fk_c_exp_tax_cat', $useempty=0, $excludeid=array(), $target='', $default_selected=0, $params=array())
 	{
-		global $db,$conf,$langs;
+		global $db, $conf, $langs, $user;
 
 		$sql = 'SELECT rowid, label FROM '.MAIN_DB_PREFIX.'c_exp_tax_cat WHERE active = 1';
 		$sql.= ' AND entity IN (0,'.getEntity('').')';
@@ -6457,13 +6462,14 @@ class Form
 		if ($resql)
 		{
 			$out = '<select name="'.$htmlname.'" class="'.$htmlname.' flat minwidth75imp">';
-			if ($useempty) $out.= '<option value="0"></option>';
+			if ($useempty) $out.= '<option value="0">&nbsp;</option>';
 
 			while ($obj = $db->fetch_object($resql))
 			{
 				$out.= '<option '.($selected == $obj->rowid ? 'selected="selected"' : '').' value="'.$obj->rowid.'">'.$langs->trans($obj->label).'</option>';
 			}
 			$out.= '</select>';
+			if (! empty($htmlname) && $user->admin) $out .= ' '.info_admin($langs->trans("YouCanChangeValuesForThisListFromDictionarySetup"),1);
 
 			if (!empty($target))
 			{

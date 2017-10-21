@@ -801,6 +801,13 @@ div.fiche>div.tabBar>form>div.div-table-responsive {
     align-self: flex-start;
 }
 
+select.selectarrowonleft {
+	direction: rtl;
+}
+select.selectarrowonleft option {
+	direction: ltr;
+}
+
 
 /* ============================================================================== */
 /* Styles to hide objects                                                         */
@@ -835,6 +842,7 @@ div.fiche>div.tabBar>form>div.div-table-responsive {
 .maxwidth50  { max-width: 50px; }
 .maxwidth75  { max-width: 75px; }
 .maxwidth100 { max-width: 100px; }
+.maxwidth125 { max-width: 125px; }
 .maxwidth150 { max-width: 150px; }
 .maxwidth200 { max-width: 200px; }
 .maxwidth300 { max-width: 300px; }
@@ -1030,6 +1038,14 @@ td.showDragHandle {
 	border-right: 1px #888 solid;
 	height: calc(100% - 50px);*/
 }
+
+<?php if (empty($conf->global->THEME_DISABLE_STICKY_TOPMENU)) {  ?>
+.side-nav-vert {
+	position: sticky;
+	top: 0px;
+	z-index: 210;
+}
+<?php } ?>
 
 .side-nav {
 	display: table-cell;
@@ -1550,7 +1566,7 @@ div.mainmenu.tools {
 	background-image: url(<?php echo dol_buildpath($path.'/theme/'.$theme.'/img/menus/tools.png',1) ?>);
 }
 
-div.mainmenu.websites {
+div.mainmenu.website {
 	background-image: url(<?php echo dol_buildpath($path.'/theme/'.$theme.'/img/menus/externalsite.png',1) ?>);
 }
 
@@ -1736,8 +1752,8 @@ table.login_table_securitycode tr td {
 div.login_block {
 	position: absolute;
 	text-align: <?php print $right; ?>;
-	<?php print $right; ?>: 5px;
-	top: 4px;
+	<?php print $right; ?>: 0;
+	top: 0;
 	font-weight: bold;
 	max-width: <?php echo $maxwidthloginblock; ?>px;
 	<?php if (GETPOST('optioncss','aZ09') == 'print') { ?>
@@ -1764,6 +1780,7 @@ div.login a:hover {
 }
 div.login_block_user {
 	display: inline-block;
+	padding-top: 3px;
 	<?php if (empty($conf->global->THEME_TOPMENU_DISABLE_IMAGE)) { ?>
 	min-width: 120px;
 	<?php } ?>
@@ -3156,7 +3173,7 @@ td.legendLabel { padding: 2px 2px 2px 0 !important; }
 
 div.titre {
 	font-family: <?php print $fontlist ?>;
-	font-size: 14px;
+	font-size: 1.1em;
 	/* font-weight: bold; */
 	color: rgb(<?php print $colortexttitlenotab; ?>);
 	text-decoration: none;
@@ -3522,15 +3539,6 @@ table.cal_event td.cal_event_right { padding: 4px 4px !important; }
 	       height:18px;
 	       cursor:pointer;
 	     }
-
-/* ============================================================================== */
-/* Gantt
-/* ============================================================================== */
-
-td.gtaskname {
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
 
 
 /* ============================================================================== */
@@ -3899,6 +3907,44 @@ pre#editfilecontentaceeditorid {
 
 div.scroll2 {
 	width: <?php print isset($_SESSION['dol_screenwidth'])?max($_SESSION['dol_screenwidth']-830,450):'450'; ?>px !important;
+}
+
+.gtaskname div, .gtaskname {
+	font-size: unset !important;
+}
+div.gantt, .gtaskheading, .gmajorheading, .gminorheading, .gminorheadingwkend {
+	font-size: unset !important;
+	font-weight: normal !important;
+	color: #000 !important;
+}
+div.gTaskInfo {
+    background: #f0f0f0 !important;
+}
+.gtaskblue {
+	background: rgb(108,152,185) !important;
+}
+.gtaskgreen {
+    background: rgb(160,173,58) !important;
+}
+td.gtaskname {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+td.gminorheadingwkend {
+    color: #888 !important;
+}
+td.gminorheading {
+    color: #666 !important;
+}
+.gtaskname div, .gtaskname {
+    min-width: 200px !important;
+    max-width: 200px !important;
+    width: 200px !important;
+}
+.gpccomplete div, .gpccomplete {
+    min-width: 40px !important;
+    max-width: 40px !important;
+    width: 40px !important;
 }
 
 
@@ -4380,7 +4426,7 @@ dl.dropdown {
 }
 .dropdown ul {
     margin: -1px 0 0 0;
-    text-align: left;
+    text-align: <?php echo $left; ?>;
 }
 .dropdown dd {
     position:relative;
@@ -4399,7 +4445,7 @@ dl.dropdown {
     background-color: #FFF;
     border: 1px solid #888;
     display:none;
-    right:0px;						/* pop is align on right */
+    <?php echo $right; ?>:0px;						/* pop is align on right */
     padding: 2px 15px 2px 5px;
     position:absolute;
     top:2px;
@@ -4416,7 +4462,7 @@ dl.dropdown {
 	padding: 2px;
 }
 .dropdown dd ul li input[type="checkbox"] {
-    margin-right: 3px;
+    margin-<?php echo $right; ?>: 3px;
 }
 .dropdown dd ul li a, .dropdown dd ul li span {
     padding: 3px;
@@ -4849,21 +4895,24 @@ div.tabsElem a.tab {
 	}
 	div.login_block {
 		<?php if ($conf->browser->layout == 'phone' && ((GETPOST('testmenuhider','int') || ! empty($conf->global->MAIN_TESTMENUHIDER)) && empty($conf->global->MAIN_OPTIMIZEFORTEXTBROWSER))) { ?>
+		/* Style when phone layout or when using the menuhider */
 		display: none;
 		padding-top: 20px;
 		padding-left: 20px;
     	padding-right: 20px;
+    	padding-bottom: 16px;
 		<?php } else { ?>
-		padding-top: 10px;
+		padding-top: 5px;
 		padding-left: 5px;
     	padding-right: 5px;
+    	padding-bottom: 5px;
     	<?php } ?>
 		top: inherit !important;
 		left: 0 !important;
 		text-align: center;
         vertical-align: middle;
         background: #FFF;
-        height: 42px;
+        height: 50px;
 
     	z-index: 202;
     	min-width: 190px;

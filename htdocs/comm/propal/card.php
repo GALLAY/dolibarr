@@ -44,6 +44,7 @@ require_once DOL_DOCUMENT_ROOT . '/comm/action/class/actioncomm.class.php';
 require_once DOL_DOCUMENT_ROOT . '/core/modules/propale/modules_propale.php';
 require_once DOL_DOCUMENT_ROOT . '/core/lib/propal.lib.php';
 require_once DOL_DOCUMENT_ROOT . '/core/lib/functions2.lib.php';
+require_once DOL_DOCUMENT_ROOT . '/core/lib/signature.lib.php';
 require_once DOL_DOCUMENT_ROOT . '/core/class/extrafields.class.php';
 require_once DOL_DOCUMENT_ROOT . '/core/class/doleditor.class.php';
 if (! empty($conf->projet->enabled)) {
@@ -2351,8 +2352,8 @@ if ($action == 'create')
 		$filename = dol_sanitizeFileName($object->ref);
 		$filedir = $conf->propal->dir_output . "/" . dol_sanitizeFileName($object->ref);
 		$urlsource = $_SERVER["PHP_SELF"] . "?id=" . $object->id;
-		$genallowed = $user->rights->propal->creer;
-		$delallowed = $user->rights->propal->supprimer;
+		$genallowed = $user->rights->propal->lire;
+		$delallowed = $user->rights->propal->creer;
 
 		$var = true;
 
@@ -2362,6 +2363,15 @@ if ($action == 'create')
 		$linktoelem = $form->showLinkToObjectBlock($object, null, array('propal'));
 		$somethingshown = $form->showLinkedObjectBlock($object, $linktoelem);
 
+		// Show online signature link
+		$useonlinepayment = $conf->global->MAIN_FEATURES_LEVEL;
+
+		if ($object->statut != Propal::STATUS_DRAFT && $useonlinepayment)
+		{
+			print '<br>';
+			require_once DOL_DOCUMENT_ROOT.'/core/lib/payments.lib.php';
+			print showOnlineSignatureUrl('proposal', $object->ref);
+		}
 
 		print '</div><div class="fichehalfright"><div class="ficheaddleft">';
 

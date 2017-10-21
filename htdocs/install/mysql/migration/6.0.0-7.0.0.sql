@@ -79,6 +79,20 @@ insert into llx_c_action_trigger (code,label,description,elementtype,rang) value
 
 ALTER TABLE llx_ecm_files MODIFY label varchar(128) NOT NULL;
 ALTER TABLE llx_ecm_files ADD COLUMN share varchar(128) NULL after label;
+ALTER TABLE llx_ecm_files ADD COLUMN src_object_type varchar(32);
+ALTER TABLE llx_ecm_files ADD COLUMN src_object_id integer;
+
+
+ALTER TABLE llx_propal ADD COLUMN last_main_doc varchar(255);
+ALTER TABLE llx_commande ADD COLUMN last_main_doc varchar(255);
+ALTER TABLE llx_facture ADD COLUMN last_main_doc varchar(255);
+ALTER TABLE llx_contrat ADD COLUMN last_main_doc varchar(255);
+ALTER TABLE llx_expedition ADD COLUMN last_main_doc varchar(255);
+ALTER TABLE llx_fichinter ADD COLUMN last_main_doc varchar(255);
+ALTER TABLE llx_livraison ADD COLUMN last_main_doc varchar(255);
+ALTER TABLE llx_supplier_proposal ADD COLUMN last_main_doc varchar(255);
+ALTER TABLE llx_facture_fourn ADD COLUMN last_main_doc varchar(255);
+ALTER TABLE llx_commande_fournisseur ADD COLUMN last_main_doc varchar(255);
 
 
 ALTER TABLE llx_c_paiement        ADD COLUMN position        integer NOT NULL DEFAULT 0;
@@ -153,6 +167,42 @@ ALTER TABLE llx_accounting_bookkeeping ADD COLUMN extraparams varchar(255);
 
 ALTER TABLE llx_accounting_bookkeeping ADD COLUMN date_lim_reglement datetime;
 ALTER TABLE llx_accounting_bookkeeping ADD COLUMN fk_user integer NULL;
+
+
+CREATE TABLE llx_websiteaccount(
+	rowid integer AUTO_INCREMENT PRIMARY KEY NOT NULL, 
+	login varchar(64) NOT NULL, 
+	label varchar(255), 
+	note_public text, 
+	note_private text, 
+	date_creation datetime NOT NULL, 
+	tms timestamp NOT NULL, 
+	fk_user_creat integer NOT NULL, 
+	fk_user_modif integer, 
+	import_key varchar(14), 
+	status integer, 
+	fk_soc integer
+) ENGINE=innodb;
+
+ALTER TABLE llx_websiteaccount ADD INDEX idx_websiteaccount_rowid (rowid);
+ALTER TABLE llx_websiteaccount ADD INDEX idx_websiteaccount_login (login);
+ALTER TABLE llx_websiteaccount ADD INDEX idx_websiteaccount_import_key (import_key);
+ALTER TABLE llx_websiteaccount ADD INDEX idx_websiteaccount_status (status);
+ALTER TABLE llx_websiteaccount ADD INDEX idx_websiteaccount_fk_soc (fk_soc);
+
+create table llx_websiteaccount_extrafields
+(
+  rowid                     integer AUTO_INCREMENT PRIMARY KEY,
+  tms                       timestamp,
+  fk_object                 integer NOT NULL,
+  import_key                varchar(14)                          		-- import key
+) ENGINE=innodb;
+
+
+
+
+
+
 
 CREATE TABLE IF NOT EXISTS llx_expensereport_ik (
     rowid           integer  AUTO_INCREMENT PRIMARY KEY,
@@ -382,3 +432,7 @@ create table llx_c_email_senderprofile
 )ENGINE=innodb;
 
 ALTER TABLE llx_c_email_senderprofile ADD UNIQUE INDEX uk_c_email_senderprofile(entity, label, email);
+
+
+-- May have error due to duplicate keys
+ALTER TABLE llx_resource ADD UNIQUE INDEX uk_resource_ref (ref, entity);
