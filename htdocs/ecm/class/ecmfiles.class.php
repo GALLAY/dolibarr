@@ -112,6 +112,7 @@ class EcmFiles //extends CommonObject
 		}
 		if (isset($this->filepath)) {
 			 $this->filepath = trim($this->filepath);
+			 $this->filepath = preg_replace('/[\\/]+$/', '', $this->filepath);		// Remove last /
 		}
 		if (isset($this->fullpath_orig)) {
 			 $this->fullpath_orig = trim($this->fullpath_orig);
@@ -141,6 +142,7 @@ class EcmFiles //extends CommonObject
 			 $this->acl = trim($this->acl);
 		}
 		if (empty($this->date_c)) $this->date_c = dol_now();
+		if (empty($this->date_m)) $this->date_m = dol_now();
 
 		// If ref not defined
 		$ref = dol_hash($this->filepath.'/'.$this->filename, 3);
@@ -163,6 +165,11 @@ class EcmFiles //extends CommonObject
 		$maxposition=$maxposition+1;
 
 		// Check parameters
+		if (empty($this->filename) || empty($this->filepath))
+		{
+			$this->errors[] = 'Bad property filename or filepath';
+			return -1;
+		}
 		// Put here code to add control on parameters values
 
 		// Insert request
@@ -348,7 +355,7 @@ class EcmFiles //extends CommonObject
 			$this->errors[] = 'Error ' . $this->db->lasterror();
 			dol_syslog(__METHOD__ . ' ' . implode(',', $this->errors), LOG_ERR);
 
-			return - 1;
+			return -1;
 		}
 	}
 

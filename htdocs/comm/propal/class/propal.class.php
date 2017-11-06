@@ -48,7 +48,7 @@ class Propal extends CommonObject
 	public $table_element='propal';
 	public $table_element_line='propaldet';
 	public $fk_element='fk_propal';
-	protected $ismultientitymanaged = 1;	// 0=No test on entity, 1=Test with field entity, 2=Test with link by societe
+	public $ismultientitymanaged = 1;	// 0=No test on entity, 1=Test with field entity, 2=Test with link by societe
 	public $picto='propal';
 
 	/**
@@ -569,28 +569,33 @@ class Propal extends CommonObject
 				// Reorder if child line
 				if (! empty($fk_parent_line)) $this->line_order(true,'DESC');
 
-				// Mise a jour informations denormalisees au niveau de la propale meme
-				$result=$this->update_price(1,'auto',0,$mysoc);	// This method is designed to add line from user input so total calculation must be done using 'auto' mode.
-				if ($result > 0)
-				{
-					$this->db->commit();
-					return $this->line->rowid;
-				}
-				else
-				{
-					$this->error=$this->db->error();
-					$this->db->rollback();
-					return -1;
-				}
-			}
-			else
-			{
-				$this->error=$this->line->error;
-				$this->db->rollback();
-				return -2;
-			}
+                // Mise a jour informations denormalisees au niveau de la propale meme
+                $result=$this->update_price(1,'auto',0,$mysoc);	// This method is designed to add line from user input so total calculation must be done using 'auto' mode.
+                if ($result > 0)
+                {
+                    $this->db->commit();
+                    return $this->line->rowid;
+                }
+                else
+                {
+                    $this->error=$this->db->error();
+                    $this->db->rollback();
+                    return -1;
+                }
+            }
+            else
+            {
+                $this->error=$this->line->error;
+                $this->db->rollback();
+                return -2;
+            }
+        }
+		else
+		{
+			dol_syslog(get_class($this)."::addline status of order must be Draft to allow use of ->addline()", LOG_ERR);
+			return -3;
 		}
-	}
+    }
 
 
 	/**
@@ -831,8 +836,9 @@ class Propal extends CommonObject
 		if (empty($this->availability_id)) $this->availability_id=0;
 		if (empty($this->demand_reason_id)) $this->demand_reason_id=0;
 
-		// Multicurrency
-		if (!empty($this->multicurrency_code)) list($this->fk_multicurrency,$this->multicurrency_tx) = MultiCurrency::getIdAndTxFromCode($this->db, $this->multicurrency_code, $this->date);
+		// Multicurrency (test on $this->multicurrency_tx because we should take the default rate only if not using origin rate)
+		if (!empty($this->multicurrency_code) && empty($this->multicurrency_tx)) list($this->fk_multicurrency,$this->multicurrency_tx) = MultiCurrency::getIdAndTxFromCode($this->db, $this->multicurrency_code, $this->date);
+		else $this->fk_multicurrency = MultiCurrency::getIdFromCode($this->db, $this->multicurrency_code);
 		if (empty($this->fk_multicurrency))
 		{
 			$this->multicurrency_code = $conf->currency;
@@ -955,13 +961,55 @@ class Propal extends CommonObject
 				$resql=$this->db->query($sql);
 				if (! $resql) $error++;
 
-				/*
+                if (! empty($this->linkedObjectsIds) && empty($this->linked_objects))	// To use new linkedObjectsIds instead of old linked_objects
+                {
+                	$this->linked_objects = $this->linkedObjectsIds;	// TODO Replace linked_objects with linkedObjectsIds
+                }
+
+                // Add object linked
+                if (! $error && $this->id && is_array($this->linked_objects) && ! empty($this->linked_objects))
+                {
+                	foreach($this->linked_objects as $origin => $tmp_origin_id)
+                	{
+                		if (is_array($tmp_origin_id))       // New behaviour, if linked_object can have several links per type, so is something like array('contract'=>array(id1, id2, ...))
+                		{
+                			foreach($tmp_origin_id as $origin_id)
+                			{
+                				$ret = $this->add_object_linked($origin, $origin_id);
+                				if (! $ret)
+                				{
+                					$this->error=$this->db->lasterror();
+                					$error++;
+                				}
+                			}
+                		}
+                		else                                // Old behaviour, if linked_object has only one link per type, so is something like array('contract'=>id1))
+                		{
+                			$origin_id = $tmp_origin_id;
+                			$ret = $this->add_object_linked($origin, $origin_id);
+                			if (! $ret)
+                			{
+                				$this->error=$this->db->lasterror();
+                				$error++;
+                			}
+                		}
+                	}
+                }
+
+                // Add linked object (deprecated, use ->linkedObjectsIds instead)
+                if (! $error && $this->origin && $this->origin_id)
+                {
+                	$ret = $this->add_object_linked();
+                	if (! $ret)	dol_print_error($this->db);
+                }
+
+                /*
                  *  Insertion du detail des produits dans la base
-                */
-				if (! $error)
-				{
-					$fk_parent_line=0;
-					$num=count($this->lines);
+                 */
+                if (! $error)
+                {
+                    $fk_parent_line=0;
+                    $num=count($this->lines);
 
 					for ($i=0;$i<$num;$i++)
 					{
@@ -3310,11 +3358,11 @@ class Propal extends CommonObject
 		$linkstart.=$linkclose.'>';
 		$linkend='</a>';
 
-		if ($withpicto)
-			$result.=($linkstart.img_object(($notooltip?'':$label), $this->picto, ($notooltip?'':'class="classfortooltip"'), 0, 0, $notooltip?0:1).$linkend);
-		if ($withpicto && $withpicto != 2)
-			$result.=' ';
-		$result.=$linkstart.$this->ref.$linkend;
+		$result .= $linkstart;
+		if ($withpicto) $result.=img_object(($notooltip?'':$label), $this->picto, ($notooltip?(($withpicto != 2) ? 'class="paddingright"' : ''):'class="'.(($withpicto != 2) ? 'paddingright ' : '').'classfortooltip"'), 0, 0, $notooltip?0:1);
+		if ($withpicto != 2) $result.= $this->ref;
+		$result .= $linkend;
+
 		return $result;
 	}
 

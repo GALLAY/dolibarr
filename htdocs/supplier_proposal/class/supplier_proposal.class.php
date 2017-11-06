@@ -48,7 +48,7 @@ class SupplierProposal extends CommonObject
     public $table_element='supplier_proposal';
     public $table_element_line='supplier_proposaldet';
     public $fk_element='fk_supplier_proposal';
-    protected $ismultientitymanaged = 1;	// 0=No test on entity, 1=Test with field entity, 2=Test with link by societe
+    public $ismultientitymanaged = 1;	// 0=No test on entity, 1=Test with field entity, 2=Test with link by societe
     public $picto='propal';
 
     /**
@@ -848,9 +848,41 @@ class SupplierProposal extends CommonObject
                 $resql=$this->db->query($sql);
                 if (! $resql) $error++;
 
+                if (! empty($this->linkedObjectsIds) && empty($this->linked_objects))	// To use new linkedObjectsIds instead of old linked_objects
+                {
+                	$this->linked_objects = $this->linkedObjectsIds;	// TODO Replace linked_objects with linkedObjectsIds
+                }
+
+                // Add object linked
+                if (! $error && $this->id && is_array($this->linked_objects) && ! empty($this->linked_objects))
+                {
+                	foreach($this->linked_objects as $origin => $tmp_origin_id)
+                	{
+                		if (is_array($tmp_origin_id))       // New behaviour, if linked_object can have several links per type, so is something like array('contract'=>array(id1, id2, ...))
+                		{
+                			foreach($tmp_origin_id as $origin_id)
+                			{
+                				$ret = $this->add_object_linked($origin, $origin_id);
+                				if (! $ret)
+                				{
+                					dol_print_error($this->db);
+                					$error++;
+                				}
+                			}
+                		}
+                	}
+                }
+
+                // Add linked object (deprecated, use ->linkedObjectsIds instead)
+                if (! $error && $this->origin && $this->origin_id)
+                {
+                	$ret = $this->add_object_linked();
+                	if (! $ret)	dol_print_error($this->db);
+                }
+
                 /*
                  *  Insertion du detail des produits dans la base
-                */
+                 */
                 if (! $error)
                 {
                     $fk_parent_line=0;
@@ -901,13 +933,6 @@ class SupplierProposal extends CommonObject
                             $fk_parent_line = $result;
                         }
                     }
-                }
-
-                // Add linked object
-                if (! $error && $this->origin && $this->origin_id)
-                {
-                    $ret = $this->add_object_linked();
-                    if (! $ret)	dol_print_error($this->db);
                 }
 
                 if (! $error)
@@ -1197,9 +1222,7 @@ class SupplierProposal extends CommonObject
 
                 $this->lines = array();
 
-                /*
-                 * Lignes askprice liees a un produit ou non
-                 */
+                // Lines of supplier proposals
                 $sql = "SELECT d.rowid, d.fk_supplier_proposal, d.fk_parent_line, d.label as custom_label, d.description, d.price, d.tva_tx, d.localtax1_tx, d.localtax2_tx, d.qty, d.fk_remise_except, d.remise_percent, d.subprice, d.fk_product,";
 				$sql.= " d.info_bits, d.total_ht, d.total_tva, d.total_localtax1, d.total_localtax2, d.total_ttc, d.fk_product_fournisseur_price as fk_fournprice, d.buy_price_ht as pa_ht, d.special_code, d.rang, d.product_type,";
                 $sql.= ' p.ref as product_ref, p.description as product_desc, p.fk_product_type, p.label as product_label,';
@@ -1341,7 +1364,7 @@ class SupplierProposal extends CommonObject
             $this->newref = $num;
 
             $sql = "UPDATE ".MAIN_DB_PREFIX."supplier_proposal";
-            $sql.= " SET ref = '".$num."',";
+            $sql.= " SET ref = '".$this->db->escape($num)."',";
             $sql.= " fk_statut = 1, date_valid='".$this->db->idate($now)."', fk_user_valid=".$user->id;
             $sql.= " WHERE rowid = ".$this->id." AND fk_statut = 0";
 
@@ -1410,6 +1433,11 @@ class SupplierProposal extends CommonObject
             	$this->db->rollback();
             	return -1;
             }
+        }
+        else
+        {
+        	dol_syslog("You don't have permission to validate supplier proposal", LOG_WARNING);
+        	return -2;
         }
     }
 
@@ -2386,12 +2414,11 @@ class SupplierProposal extends CommonObject
 
         $picto='supplier_proposal';
 
+        $result .= $linkstart;
+        if ($withpicto) $result.=img_object(($notooltip?'':$label), $this->picto, ($notooltip?(($withpicto != 2) ? 'class="paddingright"' : ''):'class="'.(($withpicto != 2) ? 'paddingright ' : '').'classfortooltip"'), 0, 0, $notooltip?0:1);
+        if ($withpicto != 2) $result.= $this->ref;
+        $result .= $linkend;
 
-        if ($withpicto)
-            $result.=($linkstart.img_object(($notooltip?'':$label), $picto, ($notooltip?'':'class="classfortooltip"'), 0, 0, $notooltip?0:1).$linkend);
-        if ($withpicto && $withpicto != 2)
-            $result.=' ';
-        $result.=$linkstart.$this->ref.$linkend;
         return $result;
     }
 
