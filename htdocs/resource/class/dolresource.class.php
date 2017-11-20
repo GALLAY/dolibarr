@@ -927,29 +927,31 @@ class Dolresource extends CommonObject
      *	@param      int		$withpicto		Add picto into link
      *	@param      string	$option			Where point the link ('compta', 'expedition', 'document', ...)
      *	@param      string	$get_params    	Parametres added to url
+     *	@param		int  	$notooltip		1=Disable tooltip
      *	@return     string          		String with URL
      */
-    function getNomUrl($withpicto=0,$option='', $get_params='')
+    function getNomUrl($withpicto=0,$option='', $get_params='', $notooltip=0)
     {
         global $langs;
 
         $result='';
         $label=$langs->trans("ShowResource").': '.$this->ref;
 
+        $linkstart = '';
+        $linkend = '';
         if ($option == '')
         {
-            $link = '<a href="'.dol_buildpath('/resource/card.php',1).'?id='.$this->id. $get_params .'" title="'.dol_escape_htmltag($label, 1).'" class="classfortooltip">';
+            $linkstart = '<a href="'.dol_buildpath('/resource/card.php',1).'?id='.$this->id. $get_params .'" title="'.dol_escape_htmltag($label, 1).'" class="classfortooltip">';
             $picto='resource';
             $label=$langs->trans("ShowResource").': '.$this->ref;
-
+            $linkend='</a>';
         }
 
-        $linkend='</a>';
+        $result .= $linkstart;
+        if ($withpicto) $result.=img_object(($notooltip?'':$label), ($this->picto?$this->picto:'generic'), ($notooltip?(($withpicto != 2) ? 'class="paddingright"' : ''):'class="'.(($withpicto != 2) ? 'paddingright ' : '').'classfortooltip"'), 0, 0, $notooltip?0:1);
+        if ($withpicto != 2) $result.= $this->ref;
+        $result .= $linkend;
 
-
-        if ($withpicto) $result.=($link.img_object($label, $picto, 'class="classfortooltip"').$linkend);
-        if ($withpicto && $withpicto != 2) $result.=' ';
-        $result.=$link.$this->ref.$linkend;
         return $result;
     }
 

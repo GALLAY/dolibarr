@@ -141,7 +141,7 @@ class ExtraFields
 	 *  @param  int				$alwayseditable		Is attribute always editable regardless of the document status
 	 *  @param	string			$perms				Permission to check
 	 *  @param	int				$list				Visibilty
-	 *  @param	int				$ishidden			Deprecated. Us visibility instead.
+	 *  @param	int				$ishidden			Deprecated. Use visibility instead.
 	 *  @param  string  		$computed           Computed value
 	 *  @param  string  		$entity    		 	Entity of extrafields
 	 *  @param  string  		$langfile  		 	Language file
@@ -742,7 +742,7 @@ class ExtraFields
 					$this->attribute_param[$tab->name]=($tab->param ? unserialize($tab->param) : '');
 					$this->attribute_pos[$tab->name]=$tab->pos;
 					$this->attribute_alwayseditable[$tab->name]=$tab->alwayseditable;
-					$this->attribute_perms[$tab->name]=$tab->perms;
+					$this->attribute_perms[$tab->name]=(strlen($tab->perms) == 0 ? 1 : $tab->perms);
 					$this->attribute_langfile[$tab->name]=$tab->langs;
 					$this->attribute_list[$tab->name]=$tab->list;
 					$this->attribute_entityid[$tab->name]=$tab->entity;
@@ -759,7 +759,7 @@ class ExtraFields
 					$this->attributes[$tab->elementtype]['param'][$tab->name]=($tab->param ? unserialize($tab->param) : '');
 					$this->attributes[$tab->elementtype]['pos'][$tab->name]=$tab->pos;
 					$this->attributes[$tab->elementtype]['alwayseditable'][$tab->name]=$tab->alwayseditable;
-					$this->attributes[$tab->elementtype]['perms'][$tab->name]=$tab->perms;
+					$this->attributes[$tab->elementtype]['perms'][$tab->name]=(strlen($tab->perms) == 0 ? 1 : $tab->perms);
 					$this->attributes[$tab->elementtype]['langfile'][$tab->name]=$tab->langs;
 					$this->attributes[$tab->elementtype]['list'][$tab->name]=$tab->list;
 					$this->attributes[$tab->elementtype]['entityid'][$tab->name]=$tab->entity;
@@ -816,6 +816,8 @@ class ExtraFields
 			require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
 			$form=new Form($this->db);
 		}
+
+		$out='';
 
 		$keyprefix = $keyprefix.'options_';		// Because we work on extrafields
 
@@ -1337,7 +1339,7 @@ class ExtraFields
 		$perms=$this->attribute_perms[$key];
 		$langfile=$this->attribute_langfile[$key];
 		$list=$this->attribute_list[$key];
-		$hidden=(($list != 0) ? 1 : 0);		// If zero, we are sure it is hidden, otherwise we show. If it depends on mode (view/create/edit form or list, this must be filtered by caller)
+		$hidden=(($list == 0) ? 1 : 0);		// If zero, we are sure it is hidden, otherwise we show. If it depends on mode (view/create/edit form or list, this must be filtered by caller)
 
 		if ($hidden) return '';		// This is a protection. If field is hidden, we should just not call this method.
 

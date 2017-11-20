@@ -416,7 +416,7 @@ class Commande extends CommonOrder
      *	Set draft status
      *
      *	@param	User	$user			Object user that modify
-     *	@param	int		$idwarehouse	Id warehouse to use for stock change.
+     *	@param	int		$idwarehouse	Warehouse ID to use for stock change (Used only if option STOCK_CALCULATE_ON_VALIDATE_ORDER is on)
      *	@return	int						<0 if KO, >0 if OK
      */
     function set_draft($user, $idwarehouse=-1)
@@ -824,11 +824,15 @@ class Commande extends CommonOrder
                         $fk_parent_line = 0;
                     }
 
+					// Complete vat rate with code
+					$vatrate = $line->tva_tx;
+					if ($line->vat_src_code && ! preg_match('/\(.*\)/', $vatrate)) $vatrate.=' ('.$line->vat_src_code.')';
+
                     $result = $this->addline(
                         $line->desc,
                         $line->subprice,
                         $line->qty,
-                        $line->tva_tx,
+                        $vatrate,
                         $line->localtax1_tx,
                         $line->localtax2_tx,
                         $line->fk_product,
@@ -1215,9 +1219,9 @@ class Commande extends CommonOrder
      *	@param      string			$desc            	Description of line
      *	@param      float			$pu_ht    	        Unit price (without tax)
      *	@param      float			$qty             	Quantite
-     *	@param      float			$txtva           	Taux de tva force, sinon -1
-     *	@param      float			$txlocaltax1		Local tax 1 rate
-     *	@param      float			$txlocaltax2		Local tax 2 rate
+     * 	@param    	float			$txtva           	Force Vat rate, -1 for auto (Can contain the vat_src_code too with syntax '9.9 (CODE)')
+     * 	@param		float			$txlocaltax1		Local tax 1 rate (deprecated, use instead txtva with code inside)
+     * 	@param		float			$txlocaltax2		Local tax 2 rate (deprecated, use instead txtva with code inside)
      *	@param      int				$fk_product      	Id of product
      *	@param      float			$remise_percent  	Pourcentage de remise de la ligne
      *	@param      int				$info_bits			Bits de type de lignes
@@ -3119,7 +3123,6 @@ class Commande extends CommonOrder
             // End call triggers
         }
 
-        //TODO: Check for error after each action. If one failed we rollback, don't waste time to do action if previous fail
         if (! $error)
         {
         	// Delete order details
@@ -3129,23 +3132,24 @@ class Commande extends CommonOrder
         		$error++;
         		$this->errors[]=$this->db->lasterror();
         	}
+        }
 
-        	// Delete order
-        	$sql = 'DELETE FROM '.MAIN_DB_PREFIX."commande WHERE rowid = ".$this->id;
-        	if (! $this->db->query($sql) )
-        	{
-        		$error++;
-        		$this->errors[]=$this->db->lasterror();
-        	}
-
+        if (! $error)
+        {
         	// Delete linked object
         	$res = $this->deleteObjectLinked();
         	if ($res < 0) $error++;
+        }
 
+        if (! $error)
+        {
         	// Delete linked contacts
         	$res = $this->delete_linked_contact();
         	if ($res < 0) $error++;
+        }
 
+        if (! $error)
+        {
         	// Remove extrafields
         	if ((! $error) && (empty($conf->global->MAIN_EXTRAFIELDS_DISABLED))) // For avoid conflicts if trigger used
         	{
@@ -3156,8 +3160,22 @@ class Commande extends CommonOrder
         			dol_syslog(get_class($this)."::delete error -4 ".$this->error, LOG_ERR);
         		}
         	}
+        }
 
-        	// On efface le repertoire de pdf provisoire
+        if (! $error)
+        {
+        	// Delete object
+        	$sql = 'DELETE FROM '.MAIN_DB_PREFIX."commande WHERE rowid = ".$this->id;
+        	if (! $this->db->query($sql) )
+        	{
+        		$error++;
+        		$this->errors[]=$this->db->lasterror();
+        	}
+        }
+
+        if (! $error)
+        {
+        	// Remove directory with files
         	$comref = dol_sanitizeFileName($this->ref);
         	if ($conf->commande->dir_output && !empty($this->ref))
         	{
@@ -3183,8 +3201,6 @@ class Commande extends CommonOrder
         			}
         		}
         	}
-
-
         }
 
         if (! $error)
@@ -3280,13 +3296,13 @@ class Commande extends CommonOrder
     /**
      *	Return status label of Order
      *
-     *	@param      int		$mode       0=libelle long, 1=libelle court, 2=Picto + Libelle court, 3=Picto, 4=Picto + Libelle long, 5=Libelle court + Picto
-     *	@return     string      		Libelle
+     *	@param      int		$mode       0=Long label, 1=Short label, 2=Picto + Short label, 3=Picto, 4=Picto + Long label, 5=Short label + Picto, 6=Long label + Picto
+     *	@return     string      		Label of status
      */
     function getLibStatut($mode)
     {
         if ($this->facturee && empty($this->billed)) $this->billed=$this->facturee; // For backward compatibility
-        return $this->LibStatut($this->statut,$this->billed,$mode);
+        return $this->LibStatut($this->statut, $this->billed, $mode);
     }
 
     /**
@@ -3294,7 +3310,7 @@ class Commande extends CommonOrder
      *
      *	@param		int		$statut      	  Id statut
      *  @param      int		$billed    		  If invoiced
-     *	@param      int		$mode        	  0=libelle long, 1=libelle court, 2=Picto + Libelle court, 3=Picto, 4=Picto + Libelle long, 5=Libelle court + Picto
+     *	@param      int		$mode        	  0=Long label, 1=Short label, 2=Picto + Short label, 3=Picto, 4=Picto + Long label, 5=Short label + Picto, 6=Long label + Picto
      *  @param      int     $donotshowbilled  Do not show billed status after order status
      *  @return     string					  Label of status
      */
@@ -3366,6 +3382,17 @@ class Commande extends CommonOrder
             if ($statut==self::STATUS_CLOSED && ($billed && empty($conf->global->WORKFLOW_BILL_ON_SHIPMENT))) return '<span class="hideonsmartphone">'.$langs->trans('StatusOrderProcessedShort').$billedtext.' </span>'.img_picto($langs->trans('StatusOrderProcessed').$billedtext,'statut6');
             if ($statut==self::STATUS_CLOSED && (! empty($conf->global->WORKFLOW_BILL_ON_SHIPMENT))) return '<span class="hideonsmartphone">'.$langs->trans('StatusOrderDeliveredShort').' </span>'.img_picto($langs->trans('StatusOrderDelivered'),'statut6');
         }
+        elseif ($mode == 6)
+        {
+        	if ($statut==self::STATUS_CANCELED) return '<span class="hideonsmartphone">'.$langs->trans('StatusOrderCanceled').' </span>'.img_picto($langs->trans('StatusOrderCanceled'),'statut5');
+        	if ($statut==self::STATUS_DRAFT) return '<span class="hideonsmartphone">'.$langs->trans('StatusOrderDraft').' </span>'.img_picto($langs->trans('StatusOrderDraft'),'statut0');
+        	if ($statut==self::STATUS_VALIDATED) return '<span class="hideonsmartphone">'.$langs->trans('StatusOrderValidated').$billedtext.' </span>'.img_picto($langs->trans('StatusOrderValidated').$billedtext,'statut1');
+        	if ($statut==self::STATUS_SHIPMENTONPROCESS) return '<span class="hideonsmartphone">'.$langs->trans('StatusOrderSent').$billedtext.' </span>'.img_picto($langs->trans('StatusOrderSent').$billedtext,'statut3');
+        	if ($statut==self::STATUS_CLOSED && (! $billed && empty($conf->global->WORKFLOW_BILL_ON_SHIPMENT))) return '<span class="hideonsmartphone">'.$langs->trans('StatusOrderToBill').' </span>'.img_picto($langs->trans('StatusOrderToBill'),'statut4');
+        	if ($statut==self::STATUS_CLOSED && ($billed && empty($conf->global->WORKFLOW_BILL_ON_SHIPMENT))) return '<span class="hideonsmartphone">'.$langs->trans('StatusOrderProcessed').$billedtext.' </span>'.img_picto($langs->trans('StatusOrderProcessed').$billedtext,'statut6');
+        	if ($statut==self::STATUS_CLOSED && (! empty($conf->global->WORKFLOW_BILL_ON_SHIPMENT))) return '<span class="hideonsmartphone">'.$langs->trans('StatusOrderDelivered').' </span>'.img_picto($langs->trans('StatusOrderDelivered'),'statut6');
+        }
+
     }
 
 

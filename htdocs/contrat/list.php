@@ -64,7 +64,7 @@ $search_sale=GETPOST('search_sale','int');
 $search_product_category=GETPOST('search_product_category','int');
 $search_dfmonth=GETPOST('search_dfmonth','int');
 $search_dfyear=GETPOST('search_dfyear','int');
-$search_op2df=GETPOST('search_op2df');
+$search_op2df=GETPOST('search_op2df','alpha');
 $day=GETPOST("day","int");
 $year=GETPOST("year","int");
 $month=GETPOST("month","int");
@@ -129,7 +129,7 @@ $arrayfields=array(
 	'c.date_contrat'=>array('label'=>$langs->trans("DateContract"), 'checked'=>1),
 	'c.datec'=>array('label'=>$langs->trans("DateCreation"), 'checked'=>0, 'position'=>500),
 	'c.tms'=>array('label'=>$langs->trans("DateModificationShort"), 'checked'=>0, 'position'=>500),
-	'lower_planned_end_date'=>array('label'=>$langs->trans("LowerDateEndPlannedShort"), 'checked'=>1, 'position'=>900),
+	'lower_planned_end_date'=>array('label'=>$langs->trans("LowerDateEndPlannedShort"), 'checked'=>1, 'position'=>900, 'help'=>$langs->trans("LowerDateEndPlannedShort")),
 	'status'=>array('label'=>$langs->trans("Status"), 'checked'=>1, 'position'=>1000),
 );
 // Extra fields
@@ -273,42 +273,36 @@ foreach ($search_array_options as $key => $val)
 	$crit=$val;
 	$tmpkey=preg_replace('/search_options_/','',$key);
 	$typ=$extrafields->attribute_type[$tmpkey];
-	$mode=0;
-	if (in_array($typ, array('int','double','real'))) $mode=1;    							// Search on a numeric
-	if (in_array($typ, array('sellist')) && $crit != '0' && $crit != '-1') $mode=2;    		// Search on a foreign key int
-	if ($crit != '' && (! in_array($typ, array('select','sellist')) || $crit != '0'))
+	$mode_search=0;
+	if (in_array($typ, array('int','double','real'))) $mode_search=1;								// Search on a numeric
+	if (in_array($typ, array('sellist','link')) && $crit != '0' && $crit != '-1') $mode_search=2;	// Search on a foreign key int
+	if ($crit != '' && (! in_array($typ, array('select','sellist')) || $crit != '0') && (! in_array($typ, array('link')) || $crit != '-1'))
 	{
-		$sql .= natural_search('ef.'.$tmpkey, $crit, $mode);
+		$sql .= natural_search('ef.'.$tmpkey, $crit, $mode_search);
 	}
 }
 // Add where from hooks
 $parameters=array();
 $reshook=$hookmanager->executeHooks('printFieldListWhere',$parameters);    // Note that $action and $object may have been modified by hook
 $sql.=$hookmanager->resPrint;
-
-if ($search_dfyear > 0)
-{
-//	$sql.= " AND MIN(".$db->ifsql("cd.statut=4", "cd.date_fin_validite", "null").") ".$search_op2df."= '".$db->idate(($search_op2df == "<" ? dol_get_last_day($search_dfyear,$search_dfmonth,false) : dol_get_first_day($search_dfyear,$search_dfmonth,false)))."'";
-}
-
 $sql.= " GROUP BY c.rowid, c.ref, c.datec, c.tms, c.date_contrat, c.statut, c.ref_customer, c.ref_supplier, c.note_private, c.note_public,";
 $sql.= ' s.rowid, s.nom, s.email, s.town, s.zip, s.fk_pays, s.client, s.code_client,';
 $sql.= " typent.code,";
 $sql.= " state.code_departement, state.nom";
-//$sql.= " MIN(".$db->ifsql("cd.statut=4", "cd.date_fin_validite", "null").")";
 // Add fields from extrafields
 foreach ($extrafields->attribute_label as $key => $val) $sql.=($extrafields->attribute_type[$key] != 'separate' ? ",ef.".$key : '');
 // Add where from hooks
 $parameters=array();
 $reshook=$hookmanager->executeHooks('printFieldListGroupBy',$parameters);    // Note that $action and $object may have been modified by hook
 $sql.=$hookmanager->resPrint;
-
-if ($search_dfyear > 0)
+if ($search_dfyear > 0 && $search_op2df)
 {
-	$sql.= " HAVING MIN(".$db->ifsql("cd.statut=4", "cd.date_fin_validite", "null").") ".$search_op2df."= '".$db->idate(($search_op2df == "<" ? dol_get_last_day($search_dfyear,$search_dfmonth,false) : dol_get_first_day($search_dfyear,$search_dfmonth,false)))."'";
+	if ($search_op2df == '<=') $sql.= " HAVING MIN(".$db->ifsql("cd.statut=4", "cd.date_fin_validite", "null").") <= '".$db->idate(dol_get_last_day($search_dfyear,$search_dfmonth,false))."'";
+	elseif ($search_op2df == '>=') $sql.= " HAVING MIN(".$db->ifsql("cd.statut=4", "cd.date_fin_validite", "null").") >= '".$db->idate(dol_get_first_day($search_dfyear,$search_dfmonth,false))."'";
+	else $sql.= " HAVING MIN(".$db->ifsql("cd.statut=4", "cd.date_fin_validite", "null").") <= '".$db->idate(dol_get_last_day($search_dfyear,$search_dfmonth,false))."' AND MIN(".$db->ifsql("cd.statut=4", "cd.date_fin_validite", "null").") >= '".$db->idate(dol_get_first_day($search_dfyear,$search_dfmonth,false))."'";
 }
-
 $sql.= $db->order($sortfield,$sortorder);
+//print $sql;
 
 $totalnboflines=0;
 $result=$db->query($sql);
@@ -371,8 +365,8 @@ if ($resql)
 		'presend'=>$langs->trans("SendByMail"),
 		'builddoc'=>$langs->trans("PDFMerge"),
 	);
-	if ($user->rights->contrat->supprimer) $arrayofmassactions['delete']=$langs->trans("Delete");
-	if ($massaction == 'presend') $arrayofmassactions=array();
+	if ($user->rights->contrat->supprimer) $arrayofmassactions['predelete']=$langs->trans("Delete");
+	if (in_array($massaction, array('presend','predelete'))) $arrayofmassactions=array();
 	$massactionbutton=$form->selectMassAction('', $arrayofmassactions);
 
 	print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
@@ -386,15 +380,11 @@ if ($resql)
 
 	print_barre_liste($langs->trans("ListOfContracts"), $page, $_SERVER["PHP_SELF"], $param, $sortfield, $sortorder, $massactionbutton, $num, $totalnboflines, 'title_commercial.png', 0, '', '', $limit);
 
-	if ($massaction == 'presend')
-	{
-		$topicmail="SendContractRef";
-		$modelmail="contract";
-		$objecttmp=new Contrat($db);
-		$trackid='con'.$object->id;
-
-		include DOL_DOCUMENT_ROOT.'/core/tpl/massactions_form.tpl.php';
-	}
+	$topicmail="SendContractRef";
+	$modelmail="contract";
+	$objecttmp=new Contrat($db);
+	$trackid='con'.$object->id;
+	include DOL_DOCUMENT_ROOT.'/core/tpl/massactions_pre.tpl.php';
 
 	if ($sall)
 	{
@@ -566,7 +556,7 @@ if ($resql)
 	if (! empty($arrayfields['lower_planned_end_date']['checked']))
 	{
 			print '<td class="liste_titre" align="center">';
-			$arrayofoperators=array('<'=>'<','>'=>'>');
+			$arrayofoperators=array('0'=>'','='=>'=','<='=>'<=','>='=>'>=');
 			print $form->selectarray('search_op2df',$arrayofoperators,$search_op2df,0);
 			print '</br>';
 			print $formother->select_month($search_dfmonth, 'search_dfmonth', 1);

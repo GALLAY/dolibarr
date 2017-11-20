@@ -410,12 +410,13 @@ class Form
 	 *	@param	int			$notabs				0=Include table and tr tags, 1=Do not include table and tr tags, 2=use div, 3=use span
 	 *	@param	string		$incbefore			Include code before the text
 	 *	@param	int			$noencodehtmltext	Do not encode into html entity the htmltext
-	 *  @param  string      $tooltiptrigger     ''=Tooltip on hover, 'abc'=Tooltip on click (abc is a unique key)
+	 *  @param  string      $tooltiptrigger		''=Tooltip on hover, 'abc'=Tooltip on click (abc is a unique key)
+	 *  @param	int			$forcenowrap		Force no wrap between text and picto (works with notabs=2 only)
 	 *	@return	string							Code html du tooltip (texte+picto)
 	 *	@see	Use function textwithpicto if you can.
 	 *  TODO Move this as static as soon as everybody use textwithpicto or @Form::textwithtooltip
 	 */
-	function textwithtooltip($text, $htmltext, $tooltipon = 1, $direction = 0, $img = '', $extracss = '', $notabs = 2, $incbefore = '', $noencodehtmltext = 0, $tooltiptrigger='')
+	function textwithtooltip($text, $htmltext, $tooltipon = 1, $direction = 0, $img = '', $extracss = '', $notabs = 2, $incbefore = '', $noencodehtmltext = 0, $tooltiptrigger='', $forcenowrap=0)
 	{
 		global $conf;
 
@@ -462,7 +463,7 @@ class Form
 		}
 		else $paramfortooltiptd =($extracss?' class="'.$extracss.'"':'').($extrastyle?' style="'.$extrastyle.'"':''); // Attribut to put on td text tag
 		if (empty($notabs)) $s.='<table class="nobordernopadding" summary=""><tr style="height: auto;">';
-		elseif ($notabs == 2) $s.='<div class="inline-block">';
+		elseif ($notabs == 2) $s.='<div class="inline-block'.($forcenowrap?' nowrap':'').'">';
 		// Define value if value is before
 		if ($direction < 0) {
 			$s.='<'.$tag.$paramfortooltipimg;
@@ -497,9 +498,10 @@ class Form
 	 *  @param  int		$noencodehtmltext   Do not encode into html entity the htmltext
 	 *  @param	int		$notabs				0=Include table and tr tags, 1=Do not include table and tr tags, 2=use div, 3=use span
 	 *  @param  string  $tooltiptrigger     ''=Tooltip on hover, 'abc'=Tooltip on click (abc is a unique key)
+	 *  @param	int		$forcenowrap		Force no wrap between text and picto (works with notabs=2 only)
 	 * 	@return	string						HTML code of text, picto, tooltip
 	 */
-	function textwithpicto($text, $htmltext, $direction = 1, $type = 'help', $extracss = '', $noencodehtmltext = 0, $notabs = 2, $tooltiptrigger='')
+	function textwithpicto($text, $htmltext, $direction = 1, $type = 'help', $extracss = '', $noencodehtmltext = 0, $notabs = 2, $tooltiptrigger='', $forcenowrap=0)
 	{
 		global $conf, $langs;
 
@@ -534,7 +536,7 @@ class Form
 		elseif ($type == 'warning') $img = img_warning($alt);
 		else $img = img_picto($alt, $type);
 
-		return $this->textwithtooltip($text, $htmltext, ($tooltiptrigger?3:2), $direction, $img, $extracss, $notabs, '', $noencodehtmltext, $tooltiptrigger);
+		return $this->textwithtooltip($text, $htmltext, (($tooltiptrigger && ! $img)?3:2), $direction, $img, $extracss, $notabs, '', $noencodehtmltext, $tooltiptrigger, $forcenowrap);
 	}
 
 	/**
@@ -689,18 +691,19 @@ class Form
 					if (empty($row['favorite']) && $atleastonefavorite)
 					{
 						$atleastonefavorite=0;
-						$out.= '<option value="" disabled class="selectoptiondisabledwhite">----------------------</option>';
+						$out.= '<option a value="" disabled class="selectoptiondisabledwhite">----------------------</option>';
 					}
 					if ($selected && $selected != '-1' && ($selected == $row['rowid'] || $selected == $row['code_iso'] || $selected == $row['code_iso3'] || $selected == $row['label']) )
 					{
 						$foundselected=true;
-						$out.= '<option value="'.($usecodeaskey?($usecodeaskey=='code2'?$row['code_iso']:$row['code_iso3']):$row['rowid']).'" selected>';
+						$out.= '<option b value="'.($usecodeaskey?($usecodeaskey=='code2'?$row['code_iso']:$row['code_iso3']):$row['rowid']).'" selected>';
 					}
 					else
 					{
-						$out.= '<option value="'.($usecodeaskey?($usecodeaskey=='code2'?$row['code_iso']:$row['code_iso3']):$row['rowid']).'">';
+						$out.= '<option c value="'.($usecodeaskey?($usecodeaskey=='code2'?$row['code_iso']:$row['code_iso3']):$row['rowid']).'">';
 					}
-					$out.= dol_trunc($row['label'],$maxlength,'middle');
+					if ($row['label']) $out.= dol_trunc($row['label'],$maxlength,'middle');
+					else $out.= '&nbsp;';
 					if ($row['code_iso']) $out.= ' ('.$row['code_iso'] . ')';
 					$out.= '</option>';
 				}
@@ -1330,7 +1333,7 @@ class Form
 			}
 
 			if ($htmlname != 'none' || $options_only) $out.= '<select class="flat'.($moreclass?' '.$moreclass:'').'" id="'.$htmlname.'" name="'.$htmlname.'">';
-			if ($showempty == 1) $out.= '<option value="0"'.($selected=='0'?' selected':'').'></option>';
+			if ($showempty == 1) $out.= '<option value="0"'.($selected=='0'?' selected':'').'>&nbsp;</option>';
 			if ($showempty == 2) $out.= '<option value="0"'.($selected=='0'?' selected':'').'>'.$langs->trans("Internal").'</option>';
 			$num = $this->db->num_rows($resql);
 			$i = 0;
@@ -3541,7 +3544,7 @@ class Form
 	 *       print '});'."\n";
 	 *       print '</script>'."\n";
 	 *
-	 *     @param  	string		$page        	   	Url of page to call if confirmation is OK
+	 *     @param  	string		$page        	   	Url of page to call if confirmation is OK. Can contains paramaters (param 'action' and 'confirm' will be reformated)
 	 *     @param	string		$title       	   	Title
 	 *     @param	string		$question    	   	Question
 	 *     @param 	string		$action      	   	Action
@@ -3551,9 +3554,10 @@ class Form
 	 * 	   @param  	int			$useajax		   	0=No, 1=Yes, 2=Yes but submit page with &confirm=no if choice is No, 'xxx'=Yes and preoutput confirm box with div id=dialog-confirm-xxx
 	 *     @param  	int			$height          	Force height of box
 	 *     @param	int			$width				Force width of box ('999' or '90%'). Ignored and forced to 90% on smartphones.
+	 *     @param	int			$disableformtag		1=Disable form tag. Can be used if we are already inside a <form> section.
 	 *     @return 	string      	    			HTML ajax code if a confirm ajax popup is required, Pure HTML code if it's an html form
 	 */
-	function formconfirm($page, $title, $question, $action, $formquestion='', $selectedchoice="", $useajax=0, $height=200, $width=500)
+	function formconfirm($page, $title, $question, $action, $formquestion='', $selectedchoice='', $useajax=0, $height=200, $width=500, $disableformtag=0)
 	{
 		global $langs,$conf;
 		global $useglobalvars;
@@ -3782,9 +3786,10 @@ class Form
 		{
 			$formconfirm.= "\n<!-- begin form_confirm page=".$page." -->\n";
 
-			$formconfirm.= '<form method="POST" action="'.$page.'" class="notoptoleftroright">'."\n";
+			if (empty($disableformtag)) $formconfirm.= '<form method="POST" action="'.$page.'" class="notoptoleftroright">'."\n";
+
 			$formconfirm.= '<input type="hidden" name="action" value="'.$action.'">'."\n";
-			$formconfirm.= '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">'."\n";
+			if (empty($disableformtag)) $formconfirm.= '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">'."\n";
 
 			$formconfirm.= '<table width="100%" class="valid">'."\n";
 
@@ -3810,7 +3815,7 @@ class Form
 
 			$formconfirm.= '</table>'."\n";
 
-			$formconfirm.= "</form>\n";
+			if (empty($disableformtag)) $formconfirm.= "</form>\n";
 			$formconfirm.= '<br>';
 
 			$formconfirm.= "<!-- end form_confirm -->\n";
@@ -5508,7 +5513,7 @@ class Form
 			    		cache: true
 			    	},
 	 				language: select2arrayoflanguage,
-					containerCssClass: \':all:\',					/* Line to add class or origin SELECT propagated to the new <span class="select2-selection...> tag */
+					containerCssClass: \':all:\',					/* Line to add class of origin SELECT propagated to the new <span class="select2-selection...> tag */
 				    placeholder: "'.dol_escape_js($placeholder).'",
 			    	escapeMarkup: function (markup) { return markup; }, 	// let our custom formatter work
 			    	minimumInputLength: '.$minimumInputLength.',
