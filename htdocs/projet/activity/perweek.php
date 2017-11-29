@@ -318,7 +318,6 @@ $taskstatic = new Task($db);
 $thirdpartystatic = new Societe($db);
 
 $title=$langs->trans("TimeSpent");
-if ($mine || $usertoprocess->id == $user->id) $title=$langs->trans("MyTimeSpent");
 
 $projectsListId = $projectstatic->getProjectsAuthorizedForUser($usertoprocess,(empty($usertoprocess->id)?2:0),1);  // Return all project i have permission on (assigned to me+public). I want my tasks and some of my task may be on a public projet that is not my project
 //var_dump($projectsListId);
@@ -381,13 +380,13 @@ dol_fiche_head($head, 'inputperweek', '', -1, 'task');
 
 // Show description of content
 print '<div class="hideonsmartphone">';
-if ($mine || ($usertoprocess->id == $user->id)) print $langs->trans("MyTasksDesc").($onlyopenedproject?' '.$langs->trans("OnlyOpenedProject"):'').'<br>';
+if ($mine || ($usertoprocess->id == $user->id)) print $langs->trans("MyTasksDesc").'.'.($onlyopenedproject?' '.$langs->trans("OnlyOpenedProject"):'').'<br>';
 else
 {
 	if (empty($usertoprocess->id) || $usertoprocess->id < 0)
 	{
-		if ($user->rights->projet->all->lire && ! $socid) print $langs->trans("ProjectsDesc").($onlyopenedproject?' '.$langs->trans("OnlyOpenedProject"):'').'<br>';
-		else print $langs->trans("ProjectsPublicTaskDesc").($onlyopenedproject?' '.$langs->trans("OnlyOpenedProject"):'').'<br>';
+		if ($user->rights->projet->all->lire && ! $socid) print $langs->trans("ProjectsDesc").'.'.($onlyopenedproject?' '.$langs->trans("OnlyOpenedProject"):'').'<br>';
+		else print $langs->trans("ProjectsPublicTaskDesc").'.'.($onlyopenedproject?' '.$langs->trans("OnlyOpenedProject"):'').'<br>';
 	}
 }
 if ($mine || ($usertoprocess->id == $user->id))

@@ -52,12 +52,7 @@ if (!empty($conf->variants->enabled)) {
 if (! empty($conf->accounting->enabled)) require_once DOL_DOCUMENT_ROOT . '/accountancy/class/accountingjournal.class.php';
 
 
-$langs->load('bills');
-$langs->load('compta');
-$langs->load('suppliers');
-$langs->load('companies');
-$langs->load('products');
-$langs->load('banks');
+$langs->loadLangs(array('bills','compta','suppliers','companies','products','banks'));
 if (!empty($conf->incoterm->enabled)) $langs->load('incoterm');
 
 $id			= (GETPOST('facid','int') ? GETPOST('facid','int') : GETPOST('id','int'));
@@ -1601,7 +1596,7 @@ if ($action == 'create')
 	}
     */
 
-	/* Not yet supporter for supplier
+	/* Not yet supported for supplier
 	if ($societe->id > 0)
 	{
 		// Replacement
@@ -2412,7 +2407,7 @@ else
 		$sql.= ' FROM '.MAIN_DB_PREFIX.'paiementfourn as p';
 		$sql.= ' LEFT JOIN '.MAIN_DB_PREFIX.'bank as b ON p.fk_bank = b.rowid';
 		$sql.= ' LEFT JOIN '.MAIN_DB_PREFIX.'bank_account as ba ON b.fk_account = ba.rowid';
-		$sql.= ' LEFT JOIN '.MAIN_DB_PREFIX.'c_paiement as c ON p.fk_paiement = c.id AND c.entity IN (' . getEntity('c_paiement').')';
+		$sql.= ' LEFT JOIN '.MAIN_DB_PREFIX.'c_paiement as c ON p.fk_paiement = c.id AND c.entity IN ('.getEntity('c_paiement').')';
 		$sql.= ' LEFT JOIN '.MAIN_DB_PREFIX.'paiementfourn_facturefourn as pf ON pf.fk_paiementfourn = p.rowid';
 		$sql.= ' WHERE pf.fk_facturefourn = '.$object->id;
 		$sql.= ' ORDER BY p.datep, p.tms';
@@ -2439,12 +2434,14 @@ else
 				{
 					$objp = $db->fetch_object($result);
 
-					print '<tr class="oddeven"><td>';
 					$paymentstatic->id=$objp->rowid;
 					$paymentstatic->datepaye=$db->jdate($objp->dp);
 					$paymentstatic->ref=($objp->ref ? $objp->ref : $objp->rowid);;
 					$paymentstatic->num_paiement=$objp->num_paiement;
 					$paymentstatic->payment_code=$objp->payment_code;
+
+					print '<tr class="oddeven">';
+					print '<td>';
 					print $paymentstatic->getNomUrl(1);
 					print '</td>';
 					print '<td>'.dol_print_date($db->jdate($objp->dp), 'day') . '</td>';

@@ -1000,6 +1000,8 @@ class Facture extends CommonInvoice
 			$line->special_code		= $object->lines[$i]->special_code;
 			$line->fk_parent_line	= $object->lines[$i]->fk_parent_line;
 			$line->fk_unit			= $object->lines[$i]->fk_unit;
+			$line->date_start 		= $object->lines[$i]->date_start;
+			$line->date_end 		= $object->lines[$i]->date_end;
 
 			$line->fk_fournprice	= $object->lines[$i]->fk_fournprice;
 			$marginInfos			= getMarginInfos($object->lines[$i]->subprice, $object->lines[$i]->remise_percent, $object->lines[$i]->tva_tx, $object->lines[$i]->localtax1_tx, $object->lines[$i]->localtax2_tx, $object->lines[$i]->fk_fournprice, $object->lines[$i]->pa_ht);
@@ -1223,9 +1225,9 @@ class Facture extends CommonInvoice
         $sql.= ", i.libelle as libelle_incoterms";
 		$sql.= ' FROM '.MAIN_DB_PREFIX.'facture as f';
 		$sql.= ' LEFT JOIN '.MAIN_DB_PREFIX.'c_payment_term as c ON f.fk_cond_reglement = c.rowid AND c.entity IN (' . getEntity('c_payment_term').')';
-		$sql.= ' LEFT JOIN '.MAIN_DB_PREFIX.'c_paiement as p ON f.fk_mode_reglement = p.id AND p.entity IN (' . getEntity('c_paiement').')';
+		$sql.= ' LEFT JOIN '.MAIN_DB_PREFIX.'c_paiement as p ON f.fk_mode_reglement = p.id AND p.entity IN ('.getEntity('c_paiement').')';
 		$sql.= ' LEFT JOIN '.MAIN_DB_PREFIX.'c_incoterms as i ON f.fk_incoterms = i.rowid';
-		$sql.= ' WHERE f.entity = '.$conf->entity;
+		$sql.= ' WHERE f.entity IN ('.getEntity('facture').')';
 		if ($rowid)   $sql.= " AND f.rowid=".$rowid;
 		if ($ref)     $sql.= " AND f.facnumber='".$this->db->escape($ref)."'";
 		if ($ref_ext) $sql.= " AND f.ref_ext='".$this->db->escape($ref_ext)."'";
@@ -3189,12 +3191,14 @@ class Facture extends CommonInvoice
 		$table2='paiement';
 		$field='fk_facture';
 		$field2='fk_paiement';
+		$sharedentity='facture';
 		if ($this->element == 'facture_fourn' || $this->element == 'invoice_supplier')
 		{
 			$table='paiementfourn_facturefourn';
 			$table2='paiementfourn';
 			$field='fk_facturefourn';
 			$field2='fk_paiementfourn';
+			$sharedentity='facture_fourn';
 		}
 
 		$sql = 'SELECT p.ref, pf.amount, pf.multicurrency_amount, p.fk_paiement, p.datep, p.num_paiement as num, t.code';
@@ -3203,7 +3207,7 @@ class Facture extends CommonInvoice
 		//$sql.= ' WHERE pf.'.$field.' = 1';
 		$sql.= ' AND pf.'.$field2.' = p.rowid';
 		$sql.= ' AND p.fk_paiement = t.id';
-		$sql.= ' AND t.entity IN (' . getEntity('c_paiement').')';
+		$sql.= ' AND p.entity IN (' . getEntity($sharedentity).')';
 		if ($filtertype) $sql.=" AND t.code='PRE'";
 
 		dol_syslog(get_class($this)."::getListOfPayments", LOG_DEBUG);
@@ -4396,6 +4400,7 @@ class FactureLigne extends CommonInvoiceLine
 			$this->date_start			= $this->db->jdate($objp->date_start);
 			$this->date_end				= $this->db->jdate($objp->date_end);
 			$this->info_bits			= $objp->info_bits;
+			$this->tva_npr              = ($objp->info_bits & 1 == 1) ? 1 : 0;
 			$this->special_code			= $objp->special_code;
 			$this->total_ht				= $objp->total_ht;
 			$this->total_tva			= $objp->total_tva;

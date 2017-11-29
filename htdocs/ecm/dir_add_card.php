@@ -1,5 +1,5 @@
 <?php
-/* Copyright (C) 2008-2012	Laurent Destailleur	<eldy@users.sourceforge.net>
+/* Copyright (C) 2008-2017	Laurent Destailleur	<eldy@users.sourceforge.net>
  * Copyright (C) 2008-2012	Regis Houssin		<regis.houssin@capnetworks.com>
  * Copyright (C) 2015-2016	Alexandre Spangaro	<aspangaro.dolibarr@gmail.com>
  *
@@ -102,7 +102,7 @@ if ($action == 'add' && $user->rights->ecm->setup)
 		}
 		else
 		{
-			header("Location: ".DOL_URL_ROOT.'/ecm/index.php?action=file_manager');
+			header("Location: ".DOL_URL_ROOT.'/ecm/index.php?action=file_manager'.($module?'&module='.$module:''));
 			exit;
 		}
 	}
@@ -227,7 +227,7 @@ if ($action == 'create')
 	print '<tr><td class="titlefieldcreate fieldrequired">'.$langs->trans("Label").'</td><td><input name="label" class="minwidth100" maxlength="32" value="'.$ecmdir->label.'"></td></tr>'."\n";
 
 	print '<tr><td>'.$langs->trans("AddIn").'</td><td>';
-	print $formecm->selectAllSections(! empty($_GET["catParent"]) ? $_GET["catParent"] : $ecmdir->fk_parent, 'catParent', $module);
+	print $formecm->selectAllSections((GETPOST("catParent",'alpha') ? GETPOST("catParent",'alpha') : $ecmdir->fk_parent), 'catParent', $module);
 	print '</td></tr>'."\n";
 
 	// Description
@@ -265,7 +265,7 @@ if (empty($action) || $action == 'delete_section')
 	$ecmdir->ref=$ecmdir->label;
 	print $langs->trans("ECMSection").': ';
 	print img_picto('','object_dir').' ';
-	print '<a href="'.DOL_URL_ROOT.'/ecm/docdir.php">'.$langs->trans("ECMRoot").'</a>';
+	print '<a href="'.DOL_URL_ROOT.'/ecm/dir_add_card.php">'.$langs->trans("ECMRoot").'</a>';
 	//print ' -> <b>'.$ecmdir->getNomUrl(1).'</b><br>';
 	print "<br><br>";
 */

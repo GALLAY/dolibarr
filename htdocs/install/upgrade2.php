@@ -22,7 +22,7 @@
  *
  * cd htdocs/install
  * php upgrade.php 3.4.0 3.5.0
- * php upgrade2.php 3.4.0 3.5.0
+ * php upgrade2.php 3.4.0 3.5.0 [MODULE_NAME1_TO_ENABLE,MODULE_NAME2_TO_ENABLE]
  *
  * Return code is 0 if OK, >0 if error
  */
@@ -89,7 +89,7 @@ if (! is_object($conf)) dolibarr_install_syslog("upgrade2: conf file not initial
 if ((! $versionfrom || preg_match('/version/', $versionfrom)) && (! $versionto || preg_match('/version/', $versionto)))
 {
 	print 'Error: Parameter versionfrom or versionto missing or having a bad format.'."\n";
-	print 'Upgrade must be ran from cmmand line with parameters or called from page install/index.php (like a first install) instead of page install/upgrade.php'."\n";
+	print 'Upgrade must be ran from command line with parameters or called from page install/index.php (like a first install) instead of page install/upgrade.php'."\n";
 	// Test if batch mode
 	$sapi_type = php_sapi_name();
 	$script_file = basename(__FILE__);
@@ -372,6 +372,15 @@ if (! GETPOST('action','aZ09') || preg_match('/upgrade/i',GETPOST('action','aZ09
         if (versioncompare($versiontoarray,$afterversionarray) >= 0 && versioncompare($versiontoarray,$beforeversionarray) <= 0)
         {
             // No particular code
+        }
+
+        // Scripts for last version
+        $afterversionarray=explode('.','6.0.9');
+        $beforeversionarray=explode('.','7.0.9');
+        if (versioncompare($versiontoarray,$afterversionarray) >= 0 && versioncompare($versiontoarray,$beforeversionarray) <= 0)
+        {
+            // Migrate contact association
+            migrate_event_assignement_contact($db,$langs,$conf);
         }
     }
 
@@ -3751,6 +3760,83 @@ function migrate_event_assignement($db,$langs,$conf)
 
 				$sqlUpdate = "INSERT INTO ".MAIN_DB_PREFIX."actioncomm_resources(fk_actioncomm, element_type, fk_element) ";
 				$sqlUpdate.= "VALUES(".$obj->id.", 'user', ".$obj->fk_user_action.")";
+
+				$result=$db->query($sqlUpdate);
+				if (! $result)
+				{
+					$error++;
+					dol_print_error($db);
+				}
+				print ". ";
+				$i++;
+			}
+		}
+		else
+		{
+			print $langs->trans('AlreadyDone')."<br>\n";
+		}
+
+		if (! $error)
+		{
+			$db->commit();
+		}
+		else
+		{
+			$db->rollback();
+		}
+	}
+	else
+	{
+		dol_print_error($db);
+		$db->rollback();
+	}
+
+
+	print '</td></tr>';
+}
+
+/**
+ * Migrate event assignement to owner
+ *
+ * @param	DoliDB		$db				Database handler
+ * @param	Translate	$langs			Object langs
+ * @param	Conf		$conf			Object conf
+ * @return	void
+ */
+function migrate_event_assignement_contact($db,$langs,$conf)
+{
+	print '<tr><td colspan="4">';
+
+	print '<br>';
+	print '<b>'.$langs->trans('MigrationEventsContact')."</b><br>\n";
+
+	$error = 0;
+
+	dolibarr_install_syslog("upgrade2::migrate_event_assignement");
+
+	$db->begin();
+
+	$sqlSelect = "SELECT a.id, a.fk_contact";
+	$sqlSelect.= " FROM ".MAIN_DB_PREFIX."actioncomm as a";
+	$sqlSelect.= " LEFT JOIN ".MAIN_DB_PREFIX."actioncomm_resources as ar ON ar.fk_actioncomm = a.id AND ar.element_type = 'socpeople' AND ar.fk_element = a.fk_contact";
+	$sqlSelect.= " WHERE fk_contact > 0 AND fk_contact NOT IN (SELECT fk_element FROM ".MAIN_DB_PREFIX."actioncomm_resources as ar WHERE ar.fk_actioncomm = a.id AND ar.element_type = 'socpeople')";
+	$sqlSelect.= " ORDER BY a.id";
+	//print $sqlSelect;
+
+	$resql = $db->query($sqlSelect);
+	if ($resql)
+	{
+		$i = 0;
+		$num = $db->num_rows($resql);
+
+		if ($num)
+		{
+			while ($i < $num)
+			{
+				$obj = $db->fetch_object($resql);
+
+				$sqlUpdate = "INSERT INTO ".MAIN_DB_PREFIX."actioncomm_resources(fk_actioncomm, element_type, fk_element) ";
+				$sqlUpdate.= "VALUES(".$obj->id.", 'socpeople', ".$obj->fk_contact.")";
 
 				$result=$db->query($sqlUpdate);
 				if (! $result)

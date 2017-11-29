@@ -50,7 +50,6 @@ abstract class CommonObject
 	public $id;
 	/**
 	 * @var string 		Error string
-	 * @deprecated		Use instead the array of error strings
 	 * @see             errors
 	 */
 	public $error;
@@ -150,13 +149,13 @@ abstract class CommonObject
 	public $user;
 
 	/**
-	 * @var CommonObject An originating object?
+	 * @var string 	The type of originating object ('commande', 'facture', ...)
 	 * @see fetch_origin()
 	 */
 	public $origin;
 	/**
-	 * @var int The originating object?
-	 * @see fetch_origin(), origin
+	 * @var int 	The id of originating object
+	 * @see fetch_origin()
 	 */
 	public $origin_id;
 
@@ -3026,7 +3025,7 @@ abstract class CommonObject
 
 		$sql = "SELECT rowid, canvas";
 		$sql.= " FROM ".MAIN_DB_PREFIX.$this->table_element;
-		$sql.= " WHERE entity IN (".getEntity($this->element, 1).")";
+		$sql.= " WHERE entity IN (".getEntity($this->element).")";
 		if (! empty($id))  $sql.= " AND rowid = ".$id;
 		if (! empty($ref)) $sql.= " AND ref = '".$this->db->escape($ref)."'";
 
@@ -4362,7 +4361,7 @@ abstract class CommonObject
 
 
 	/**
-	 *  Function to get extra fields of a member into $this->array_options
+	 *  Function to get extra fields of an object into $this->array_options
 	 *  This method is in most cases called by method fetch of objects but you can call it separately.
 	 *
 	 *  @param	int		$rowid			Id of line. Use the id of object if not defined. Deprecated. Function must be called without parameters.
@@ -6148,8 +6147,9 @@ abstract class CommonObject
 		// Clean and check mandatory
 		foreach($keys as $key)
 		{
-			if (preg_match('/^integer:/i', $this->fields[$key]['type']) && $values[$key] == '-1') $values[$key]='';		// This is an implicit foreign key field
-			if (! empty($this->fields[$key]['foreignkey']) && $values[$key] == '-1') $values[$key]='';					// This is an explicit foreign key field
+			// If field is an implicit foreign key field
+			if (preg_match('/^integer:/i', $this->fields[$key]['type']) && $values[$key] == '-1') $values[$key]='';
+			if (! empty($this->fields[$key]['foreignkey']) && $values[$key] == '-1') $values[$key]='';
 
 			//var_dump($key.'-'.$values[$key].'-'.($this->fields[$key]['notnull'] == 1));
 			if ($this->fields[$key]['notnull'] == 1 && empty($values[$key]))
@@ -6157,6 +6157,10 @@ abstract class CommonObject
 				$error++;
 				$this->errors[]=$langs->trans("ErrorFieldRequired", $this->fields[$key]['label']);
 			}
+
+			// If field is an implicit foreign key field
+			if (preg_match('/^integer:/i', $this->fields[$key]['type']) && empty($values[$key])) $values[$key]='null';
+			if (! empty($this->fields[$key]['foreignkey']) && empty($values[$key])) $values[$key]='null';
 		}
 
 		if ($error) return -1;

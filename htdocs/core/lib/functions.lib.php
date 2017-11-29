@@ -105,7 +105,7 @@ function getDoliDBInstance($type, $host, $user, $pass, $name, $port)
  * 	@param	string	$element		Current element
  *									'societe', 'socpeople', 'actioncomm', 'agenda', 'resource',
  *									'product', 'productprice', 'stock',
- *									'propal', 'supplier_proposal', 'facture', 'facture_fourn',
+ *									'propal', 'supplier_proposal', 'facture', 'facture_fourn', 'payment_various',
  *									'categorie', 'bank_account', 'bank_account', 'adherent', 'user',
  *									'commande', 'commande_fournisseur', 'expedition', 'intervention', 'survey',
  *									'contract', 'tax', 'expensereport', 'holiday', 'multicurrency', 'project',
@@ -1119,7 +1119,7 @@ function dol_get_fiche_head($links=array(), $active='', $title='', $notab=0, $pi
 		if (count($keys)) $maxkey=max($keys);
 	}
 
-	//$conf->global->MAIN_MAXTABS_IN_CARD=3;
+	if (! empty($conf->dol_optimize_smallscreen)) $conf->global->MAIN_MAXTABS_IN_CARD=2;
 
 	// Show tabs
 	$bactive=false;
@@ -1132,9 +1132,8 @@ function dol_get_fiche_head($links=array(), $active='', $title='', $notab=0, $pi
 	{
 		if ((is_numeric($active) && $i == $active) || (! empty($links[$i][2]) && ! is_numeric($active) && $active == $links[$i][2]))
 		{
-			// si l'active est présent dans la box
-			if ($i >= $limittoshow)
-				$limittoshow--;
+			// If active tab is already present
+			if ($i >= $limittoshow) $limittoshow--;
 		}
 	}
 
@@ -1146,7 +1145,9 @@ function dol_get_fiche_head($links=array(), $active='', $title='', $notab=0, $pi
 			$bactive=true;
 		}
 		else
+		{
 			$isactive=false;
+		}
 
 		if ($i < $limittoshow || $isactive)
 		{
@@ -1155,11 +1156,11 @@ function dol_get_fiche_head($links=array(), $active='', $title='', $notab=0, $pi
 			{
 				if (!empty($links[$i][0]))
 				{
-					$out.='<a data-role="button" class="tabimage" href="'.$links[$i][0].'">'.$links[$i][1].'</a>'."\n";
+					$out.='<a class="tabimage" href="'.$links[$i][0].'">'.$links[$i][1].'</a>'."\n";
 				}
 				else
 				{
-					$out.='<span data-role="button" class="tabspan">'.$links[$i][1].'</span>'."\n";
+					$out.='<span class="tabspan">'.$links[$i][1].'</span>'."\n";
 				}
 			}
 			else if (! empty($links[$i][1]))
@@ -1167,11 +1168,15 @@ function dol_get_fiche_head($links=array(), $active='', $title='', $notab=0, $pi
 				//print "x $i $active ".$links[$i][2]." z";
 				if ($isactive)
 				{
-					$out.='<a data-role="button"'.(! empty($links[$i][2])?' id="'.$links[$i][2].'"':'').' class="tabactive tab inline-block" href="'.$links[$i][0].'">'.$links[$i][1].'</a>'."\n";
+					$out.='<a'.(! empty($links[$i][2])?' id="'.$links[$i][2].'"':'').' class="tabactive tab inline-block" href="'.$links[$i][0].'">';
+					$out.=$links[$i][1];
+					$out.='</a>'."\n";
 				}
 				else
 				{
-					$out.='<a data-role="button"'.(! empty($links[$i][2])?' id="'.$links[$i][2].'"':'').' class="tabunactive tab inline-block" href="'.$links[$i][0].'">'.$links[$i][1].'</a>'."\n";
+					$out.='<a'.(! empty($links[$i][2])?' id="'.$links[$i][2].'"':'').' class="tabunactive tab inline-block" href="'.$links[$i][0].'">';
+					$out.=$links[$i][1];
+					$out.='</a>'."\n";
 				}
 			}
 			$out.='</div>';
@@ -1182,9 +1187,9 @@ function dol_get_fiche_head($links=array(), $active='', $title='', $notab=0, $pi
 			if (! $popuptab)
 			{
 				$popuptab=1;
-				$outmore.='<div class="popuptabset">';
+				$outmore.='<div class="popuptabset wordwrap">';	// The css used to hide/show popup
 			}
-			$outmore.='<div class="popuptab" style="display:inherit;">';
+			$outmore.='<div class="popuptab wordwrap" style="display:inherit;">';
 			if (isset($links[$i][2]) && $links[$i][2] == 'image')
 			{
 				if (!empty($links[$i][0]))
@@ -1194,8 +1199,11 @@ function dol_get_fiche_head($links=array(), $active='', $title='', $notab=0, $pi
 
 			}
 			else if (! empty($links[$i][1]))
-				$outmore.='<a'.(! empty($links[$i][2])?' id="'.$links[$i][2].'"':'').' class="inline-block" href="'.$links[$i][0].'">'.$links[$i][1].'</a>'."\n";
-
+			{
+				$outmore.='<a'.(! empty($links[$i][2])?' id="'.$links[$i][2].'"':'').' class="wordwrap inline-block" href="'.$links[$i][0].'">';
+				$outmore.=preg_replace('/([a-z])\/([a-z])/i', '\\1 / \\2', $links[$i][1]);	// Replace x/y with x / y to allow wrap on long composed texts.
+				$outmore.='</a>'."\n";
+			}
 			$outmore.='</div>';
 
 			$nbintab++;
@@ -1206,15 +1214,21 @@ function dol_get_fiche_head($links=array(), $active='', $title='', $notab=0, $pi
 
 	if ($displaytab > $limittoshow)
 	{
+		$left=($langs->trans("DIRECTION") == 'rtl'?'right':'left');
+		$right=($langs->trans("DIRECTION") == 'rtl'?'left':'right');
+
 		$tabsname=str_replace("@", "", $picto);
 		$out.='<div id="moretabs'.$tabsname.'" class="inline-block tabsElem">';
-		$out.='<a href="#" data-role="button" class="tab moretab inline-block tabunactive">'.$langs->trans("More").'... ('.$nbintab.')</a>';
-		$out.='<div id="moretabsList'.$tabsname.'" style="position: absolute; left: -999em;text-align: left;margin:0px;padding:2px">'.$outmore.'</div>';
+		$out.='<a href="#" class="tab moretab inline-block tabunactive">'.$langs->trans("More").'... ('.$nbintab.')</a>';
+		$out.='<div id="moretabsList'.$tabsname.'" style="position: absolute; '.$left.': -999em; text-align: '.$left.'; margin:0px; padding:2px">';
+		$out.=$outmore;
+		$out.='</div>';
+		$out.='<div></div>';
 		$out.="</div>\n";
 
 		$out.="<script>";
-		$out.="$('#moretabs".$tabsname."').mouseenter( function() { $('#moretabsList".$tabsname."').css('left','auto');});";
-		$out.="$('#moretabs".$tabsname."').mouseleave( function() { $('#moretabsList".$tabsname."').css('left','-999em');});";
+		$out.="$('#moretabs".$tabsname."').mouseenter( function() { console.log('mouseenter ".$left."'); $('#moretabsList".$tabsname."').css('".$left."','auto');});";
+		$out.="$('#moretabs".$tabsname."').mouseleave( function() { console.log('mouseleave ".$left."'); $('#moretabsList".$tabsname."').css('".$left."','-999em');});";
 		$out.="</script>";
 	}
 
@@ -1539,14 +1553,15 @@ function dol_bc($var,$moreclass='')
 /**
  *      Return a formated address (part address/zip/town/state) according to country rules
  *
- *      @param  Object		$object         A company or contact object
- * 	    @param	int			$withcountry	1=Add country into address string
- *      @param	string		$sep			Separator to use to build string
- *      @param	Translate	$outputlangs	Object lang that contains language for text translation.
- *      @return string          			Formated string
+ *      @param  Object		$object			A company or contact object
+ * 	    @param	int			$withcountry		1=Add country into address string
+ *      @param	string		$sep				Separator to use to build string
+ *      @param	Translate	$outputlangs		Object lang that contains language for text translation.
+ *      @param	int		$mode		0=Standard output, 1=Remove address
+ *      @return string						Formated string
  *      @see dol_print_address
  */
-function dol_format_address($object,$withcountry=0,$sep="\n",$outputlangs='')
+function dol_format_address($object, $withcountry=0, $sep="\n", $outputlangs='', $mode=0)
 {
 	global $conf,$langs;
 
@@ -1554,7 +1569,9 @@ function dol_format_address($object,$withcountry=0,$sep="\n",$outputlangs='')
 	$countriesusingstate=array('AU','CA','US','IN','GB','ES','UK','TR');    // See also MAIN_FORCE_STATE_INTO_ADDRESS
 
 	// Address
-	$ret .= $object->address;
+	if (empty($mode)) {
+		$ret .= $object->address;
+	}
 	// Zip/Town/State
 	if (in_array($object->country_code,array('AU', 'CA', 'US')) || ! empty($conf->global->MAIN_FORCE_STATE_INTO_ADDRESS))   	// US: title firstname name \n address lines \n town, state, zip \n country
 	{
@@ -1932,7 +1949,7 @@ function dol_mktime($hour,$minute,$second,$month,$day,$year,$gm=false,$check=1)
 
 
 /**
- *	Return date for now. In mot cases, we use this function without parameters (that means GMT time).
+ *	Return date for now. In most cases, we use this function without parameters (that means GMT time).
  *
  * 	@param	string		$mode	'gmt' => we return GMT timestamp,
  * 								'tzserver' => we add the PHP server timezone
@@ -1942,7 +1959,8 @@ function dol_mktime($hour,$minute,$second,$month,$day,$year,$gm=false,$check=1)
  */
 function dol_now($mode='gmt')
 {
-	$ret='';
+	$ret=0;
+
 	// Note that gmmktime and mktime return same value (GMT) when used without parameters
 	//if ($mode == 'gmt') $ret=gmmktime(); // Strict Standards: gmmktime(): You should be using the time() function instead
 	if ($mode == 'gmt') $ret=time();	// Time for now at greenwich.
@@ -1950,7 +1968,7 @@ function dol_now($mode='gmt')
 	{
 		require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
 		$tzsecond=getServerTimeZoneInt('now');    // Contains tz+dayling saving time
-		$ret=dol_now('gmt')+($tzsecond*3600);
+		$ret=(int) dol_now('gmt')+($tzsecond*3600);
 	}
 	/*else if ($mode == 'tzref')				// Time for now with parent company timezone is added
 	{
@@ -1963,8 +1981,9 @@ function dol_now($mode='gmt')
 		//print 'eeee'.time().'-'.mktime().'-'.gmmktime();
 		$offsettz=(empty($_SESSION['dol_tz'])?0:$_SESSION['dol_tz'])*60*60;
 		$offsetdst=(empty($_SESSION['dol_dst'])?0:$_SESSION['dol_dst'])*60*60;
-		$ret=dol_now('gmt')+($offsettz+$offsetdst);
+		$ret=(int) dol_now('gmt')+($offsettz+$offsetdst);
 	}
+
 	return $ret;
 }
 
@@ -3690,19 +3709,19 @@ function load_fiche_titre($titre, $morehtmlright='', $picto='title_generic.png',
  *	@param	string	    $options         	More parameters for links ('' by default, does not include sortfield neither sortorder). Value must be 'urlencoded' before calling function.
  *	@param	string    	$sortfield       	Field to sort on ('' by default)
  *	@param	string	    $sortorder       	Order to sort ('' by default)
- *	@param	string	    $center          	String in the middle ('' by default). We often find here string $massaction comming from $form->selectMassAction()
+ *	@param	string	    $morehtmlcenter     String in the middle ('' by default). We often find here string $massaction comming from $form->selectMassAction()
  *	@param	int		    $num				Number of records found by select with limit+1
  *	@param	int|string  $totalnboflines		Total number of records/lines for all pages (if known). Use a negative value of number to not show number. Use '' if unknown.
  *	@param	string	    $picto				Icon to use before title (should be a 32x32 transparent png file)
  *	@param	int		    $pictoisfullpath	1=Icon name is a full absolute url of image
- *  @param	string	    $morehtml			More html to show
+ *  @param	string	    $morehtmlright			More html to show
  *  @param  string      $morecss            More css to the table
  *  @param  int         $limit              Max number of lines (-1 = use default, 0 = no limit, > 0 = limit).
  *  @param  int         $hideselectlimit    Force to hide select limit
  *  @param  int         $hidenavigation     Force to hide all navigation tools
  *	@return	void
  */
-function print_barre_liste($titre, $page, $file, $options='', $sortfield='', $sortorder='', $center='', $num=-1, $totalnboflines='', $picto='title_generic.png', $pictoisfullpath=0, $morehtml='', $morecss='', $limit=-1, $hideselectlimit=0, $hidenavigation=0)
+function print_barre_liste($titre, $page, $file, $options='', $sortfield='', $sortorder='', $morehtmlcenter='', $num=-1, $totalnboflines='', $picto='title_generic.png', $pictoisfullpath=0, $morehtmlright='', $morecss='', $limit=-1, $hideselectlimit=0, $hidenavigation=0)
 {
 	global $conf,$langs;
 
@@ -3736,9 +3755,9 @@ function print_barre_liste($titre, $page, $file, $options='', $sortfield='', $so
 	print '</div></td>';
 
 	// Center
-	if ($center)
+	if ($morehtmlcenter)
 	{
-		print '<td class="nobordernopadding center valignmiddle">'.$center.'</td>';
+		print '<td class="nobordernopadding center valignmiddle">'.$morehtmlcenter.'</td>';
 	}
 
 	// Right
@@ -3792,7 +3811,7 @@ function print_barre_liste($titre, $page, $file, $options='', $sortfield='', $so
 		}
 	}
 
-	print_fleche_navigation($page, $file, $options, $nextpage, $pagelist, $morehtml, $savlimit, $totalnboflines, $hideselectlimit);		// output the div and ul for previous/last completed with page numbers into $pagelist
+	print_fleche_navigation($page, $file, $options, $nextpage, $pagelist, $morehtmlright, $savlimit, $totalnboflines, $hideselectlimit);		// output the div and ul for previous/last completed with page numbers into $pagelist
 
 	print '</td>';
 
@@ -5351,7 +5370,8 @@ function getCommonSubstitutionArray($outputlangs, $onlykey=0, $exclude=null, $ob
 
 	if (empty($exclude) || ! in_array('system', $exclude))
 	{
-		$substitutionarray['__(AnyTranslationKey)__']=$outputlangs->trans('TranslationKey');
+		$substitutionarray['__(AnyTranslationKey)__']=$outputlangs->trans('TranslationOfKey');
+		$substitutionarray['__[AnyConstantKey]__']=$outputlangs->trans('ValueOfConstant');
 		$substitutionarray['__DOL_MAIN_URL_ROOT__']=DOL_MAIN_URL_ROOT;
 	}
 	if (empty($exclude) || ! in_array('mycompany', $exclude))
@@ -5586,17 +5606,29 @@ function make_substitutions($text, $substitutionarray, $outputlangs=null)
 	// Make substitution for language keys
 	if (is_object($outputlangs))
 	{
-		while (preg_match('/__\(([^\)]*)\)__/', $text, $reg))
+		while (preg_match('/__\(([^\)]+)\)__/', $text, $reg))
 		{
+			$msgishtml = 0;
+			if (dol_textishtml($text,1)) $msgishtml = 1;
+
 			// If key is __(TranslationKey|langfile)__, then force load of langfile.lang
 			$tmp=explode('|',$reg[1]);
 			if (! empty($tmp[1])) $outputlangs->load($tmp[1]);
 
-			$msgishtml = 0;
-			if (dol_textishtml($text,1)) $msgishtml = 1;
-
 			$text = preg_replace('/__\('.preg_quote($reg[1], '/').'\)__/', $msgishtml?dol_htmlentitiesbr($outputlangs->transnoentitiesnoconv($reg[1])):$outputlangs->transnoentitiesnoconv($reg[1]), $text);
 		}
+	}
+
+	// Make substitution for constant keys. Must be after the substitution of translation, so if text of translation contains a constant,
+	// it is also converted.
+	while (preg_match('/__\[([^\]]+)\]__/', $text, $reg))
+	{
+		$msgishtml = 0;
+		if (dol_textishtml($text,1)) $msgishtml = 1;
+
+		$keyfound = $reg[1];
+		$newval=empty($conf->global->$keyfound)?'':$conf->global->$keyfound;
+		$text = preg_replace('/__\['.preg_quote($keyfound, '/').'\]__/', $msgishtml?dol_htmlentitiesbr($newval):$newval, $text);
 	}
 
 	// Make substitition for array $substitutionarray
@@ -5631,16 +5663,16 @@ function complete_substitutions_array(&$substitutionarray, $outputlangs, $object
 
 	// Add a substitution key for each extrafields, using key __EXTRA_XXX__
 	// TODO Remove this. Already available into the getCommonSubstitutionArray used to build the substitution array.
-	if (is_object($object) && is_array($object->array_options))
+	/*if (is_object($object) && is_array($object->array_options))
 	{
 		foreach($object->array_options as $key => $val)
 		{
 			$keyshort=preg_replace('/^(options|extra)_/','',$key);
-			$substitutionarray['__EXTRA_'.$keyshort.'__']=$val;
+			$substitutionarray['__EXTRAFIELD_'.$keyshort.'__']=$val;
 			// For backward compatibiliy
 			$substitutionarray['%EXTRA_'.$keyshort.'%']=$val;
 		}
-	}
+	}*/
 
 	// Check if there is external substitution to do, requested by plugins
 	$dirsubstitutions=array_merge(array(),(array) $conf->modules_parts['substitutions']);

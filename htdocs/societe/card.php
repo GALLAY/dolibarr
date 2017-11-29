@@ -2440,82 +2440,6 @@ else
 		if (GETPOST('modelselected')) {
 			$action = 'presend';
 		}
-		/*if ($action == 'presend')
-		{
-			// By default if $action=='presend'
-			$titreform='SendMail';
-			$topicmail='';
-			$action='send';
-			$modelmail='thirdparty';
-
-    		print '<div id="formmailbeforetitle" name="formmailbeforetitle"></div>';
-    		print '<div class="clearboth"></div>';
-    		print '<br>';
-			print load_fiche_titre($langs->trans($titreform));
-
-			dol_fiche_head();
-
-			// Define output language
-			$outputlangs = $langs;
-			$newlang = '';
-			if ($conf->global->MAIN_MULTILANGS && empty($newlang) && ! empty($_REQUEST['lang_id']))
-				$newlang = $_REQUEST['lang_id'];
-			if ($conf->global->MAIN_MULTILANGS && empty($newlang))
-				$newlang = $object->default_lang;
-
-			// Cree l'objet formulaire mail
-			include_once DOL_DOCUMENT_ROOT.'/core/class/html.formmail.class.php';
-			$formmail = new FormMail($db);
-			$formmail->param['langsmodels']=(empty($newlang)?$langs->defaultlang:$newlang);
-            $formmail->fromtype = (GETPOST('fromtype')?GETPOST('fromtype'):(!empty($conf->global->MAIN_MAIL_DEFAULT_FROMTYPE)?$conf->global->MAIN_MAIL_DEFAULT_FROMTYPE:'user'));
-
-            if($formmail->fromtype === 'user'){
-                $formmail->fromid = $user->id;
-
-            }
-			$formmail->trackid='thi'.$object->id;
-			if (! empty($conf->global->MAIN_EMAIL_ADD_TRACK_ID) && ($conf->global->MAIN_EMAIL_ADD_TRACK_ID & 2))	// If bit 2 is set
-			{
-				include DOL_DOCUMENT_ROOT.'/core/lib/functions2.lib.php';
-				$formmail->frommail=dolAddEmailTrackId($formmail->frommail, 'thi'.$object->id);
-			}
-			$formmail->withfrom=1;
-			$formmail->withtopic=1;
-			$liste=array();
-			foreach ($object->thirdparty_and_contact_email_array(1) as $key=>$value) $liste[$key]=$value;
-			$formmail->withto=GETPOST('sendto')?GETPOST('sendto'):$liste;
-			$formmail->withtofree=1;
-			$formmail->withtocc=$liste;
-			$formmail->withtoccc=$conf->global->MAIN_EMAIL_USECCC;
-			$formmail->withfile=2;
-			$formmail->withbody=1;
-			$formmail->withdeliveryreceipt=1;
-			$formmail->withcancel=1;
-			// Array of substitutions
-			$formmail->setSubstitFromObject($object, $outputlangs);
-			$formmail->substit['__THIRDPARTY_ID__']=$object->id;		// substit in setSubstitFromObject was wrong for this one
-			$formmail->substit['__THIRDPARTY_NAME__']=$object->name;	// substit in setSubstitFromObject was wrong for this one
-			$formmail->substit['__PERSONALIZED__']='';					// deprecated
-			$formmail->substit['__CONTACTCIVNAME__']='';
-
-
-			// Tableau des parametres complementaires du post
-			$formmail->param['action']=$action;
-			$formmail->param['models']=$modelmail;
-			$formmail->param['models_id']=GETPOST('modelmailselected','int');
-			$formmail->param['socid']=$object->id;
-			$formmail->param['returnurl']=$_SERVER["PHP_SELF"].'?socid='.$object->id;
-
-			// Init list of files
-			if (GETPOST("mode")=='init')
-			{
-				$formmail->clear_attached_files();
-				$formmail->add_attached_files($file,basename($file),dol_mimetype($file));
-			}
-			print $formmail->get_form();
-
-			dol_fiche_end();
-		}*/
 
 		if ($action != 'presend')
 		{
@@ -2546,7 +2470,7 @@ else
 
 			print '</div><div class="fichehalfright"><div class="ficheaddleft">';
 
-			$MAX = 10;
+			$MAXEVENT = 10;
 
 			$morehtmlright = '<a href="'.DOL_URL_ROOT.'/societe/agenda.php?socid='.$object->id.'">';
 			$morehtmlright.= $langs->trans("SeeAll");
@@ -2555,7 +2479,7 @@ else
 			// List of actions on element
 			include_once DOL_DOCUMENT_ROOT . '/core/class/html.formactions.class.php';
 			$formactions = new FormActions($db);
-			$somethingshown = $formactions->showactions($object, '', $socid, 1, '', $MAX, '', $morehtmlright);		// Show all action for thirdparty
+			$somethingshown = $formactions->showactions($object, '', $socid, 1, '', $MAXEVENT, '', $morehtmlright);		// Show all action for thirdparty
 
 			print '</div></div></div>';
 		}

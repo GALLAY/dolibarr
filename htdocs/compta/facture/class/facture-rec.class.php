@@ -291,11 +291,12 @@ class FactureRec extends CommonInvoice
 		$sql.= ', c.code as cond_reglement_code, c.libelle as cond_reglement_libelle, c.libelle_facture as cond_reglement_libelle_doc';
 		//$sql.= ', el.fk_source';
 		$sql.= ' FROM '.MAIN_DB_PREFIX.'facture_rec as f';
-		$sql.= ' LEFT JOIN '.MAIN_DB_PREFIX.'c_payment_term as c ON f.fk_cond_reglement = c.rowid AND c.entity IN (' . getEntity('c_payment_term').')';
-		$sql.= ' LEFT JOIN '.MAIN_DB_PREFIX.'c_paiement as p ON f.fk_mode_reglement = p.id AND p.entity IN (' . getEntity('c_paiement').')';
+		$sql.= ' LEFT JOIN '.MAIN_DB_PREFIX.'c_payment_term as c ON f.fk_cond_reglement = c.rowid AND c.entity IN ('.getEntity('c_payment_term').')';
+		$sql.= ' LEFT JOIN '.MAIN_DB_PREFIX.'c_paiement as p ON f.fk_mode_reglement = p.id AND p.entity IN ('.getEntity('c_paiement').')';
 		//$sql.= " LEFT JOIN ".MAIN_DB_PREFIX."element_element as el ON el.fk_target = f.rowid AND el.targettype = 'facture'";
-		if ($rowid) $sql.= ' WHERE f.rowid='.$rowid;
-		elseif ($ref) $sql.= " WHERE f.titre='".$this->db->escape($ref)."'";
+		$sql.= ' WHERE f.entity IN ('.getEntity('facture').')';
+		if ($rowid) $sql.= ' AND f.rowid='.$rowid;
+		elseif ($ref) $sql.= " AND f.titre='".$this->db->escape($ref)."'";
 		/* This field are not used for template invoice
 		if ($ref_ext) $sql.= " AND f.ref_ext='".$this->db->escape($ref_ext)."'";
 		if ($ref_int) $sql.= " AND f.ref_int='".$this->db->escape($ref_int)."'";
@@ -997,14 +998,16 @@ class FactureRec extends CommonInvoice
 	/**
 	 *	Return clicable name (with picto eventually)
 	 *
-	 * @param	int		$withpicto       Add picto into link
-	 * @param  string	$option          Where point the link
-	 * @param  int		$max             Maxlength of ref
-	 * @param  int		$short           1=Return just URL
-	 * @param  string   $moretitle       Add more text to title tooltip
-	 * @return string 			         String with URL
+	 * @param	int		$withpicto       			Add picto into link
+	 * @param  string	$option          			Where point the link
+	 * @param  int		$max             			Maxlength of ref
+	 * @param  int		$short           			1=Return just URL
+	 * @param  string   $moretitle       			Add more text to title tooltip
+     * @param	int  	$notooltip		 			1=Disable tooltip
+     * @param  int		$save_lastsearch_value    	-1=Auto, 0=No save of lastsearch_values when clicking, 1=Save lastsearch_values whenclicking
+	 * @return string 			         			String with URL
 	 */
-	function getNomUrl($withpicto=0,$option='',$max=0,$short=0,$moretitle='')
+	function getNomUrl($withpicto=0,$option='',$max=0,$short=0,$moretitle='',$notooltip='',$save_lastsearch_value=-1)
 	{
 		global $langs;
 
@@ -1015,16 +1018,22 @@ class FactureRec extends CommonInvoice
 
         if ($short) return $url;
 
-		$picto='bill';
+        if ($option != 'nolink')
+        {
+        	// Add param to save lastsearch_values or not
+        	$add_save_lastsearch_values=($save_lastsearch_value == 1 ? 1 : 0);
+        	if ($save_lastsearch_value == -1 && preg_match('/list\.php/',$_SERVER["PHP_SELF"])) $add_save_lastsearch_values=1;
+        	if ($add_save_lastsearch_values) $url.='&save_lastsearch_values=1';
+        }
 
-		$link = '<a href="'.$url.'" title="'.dol_escape_htmltag($label, 1).'" class="classfortooltip">';
+		$linkstart = '<a href="'.$url.'" title="'.dol_escape_htmltag($label, 1).'" class="classfortooltip">';
 		$linkend='</a>';
 
+		$result .= $linkstart;
+		if ($withpicto) $result.=img_object(($notooltip?'':$label), ($this->picto?$this->picto:'generic'), ($notooltip?(($withpicto != 2) ? 'class="paddingright"' : ''):'class="'.(($withpicto != 2) ? 'paddingright ' : '').'classfortooltip"'), 0, 0, $notooltip?0:1);
+		if ($withpicto != 2) $result.= $this->ref;
+		$result .= $linkend;
 
-
-        if ($withpicto) $result.=($link.img_object($label, $picto, 'class="classfortooltip"').$linkend);
-		if ($withpicto && $withpicto != 2) $result.=' ';
-		if ($withpicto != 2) $result.=$link.$this->ref.$linkend;
 		return $result;
 	}
 
@@ -1032,28 +1041,31 @@ class FactureRec extends CommonInvoice
 	 *  Return label of object status
 	 *
 	 *  @param      int		$mode			0=long label, 1=short label, 2=Picto + short label, 3=Picto, 4=Picto + long label, 5=short label + picto, 6=Long label + picto
-	 *  @return     string			        Label
+	 *  @param      integer	$alreadypaid    Not used on recurring invoices
+	 *  @return     string			        Label of status
 	 */
-	function getLibStatut($mode=0)
+	function getLibStatut($mode=0, $alreadypaid=-1)
 	{
-		return $this->LibStatut($this->frequency?1:0, $this->suspended, $mode, empty($this->type)?0:$this->type);
+
+		return $this->LibStatut($this->frequency?1:0, $this->suspended, $mode, $alreadypaid, empty($this->type)?0:$this->type);
 	}
 
 	/**
-	 *	Renvoi le libelle d'un statut donne
+	 *	Return label of a status
 	 *
 	 *	@param    	int  	$recur         	Is it a recurring invoice ?
 	 *	@param      int		$status        	Id status (suspended or not)
 	 *	@param      int		$mode          	0=long label, 1=short label, 2=Picto + short label, 3=Picto, 4=Picto + long label, 5=short label + picto, 6=long label + picto
+	 *	@param		integer	$alreadypaid	Not used for recurring invoices
 	 *	@param		int		$type			Type invoice
-	 *	@return     string        			Libelle du statut
+	 *	@return     string        			Label of status
 	 */
-	function LibStatut($recur, $status, $mode=0, $type=0)
+	function LibStatut($recur, $status, $mode=0, $alreadypaid=-1, $type=0)
 	{
 		global $langs;
 		$langs->load('bills');
 
-		//print "$recur,$status,$mode,$type";
+		//print "$recur,$status,$mode,$alreadypaid,$type";
 		if ($mode == 0)
 		{
 			$prefix='';

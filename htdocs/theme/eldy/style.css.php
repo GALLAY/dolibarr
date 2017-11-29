@@ -456,6 +456,9 @@ fieldset { border: 1px solid #AAAAAA !important; }
 .trextrafieldseparator td {
     border-bottom: 2px solid rgb(120,120,120) !important;
 }
+input#onlinepaymenturl, input#directdownloadlink {
+	opacity: 0.7;
+}
 
 hr { border: 0; border-top: 1px solid #ccc; }
 
@@ -581,6 +584,9 @@ textarea.centpercent {
 .nowraponall {
 	white-space: nowrap;
 }
+.wordwrap {
+	word-wrap: break-word;
+}
 .nobold {
 	font-weight: normal !important;
 }
@@ -647,8 +653,17 @@ div.divsearchfield {
 div.confirmmessage {
 	padding-top: 6px;
 }
-div.myavailability {
-	padding-top: 6px;
+ul.attendees {
+	padding-top: 0;
+	padding-bottom: 0;
+	padding-left: 0;
+	margin-top: 0;
+	margin-bottom: 0;
+}
+ul.attendees li {
+	list-style-type: none;
+	padding-top:1px;
+	padding-bottom:1px;
 }
 .googlerefreshcal {
 	padding-top: 4px;
@@ -666,6 +681,9 @@ div.myavailability {
 .selectlimit, .marginrightonly {
 	margin-right: 10px !important;
 }
+.marginleftonly {
+	margin-left: 10px !important;
+}
 .selectlimit, .selectlimit:focus {
     border-left: none !important;
     border-top: none !important;
@@ -681,6 +699,12 @@ div.myavailability {
 /* using a tdoverflowxxx make the min-width not working */
 .tdoverflow {
     max-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.tdoverflowmax50 {			/* For tdoverflow, the max-midth become a minimum ! */
+    max-width: 50px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -899,6 +923,9 @@ select.selectarrowonleft option {
 	body {
 		font-size: <?php print $fontsize+3; ?>px;
 	}
+	div.refidno {
+		font-size: <?php print $fontsize+3; ?>px !important;
+	}
 }
 
 /* Force values for small screen 570 */
@@ -906,6 +933,9 @@ select.selectarrowonleft option {
 {
 	body {
 		font-size: <?php print $fontsize+3; ?>px;
+	}
+	div.refidno {
+		font-size: <?php print $fontsize+3; ?>px !important;
 	}
 
 	.divmainbodylarge { margin-left: 20px !important; margin-right: 20px !important; }
@@ -920,7 +950,8 @@ select.selectarrowonleft option {
 		    margin-top: <?php print ($dol_hide_topmenu?'12':'6'); ?>px !important;
 	}
 	div.titre {
-		line-height: 2em;
+		margin-top: 12px;
+		/* line-height: 2em; */
 	}
     .border tbody tr, .border tbody tr td, div.tabBar table.border tr, div.tabBar table.border tr td, div.tabBar div.border .table-border-row, div.tabBar div.border .table-key-border-col, div.tabBar div.border .table-val-border-col {
     	height: 40px !important;
@@ -2219,6 +2250,9 @@ div.divButAction {
 div.tabsAction > a.butAction, div.tabsAction > a.butActionRefused {
 	margin-bottom: 1.4em !important;
 }
+div.tabsActionNoBottom > a.butAction, div.tabsActionNoBottom > a.butActionRefused {
+	margin-bottom: 0 !important;
+}
 
 span.butAction, span.butActionDelete {
 	cursor: pointer;
@@ -2238,6 +2272,11 @@ span.butAction, span.butActionDelete {
     color: #fff;
     background: rgb(<?php echo $colorbackhmenu1 ?>);
     border: 1px solid rgb(<?php echo $colorbackhmenu1 ?>);
+
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
 }
 
 .butAction:hover   {
@@ -2788,7 +2827,6 @@ input.liste_titre {
 .listactionlargetitle .liste_titre {
 	line-height: 24px;
 }
-
 .noborder tr.liste_total td, tr.liste_total td, form.liste_total div, .noborder tr.liste_total_wrap td, tr.liste_total_wrap td, form.liste_total_wrap div {
     color: #551188;
     font-weight: normal;
@@ -2995,6 +3033,10 @@ span.dashboardlineko {
 }
 .tdboxstats {
 	text-align: center;
+}
+.boxworkingboard .tdboxstats {
+	padding-left: 0px !important;
+	padding-right: 0px !important;
 }
 a.valignmiddle.dashboardlineindicator {
     line-height: 30px;
@@ -3505,8 +3547,8 @@ table.cal_month td:last-child   { border-right: 0px; }
 .cal_peruser       { padding-top: 0 !important; padding-bottom: 0 !important; padding-<?php print $left; ?>: 1px !important; padding-<?php print $right; ?>: 1px !important; }
 .cal_impair        { background: #F8F8F8; }
 .cal_today_peruser_impair { background: #F8F8F0; }
-.peruser_busy      { background: #CC8888; }
-.peruser_notbusy   { background: #EEDDDD; opacity: 0.5; }
+.peruser_busy      { }
+.peruser_notbusy   { opacity: 0.5; }
 table.cal_event    { border: none; border-collapse: collapse; margin-bottom: 1px; min-height: 20px; }
 table.cal_event td { border: none; padding-<?php print $left; ?>: 2px; padding-<?php print $right; ?>: 2px; padding-top: 0px; padding-bottom: 0px; }
 table.cal_event td.cal_event { padding: 4px 4px !important; }
@@ -3514,7 +3556,7 @@ table.cal_event td.cal_event_right { padding: 4px 4px !important; }
 .cal_event a:link    { color: #111111; font-size: 11px; font-weight: normal !important; }
 .cal_event a:visited { color: #111111; font-size: 11px; font-weight: normal !important; }
 .cal_event a:active  { color: #111111; font-size: 11px; font-weight: normal !important; }
-.cal_event a:hover   { color: #111111; font-size: 11px; font-weight: normal !important; color:rgba(255,255,255,.75); }
+.cal_event_busy a:hover   { color: #111111; font-size: 11px; font-weight: normal !important; color:rgba(255,255,255,.75); }
 .cal_event_busy      { }
 .cal_peruserviewname { max-width: 100px; height: 22px; }
 
@@ -4068,6 +4110,7 @@ div#ecm-layout-center {
 	max-width: 1024px;
 	padding-left: 10px !important;
 	padding-right: 10px !important;
+	word-wrap: break-word;
 }
 .jnotify-container .jnotify-notification .jnotify-message {
 	font-weight: normal;
@@ -4363,6 +4406,10 @@ a span.select2-chosen
 #addbox .select2-container .select2-choice > .select2-chosen, #actionbookmark .select2-container .select2-choice > .select2-chosen {
     text-align: <?php echo $left; ?>;
     opacity: 0.4;
+}
+.select2-container--default .select2-selection--single .select2-selection__placeholder {
+	color: unset;
+	opacity: 0.5;
 }
 span#select2-boxbookmark-container, span#select2-boxcombo-container {
     text-align: <?php echo $left; ?>;
@@ -4874,6 +4921,10 @@ div.tabsElem a.tab {
     }
 	div.tmenuleft {
 		display: none;
+	}
+
+	.dropdown dd ul {
+		max-width: 300px;
 	}
 }
 /* rule to reduce top menu - 2nd reduction */
