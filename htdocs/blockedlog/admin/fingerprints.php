@@ -38,6 +38,10 @@ $showonlyerrors = GETPOST('showonlyerrors','int');
 
 $block_static = new BlockedLog($db);
 
+/*
+ * Actions
+ */
+
 if($action === 'downloadblockchain') {
 
 	$auth = new BlockedLogAuthority($db);
@@ -54,8 +58,11 @@ if($action === 'downloadblockchain') {
 }
 else if($action === 'downloadcsv') {
 
-	$res = $db->query("SELECT rowid,tms,action,amounts,element,fk_object,date_object,ref_object,signature,fk_user
-					FROM ".MAIN_DB_PREFIX."blockedlog ORDER BY rowid ASC");
+	$sql = "SELECT rowid,date_creation,tms,user_fullname,action,amounts,element,fk_object,date_object,ref_object,signature,fk_user,object_data";
+	$sql.= " FROM ".MAIN_DB_PREFIX."blockedlog";
+	$sql.= " WHERE entity = ".$conf->entity;
+	$sql.= " ORDER BY rowid ASC";
+	$res = $db->query($sql);
 
 	if($res) {
 
@@ -63,32 +70,35 @@ else if($action === 'downloadcsv') {
 
 		header('Content-Type: application/octet-stream');
 		header("Content-Transfer-Encoding: Binary");
-		header("Content-disposition: attachment; filename=\"" .$signature. ".csv\"");
+		header("Content-disposition: attachment; filename=\"archive-log-" .$signature. ".csv\"");
 
 		print $langs->transnoentities('Id')
-			.';'.$langs->transnoentities('Timestamp')
+			.';'.$langs->transnoentities('Date')
+			.';'.$langs->transnoentities('User')
 			.';'.$langs->transnoentities('Action')
-			.';'.$langs->transnoentities('Amounts')
 			.';'.$langs->transnoentities('Element')
+			.';'.$langs->transnoentities('Amounts')
 			.';'.$langs->transnoentities('ObjectId')
 			.';'.$langs->transnoentities('Date')
 			.';'.$langs->transnoentities('Ref')
 			.';'.$langs->transnoentities('Fingerprint')
-			.';'.$langs->transnoentities('User')."\n";
+			.';'.$langs->transnoentities('FullData')
+			."\n";
 
 		while($obj = $db->fetch_object($res)) {
 
 			print $obj->rowid
-				.';'.$obj->tms
+				.';'.$obj->date_creation
+				.';"'.$obj->user_fullname.'"'
 				.';'.$obj->action
-				.';'.$obj->amounts
 				.';'.$obj->element
+				.';'.$obj->amounts
 				.';'.$obj->fk_object
 				.';'.$obj->date_object
-				.';'.$obj->ref_object
+				.';"'.$obj->ref_object.'"'
 				.';'.$obj->signature
-				.';'.$obj->fk_user."\n";
-
+				.';"'.str_replace('"','""',$obj->object_data).'"'
+				."\n";
 		}
 
 		exit;
@@ -99,11 +109,12 @@ else if($action === 'downloadcsv') {
 
 }
 
+
 /*
  *	View
  */
 
-$blocks = $block_static->getLog('all', 0, GETPOST('all') ? 0 : 50);
+$blocks = $block_static->getLog('all', 0, GETPOST('all','alpha') ? 0 : 50);
 
 $form=new Form($db);
 
@@ -128,28 +139,29 @@ print ' | <a href="?action=downloadcsv">'.$langs->trans('DownloadLogCSV').'</a>'
 print ' </div>';
 
 
+print '<div class="div-table-responsive">';		// You can use div-table-responsive-no-min if you dont need reserved height for your table
 print '<table class="noborder" width="100%">';
+
 print '<tr class="liste_titre">';
-
-print '<td class="minwidth50">'.$langs->trans('#').'</td>';
-print '<td class="center">'.$langs->trans('Date').'</td>';
-print '<td>'.$langs->trans('Author').'</td>';
-print '<td>'.$langs->trans('Action').'</td>';
-print '<td>'.$langs->trans('Ref').'</td>';
-print '<td>'.$langs->trans('Element').'</td>';
-print '<td>'.$langs->trans('Amount').'</td>';
-print '<td class="center">'.$langs->trans('DataOfArchivedEvent').'</td>';
-print '<td>'.$langs->trans('Fingerprint').'</td>';
-print '<td><span id="blockchainstatus"></span></td>';
-
+print getTitleFieldOfList($langs->trans('#'), 0, $_SERVER["PHP_SELF"],'','','','',$sortfield,$sortorder,'minwidth50 ')."\n";
+print getTitleFieldOfList($langs->trans('Date'), 0, $_SERVER["PHP_SELF"],'','','','',$sortfield,$sortorder,'')."\n";
+print getTitleFieldOfList($langs->trans('Author'), 0, $_SERVER["PHP_SELF"],'','','','',$sortfield,$sortorder,'')."\n";
+print getTitleFieldOfList($langs->trans('Action'), 0, $_SERVER["PHP_SELF"],'','','','',$sortfield,$sortorder,'')."\n";
+print getTitleFieldOfList($langs->trans('Ref'), 0, $_SERVER["PHP_SELF"],'','','','',$sortfield,$sortorder,'')."\n";
+print getTitleFieldOfList($langs->trans('Element'), 0, $_SERVER["PHP_SELF"],'','','','',$sortfield,$sortorder,'')."\n";
+print getTitleFieldOfList($langs->trans('Amount'), 0, $_SERVER["PHP_SELF"],'','','','align="right"',$sortfield,$sortorder,'')."\n";
+print getTitleFieldOfList($langs->trans('DataOfArchivedEvent'), 0, $_SERVER["PHP_SELF"],'','','','align="center"',$sortfield,$sortorder,'')."\n";
+print getTitleFieldOfList($langs->trans('Fingerprint'), 0, $_SERVER["PHP_SELF"],'','','','',$sortfield,$sortorder,'')."\n";
+print getTitleFieldOfList('<span id="blockchainstatus"></span>', 0, $_SERVER["PHP_SELF"],'','','','',$sortfield,$sortorder,'')."\n";
 print '</tr>';
 
+$atleastoneerror=0;
 foreach($blocks as &$block) {
 
 	$checksignature = $block->checkSignature();
 	$object_link = $block->getObjectLink();
 
-	if(!$showonlyerrors || $block->error>0) {
+	if (!$showonlyerrors || $block->error>0) {
 
 	   	print '<tr class="oddeven">';
 	   	print '<td>'.$block->id.'</td>';
@@ -159,14 +171,23 @@ foreach($blocks as &$block) {
 	   	print '<td>'.$block->ref_object.'</td>';
 	   	print '<td>'.$object_link.'</td>';
 	   	print '<td align="right">'.price($block->amounts).'</td>';
-	   	print '<td align="center"><a href="#" blockid="'.$block->id.'" rel="show-info">'.img_info($langs->trans('ShowDetails')).'</a></td>';
+	   	print '<td align="center"><a href="#" data-blockid="'.$block->id.'" rel="show-info">'.img_info($langs->trans('ShowDetails')).'</a></td>';
 
 	   	print '<td>';
 	   	print $form->textwithpicto(dol_trunc($block->signature, '12'), $block->signature);
 	   	print '</td>';
 
 	   	print '<td>';
-	   	print $block->error == 0 ? img_picto($langs->trans('OkCheckFingerprintValidity'), 'tick') : img_picto($langs->trans('KoCheckFingerprintValidity'), 'statut8');
+	   	if (empty($block->error))
+	   	{
+	   		if (empty($atleastoneerror)) print img_picto($langs->trans('OkCheckFingerprintValidity'), 'statut4');
+	   		else print img_picto($langs->trans('OkCheckFingerprintValidityButChainIsKo'), 'statut1');
+	   	}
+	   	else
+	   	{
+	   		$atleastoneerror++;
+	   		print img_picto($langs->trans('KoCheckFingerprintValidity'), 'statut8');
+	   	}
 
 	   	if(!empty($conf->global->BLOCKEDLOG_USE_REMOTE_AUTHORITY) && !empty($conf->global->BLOCKEDLOG_AUTHORITY_URL)) {
 	   		print ' '.($block->certified ? img_picto($langs->trans('AddedByAuthority'), 'info') :  img_picto($langs->trans('NotAddedByAuthorityYet'), 'info_black') );
@@ -179,53 +200,49 @@ foreach($blocks as &$block) {
 }
 
 print '</table>';
+print '</div>';
 
+print '<script type="text/javascript">
 
+jQuery(document).ready(function () {
+	jQuery("#dialogforpopup").dialog(
+	{ closeOnEscape: true, classes: { "ui-dialog": "highlight" },
+	maxHeight: window.innerHeight-60, height: window.innerHeight-60, width: '.($conf->browser->layout == 'phone' ? 400 : 700).',
+	modal: true,
+	autoOpen: false }).css("z-index: 5000");
 
-?>
-<script type="text/javascript">
-$('a[rel=show-info]').click(function() {
+	$("a[rel=show-info]").click(function() {
 
-	$pop = $('<div id="pop-info"><table width="100%" class="border"><thead><th width="25%"><?php echo $langs->trans('Field') ?></th><th><?php echo $langs->trans('Value') ?></th></thead><tbody></tbody></table></div>');
+	    console.log("We click on tooltip");
 
-	$pop.dialog({
-		title:"<?php echo $langs->transnoentities('BlockedlogInfoDialog'); ?>"
-		,modal:true
-		,width:'80%'
+		jQuery("#dialogforpopup").html(\'<div id="pop-info"><table width="100%" height="80%" class="border"><thead><th width="50%">'.$langs->trans('Field').'</th><th>'.$langs->trans('Value').'</th></thead><tbody></tbody></table></div>\');
+
+		var fk_block = $(this).attr("data-blockid");
+
+		$.ajax({
+			url:"../ajax/block-info.php?id="+fk_block
+			,dataType:"json"
+		}).done(function(data) {
+			drawData(data,"");
+		});
+
+		jQuery("#dialogforpopup").dialog("open");
 	});
 
-	var fk_block = $(this).attr("blockid");
 
-	$.ajax({
-		url:"../ajax/block-info.php?id="+fk_block
-		,dataType:'json'
-	}).done(function(data) {
+	function drawData(data, prefix) {
+		for(x in data) {
+			value = data[x];
 
-		drawData(data,'');
-
-	});
-
-});
-
-function drawData(data, prefix) {
-
-	for(x in data) {
-
-		value = data[x];
-
-		$('#pop-info table tbody').append('<tr><td>'+prefix+x+'</td><td>'+value+'</td></tr>');
-
-		if( (typeof value === "object") && (value !== null) ) {
-			drawData(value, prefix+x+' &gt;&gt; ');
+			$("#pop-info table tbody").append("<tr><td>"+prefix+x+"</td><td class=\"wordwrap\">"+value+"</td></tr>");
+			if( (typeof value === "object") && (value !== null) ) {
+				drawData(value, prefix+x+" &gt;&gt; ");
+			}
 		}
-
 	}
 
-}
-
-</script>
-
-<?php
+})
+</script>'."\n";
 
 
 if(!empty($conf->global->BLOCKEDLOG_USE_REMOTE_AUTHORITY) && !empty($conf->global->BLOCKEDLOG_AUTHORITY_URL)) {

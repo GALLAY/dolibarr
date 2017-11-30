@@ -16,13 +16,14 @@
  */
 
 /**
- *	\file       htdocs/core/triggers/interface_50_modAgenda_ActionsBlockedLog.class.php
+ *	\file       htdocs/core/triggers/interface_50_modBlockedlog_ActionsBlockedLog.class.php
  *  \ingroup    system
  *  \brief      Trigger file for blockedlog module
  */
 
 require_once DOL_DOCUMENT_ROOT.'/core/triggers/dolibarrtriggers.class.php';
 require_once DOL_DOCUMENT_ROOT.'/blockedlog/class/blockedlog.class.php';
+
 
 /**
  *  Class of triggered functions for agenda module
@@ -79,9 +80,7 @@ class InterfaceActionsBlockedLog extends DolibarrTriggers
 
 
 		$b=new BlockedLog($this->db);
-		$b->action = $action;
-		$b->amounts= $amounts;
-		$b->setObjectData($object);		// Set field date_object, ref_object, fk_object, element, object_data
+		$b->setObjectData($object, $action, $amounts);		// Set field date_object, ref_object, fk_object, element, object_data
 
 		$res = $b->create($user);
 
