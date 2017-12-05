@@ -632,9 +632,10 @@ function isInEEC($object)
  * 		@param	Object		$object			Third party object
  *      @param  string		$backtopage		Url to go once contact is created
  *      @param  int         $nocreatelink   1=Hide create project link
+ *      @param	string		$morehtmlright	More html on right of title
  *      @return	void
  */
-function show_projects($conf, $langs, $db, $object, $backtopage='', $nocreatelink=0)
+function show_projects($conf, $langs, $db, $object, $backtopage='', $nocreatelink=0, $morehtmlright='')
 {
     global $user;
     global $bc;
@@ -655,7 +656,7 @@ function show_projects($conf, $langs, $db, $object, $backtopage='', $nocreatelin
         }
 
         print "\n";
-        print load_fiche_titre($langs->trans("ProjectsDedicatedToThisThirdParty"),$buttoncreate,'');
+        print load_fiche_titre($langs->trans("ProjectsDedicatedToThisThirdParty"), $buttoncreate.$morehtmlright, '');
         print '<div class="div-table-responsive">';
         print "\n".'<table class="noborder" width=100%>';
 
@@ -803,23 +804,22 @@ function show_contacts($conf,$langs,$db,$object,$backtopage='')
     {
     	$addcontact = (! empty($conf->global->SOCIETE_ADDRESSES_MANAGEMENT) ? $langs->trans("AddContact") : $langs->trans("AddContactAddress"));
 		$buttoncreate='<a class="addnewrecord" href="'.DOL_URL_ROOT.'/contact/card.php?socid='.$object->id.'&amp;action=create&amp;backtopage='.urlencode($backtopage).'">'.$addcontact;
-		if (empty($conf->dol_optimize_smallscreen)) $buttoncreate.=' '.img_picto($addcontact,'filenew');
 		$buttoncreate.='</a>'."\n";
     }
 
     print "\n";
 
     $title = (! empty($conf->global->SOCIETE_ADDRESSES_MANAGEMENT) ? $langs->trans("ContactsForCompany") : $langs->trans("ContactsAddressesForCompany"));
-    print load_fiche_titre($title,$buttoncreate,'');
+    print load_fiche_titre($title, $buttoncreate,'');
 
-    print '<form method="GET" action="'.$_SERVER["PHP_SELF"].'" name="formfilter">';
+    print '<form method="POST" action="'.$_SERVER["PHP_SELF"].'" name="formfilter">';
     print '<input type="hidden" name="socid" value="'.$object->id.'">';
     print '<input type="hidden" name="sortorder" value="'.$sortorder.'">';
     print '<input type="hidden" name="sortfield" value="'.$sortfield.'">';
     print '<input type="hidden" name="page" value="'.$page.'">';
 
 
-	print '<div class="div-table-responsive-nomin">';		// You can use div-table-responsive-no-min if you dont need reserved height for your table
+	print '<div class="div-table-responsive-no-min">';		// You can use div-table-responsive-no-min if you dont need reserved height for your table
     print "\n".'<table class="noborder" width="100%">'."\n";
 
     $param="socid=".$object->id;
@@ -842,48 +842,48 @@ function show_contacts($conf,$langs,$db,$object,$backtopage='')
 
     $colspan=9;
 
-    if ($num || (GETPOST('button_search','alpha') || GETPOST('button_search.x','alpha') || GETPOST('button_search_x','alpha')))
-    {
-    	print '<tr class="liste_titre">';
+	print '<tr class="liste_titre">';
 
-    	// Photo - Name
-    	print '<td class="liste_titre">';
-    	print '<input type="text" class="flat minwidth75" name="search_name" value="'.dol_escape_htmltag($search_name).'">';
-    	print '</td>';
+	// Photo - Name
+	print '<td class="liste_titre">';
+	print '<input type="text" class="flat minwidth75" name="search_name" value="'.dol_escape_htmltag($search_name).'">';
+	print '</td>';
 
-    	// Position
-    	print '<td class="liste_titre">';
-    	print '</td>';
+	// Position
+	print '<td class="liste_titre">';
+	print '</td>';
 
-    	// Address - Phone - Email
-    	print '<td class="liste_titre"></td>';
+	// Address - Phone - Email
+	print '<td class="liste_titre"></td>';
 
-    	// Status
-    	print '<td class="liste_titre maxwidthonsmartphone">';
-    	print $form->selectarray('search_status', array('-1'=>'','0'=>$contactstatic->LibStatut(0,1),'1'=>$contactstatic->LibStatut(1,1)),$search_status);
-    	print '</td>';
+	// Status
+	print '<td class="liste_titre maxwidthonsmartphone" align="center">';
+	print $form->selectarray('search_status', array('-1'=>'','0'=>$contactstatic->LibStatut(0,1),'1'=>$contactstatic->LibStatut(1,1)),$search_status);
+	print '</td>';
 
-    	// Add to agenda
-    	if (! empty($conf->agenda->enabled) && $user->rights->agenda->myactions->create)
-    	{
-    		$colspan++;
-    		print '<td class="liste_titre"></td>';
-    	}
+	// Add to agenda
+	if (! empty($conf->agenda->enabled) && $user->rights->agenda->myactions->create)
+	{
+		$colspan++;
+		print '<td class="liste_titre"></td>';
+	}
 
-    	// Action
-		print '<td class="liste_titre" align="right">';
-		$searchpicto=$form->showFilterButtons();
-		print $searchpicto;
-		print '</td>';
+	// Action
+	print '<td class="liste_titre" align="right">';
+	$searchpicto=$form->showFilterButtons();
+	print $searchpicto;
+	print '</td>';
 
-    	print "</tr>";
-    }
+	print "</tr>";
+
+    $titlefieldaddress=$langs->trans("Address").' / '.$langs->trans("Phone").' / '.$langs->trans("Email");
+    if (! empty($conf->dol_optimize_smallscreen)) $titlefieldaddress=$langs->trans("Address");
 
     print '<tr class="liste_titre">';
     print_liste_field_titre("Name",$_SERVER["PHP_SELF"],"p.lastname","",$param,'',$sortfield,$sortorder);
     print_liste_field_titre("Poste",$_SERVER["PHP_SELF"],"p.poste","",$param,'',$sortfield,$sortorder);
-    print_liste_field_titre( $langs->trans("Address").' / '.$langs->trans("Phone").' / '.$langs->trans("Email"),$_SERVER["PHP_SELF"],"","",$param,'',$sortfield,$sortorder);
-    print_liste_field_titre("Status",$_SERVER["PHP_SELF"],"p.statut","",$param,'',$sortfield,$sortorder);
+    print_liste_field_titre($titlefieldaddress,$_SERVER["PHP_SELF"],"","",$param,'',$sortfield,$sortorder);
+    print_liste_field_titre("Status",$_SERVER["PHP_SELF"],"p.statut","",$param,'align="center"',$sortfield,$sortorder);
     // Add to agenda
     if (! empty($conf->agenda->enabled) && ! empty($user->rights->agenda->myactions->create)) print_liste_field_titre('');
     // Edit
@@ -941,7 +941,7 @@ function show_contacts($conf,$langs,$db,$object,$backtopage='')
             print '</td>';
 
             // Status
-			print '<td>'.$contactstatic->getLibStatut(5).'</td>';
+			print '<td align="center">'.$contactstatic->getLibStatut(5).'</td>';
 
             // Add to agenda
             if (! empty($conf->agenda->enabled) && $user->rights->agenda->myactions->create)

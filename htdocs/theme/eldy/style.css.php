@@ -403,6 +403,7 @@ td.actionbuttons a {
 }
 select.flat, form.flat select {
 	font-weight: normal;
+	font-size: unset;
     height: 2em;
 }
 .optionblue {
@@ -620,12 +621,12 @@ textarea.centpercent {
 	padding: 2px 5px;
 	font-size: 10px;
 	font-weight: 700;
-	line-height: 0.9em;
+	line-height: 1em;
 	color: #fff;
 	text-align: center;
 	white-space: nowrap;
-	vertical-align: baseline;
-	background-color: #777;
+	vertical-align: text-bottom;
+	background-color: #aaa;
 	border-radius: 10px;
 }
 .borderrightlight
@@ -1148,8 +1149,8 @@ div.vmenu, td.vmenu {
 	padding-right: 6px !important;
 }
 div.fiche {
-	margin-<?php print $left; ?>: 6px !important;
-	margin-<?php print $right; ?>: 6px !important;
+	margin-<?php print $left; ?>: 9px !important;
+	margin-<?php print $right; ?>: 10px !important;
 }
 <?php } ?>
 
@@ -3627,8 +3628,8 @@ table.cal_event td.cal_event_right { padding: 4px 4px !important; }
 /* ============================================================================== */
 
 /* CSS for treeview */
-.treeview ul { background-color: transparent !important; margin-top: 0; }
-.treeview li { background-color: transparent !important; padding: 0 0 0 16px !important; min-height: 20px; }
+.treeview ul { background-color: transparent !important; margin-top: 4px; padding-top: 4px !important; }
+.treeview li { background-color: transparent !important; padding: 0 0 0 16px !important; min-height: 26px; }
 .treeview .hover { color: rgb(<?php print $colortextlink; ?>) !important; text-decoration: underline !important; }
 
 
@@ -4774,8 +4775,18 @@ div.tabsElem a.tab {
 }
 .lilevel3
 {
-	padding-left: 54px;
+	padding-left: 44px;
 	background: #fff ! important;
+}
+.lilevel4
+{
+	padding-left: 66px;
+    background: #fff ! important;
+}
+.lilevel5
+{
+	padding-left: 88px;
+    background: #fff ! important;
 }
 
 
@@ -5036,6 +5047,18 @@ div.tabsElem a.tab {
 	div.mainmenu {
     	min-width: 20px;
     }
+
+	.titlefield {
+	    width: auto !important;		/* We want to ignor the 30%, try to use more if you can */
+	}
+	.tableforfield>tr>td:first-child {
+	    max-width: 100px;			/* but no more than 100px */
+	}
+	.badge {
+		line-height: 1.2em;
+		min-width: auto;
+		font-size: 12px;
+	}
 }
 
 <?php

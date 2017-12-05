@@ -788,6 +788,24 @@ if (empty($reshook))
 		}
 	}
 
+	// Delete payment
+	elseif ($action == 'confirm_delete_paiement' && $confirm == 'yes' && $user->rights->facture->creer)
+	{
+		$object->fetch($id);
+		if ($object->statut == Facture::STATUS_VALIDATED && $object->paye == 0)
+		{
+			$paiement = new Paiement($db);
+			$result=$paiement->fetch(GETPOST('paiement_id'));
+			if ($result > 0) {
+				$result=$paiement->delete(); // If fetch ok and found
+				header("Location: ".$_SERVER['PHP_SELF']."?id=".$id);
+			}
+			if ($result < 0) {
+				setEventMessages($paiement->error, $paiement->errors, 'errors');
+			}
+		}
+	}
+
 	/*
 	 * Insert new invoice in database
 	 */
@@ -1098,7 +1116,7 @@ if (empty($reshook))
 						$exp = new Expedition($db);
 						$exp->fetch($object->origin_id);
 						$exp->fetchObjectLinked();
-						if (count($exp->linkedObjectsIds['commande']) > 0) {
+						if (is_array($exp->linkedObjectsIds['commande']) && count($exp->linkedObjectsIds['commande']) > 0) {
 							foreach ($exp->linkedObjectsIds['commande'] as $key => $value){
 								$object->linked_objects['commande'] = $value;
 							}
@@ -2913,7 +2931,9 @@ else if ($id > 0 || ! empty($ref))
 	$resteapayer = price2num($object->total_ttc - $totalpaye - $totalcreditnotes - $totaldeposits, 'MT');
 
 	if ($object->paye)
+	{
 		$resteapayer = 0;
+	}
 	$resteapayeraffiche = $resteapayer;
 
 	if (! empty($conf->global->FACTURE_DEPOSITS_ARE_JUST_PAYMENTS)) {	// Never use this
@@ -3089,7 +3109,7 @@ else if ($id > 0 || ! empty($ref))
 	if ($action == 'paid' && $resteapayer > 0) {
 		// Code
 		$i = 0;
-		$close [$i] ['code'] = 'discount_vat';
+		$close [$i] ['code'] = 'discount_vat';	// escompte
 		$i ++;
 		$close [$i] ['code'] = 'badcustomer';
 		$i ++;
@@ -3146,6 +3166,13 @@ else if ($id > 0 || ! empty($ref))
 
 			$formconfirm = $form->formconfirm($_SERVER['PHP_SELF'] . '?facid=' . $object->id, $langs->trans('CancelBill'), $langs->trans('ConfirmCancelBill', $object->ref), 'confirm_canceled', $formquestion, "yes");
 		}
+	}
+
+	if ($action == 'deletepaiement')
+	{
+		$payment_id = GETPOST('paiement_id');
+		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id.'&paiement_id='.$payment_id, $langs->trans('DeletePayment'), $langs->trans('ConfirmDeletePayment'), 'confirm_delete_paiement', '', 0, 1);
+
 	}
 
 	// Confirmation de la suppression d'une ligne produit
@@ -3791,6 +3818,7 @@ else if ($id > 0 || ! empty($ref))
 
 
 	// List of payments already done
+
 	print '<div class="div-table-responsive-no-min">';
 	print '<table class="noborder paymenttable" width="100%">';
 
@@ -3862,7 +3890,14 @@ else if ($id > 0 || ! empty($ref))
 					print '</td>';
 				}
 				print '<td align="right">' . price($sign * $objp->amount) . '</td>';
-				print '<td>&nbsp;</td>';
+				print '<td align="center">';
+				if ($object->statut == Facture::STATUS_VALIDATED && $object->paye == 0 && $user->societe_id == 0)
+				{
+					print '<a href="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&action=deletepaiement&paiement_id='.$objp->rowid.'">';
+					print img_delete();
+					print '</a>';
+				}
+				print '</td>';
 				print '</tr>';
 				$i ++;
 			}
@@ -4346,13 +4381,30 @@ else if ($id > 0 || ! empty($ref))
 			// Delete
 			if ($user->rights->facture->supprimer)
 			{
-				if ($object->is_erasable() <= 0) {
-					print '<div class="inline-block divButAction"><a class="butActionRefused" href="#" title="' . $langs->trans("DisabledBecauseNotErasable") . '">' . $langs->trans('Delete') . '</a></div>';
-				} else if ($objectidnext) {
-					print '<div class="inline-block divButAction"><a class="butActionRefused" href="#" title="' . $langs->trans("DisabledBecauseReplacedInvoice") . '">' . $langs->trans('Delete') . '</a></div>';
-				} elseif ($object->getSommePaiement()) {
+				$isErasable = $object->is_erasable();
+				//var_dump($isErasable);
+				if ($isErasable == -4) {
 					print '<div class="inline-block divButAction"><a class="butActionRefused" href="#" title="' . $langs->trans("DisabledBecausePayments") . '">' . $langs->trans('Delete') . '</a></div>';
-				} else {
+				}
+				elseif ($isErasable == -3) {
+					print '<div class="inline-block divButAction"><a class="butActionRefused" href="#" title="' . $langs->trans("DisabledBecauseNotLastSituationInvoice") . '">' . $langs->trans('Delete') . '</a></div>';
+				}
+				elseif ($isErasable == -2) {
+					print '<div class="inline-block divButAction"><a class="butActionRefused" href="#" title="' . $langs->trans("DisabledBecauseNotLastInvoice") . '">' . $langs->trans('Delete') . '</a></div>';
+				}
+				elseif ($isErasable == -1) {
+					print '<div class="inline-block divButAction"><a class="butActionRefused" href="#" title="' . $langs->trans("DisabledBecauseDispatchedInBookkeeping") . '">' . $langs->trans('Delete') . '</a></div>';
+				}
+				elseif ($isErasable <= 0)	// Any other cases
+				{
+					print '<div class="inline-block divButAction"><a class="butActionRefused" href="#" title="' . $langs->trans("DisabledBecauseNotErasable") . '">' . $langs->trans('Delete') . '</a></div>';
+				}
+				elseif ($objectidnext)
+				{
+					print '<div class="inline-block divButAction"><a class="butActionRefused" href="#" title="' . $langs->trans("DisabledBecauseReplacedInvoice") . '">' . $langs->trans('Delete') . '</a></div>';
+				}
+				else
+				{
 					print '<div class="inline-block divButAction"><a class="butActionDelete" href="' . $_SERVER["PHP_SELF"] . '?facid=' . $object->id . '&amp;action=delete">' . $langs->trans('Delete') . '</a></div>';
 				}
 			} else {

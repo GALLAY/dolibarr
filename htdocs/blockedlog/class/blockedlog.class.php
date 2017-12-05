@@ -148,7 +148,7 @@ class BlockedLog
 			}
 		}
 
-		return $langs->trans('ImpossibleToReloadObject', $this->element, $this->fk_object);
+		return '<i class="opacitymedium">'.$langs->trans('ImpossibleToReloadObject', $this->element, $this->fk_object).'</i>';
 
 	}
 
@@ -184,7 +184,7 @@ class BlockedLog
 	 */
 	public function setObjectData(&$object, $action, $amounts)
 	{
-		global $user, $mysoc;
+		global $langs, $user, $mysoc;
 
 		// Generic fields
 
@@ -205,7 +205,7 @@ class BlockedLog
 			$this->date_object = $object->date;
 		}
 		// ref
-		$this->ref_object = $object->ref;
+		$this->ref_object = ((! empty($object->newref)) ? $object->newref : $object->ref);		// newref is set when validating a draft, ref is set in other cases
 		// type of object
 		$this->element = $object->element;
 		// id of object
@@ -215,7 +215,7 @@ class BlockedLog
 
 		// Add thirdparty info
 
-		if (empty($object->thirdparty) && method_exists('fetch_thirdparty')) $object->fetch_thirdparty();
+		if (empty($object->thirdparty) && method_exists($object, 'fetch_thirdparty')) $object->fetch_thirdparty();
 
 		if (! empty($object->thirdparty))
 		{
@@ -495,7 +495,7 @@ class BlockedLog
 	/**
 	 *	Check if current signature still correct compare to the chain
 	 *
-	 *	@return	boolean
+	 *	@return	boolean			True if OK, False if KO
 	 */
 	public function checkSignature()
 	{
@@ -512,8 +512,8 @@ class BlockedLog
 
 		$res = ($signature === $this->signature);
 
-		if(!$res) {
-			$this->error++;
+		if (!$res) {
+			$this->error = 'Signature KO';
 		}
 
 		return $res;
@@ -578,10 +578,11 @@ class BlockedLog
 	 *	@param	string 	$element      	element to search
 	 *	@param	int 	$fk_object		id of object to search
 	 *	@param	int 	$limit      	max number of element, 0 for all
-	 *	@param	string 	$order      	sort of query
+	 *	@param	string 	$sortfield     	sort field
+	 *	@param	string 	$sortorder     	sort order
 	 *	@return	array					array of object log
 	 */
-	public function getLog($element, $fk_object, $limit = 0, $order = -1)
+	public function getLog($element, $fk_object, $limit = 0, $sortfield = '', $sortorder = '')
 	{
 		global $conf, $cachedlogs;
 
@@ -609,7 +610,8 @@ class BlockedLog
 	         WHERE element='".$element."' AND fk_object=".(int) $fk_object;
 		}
 
-		$sql.=($order<0 ? ' ORDER BY rowid DESC ' : ' ORDER BY rowid ASC ');
+		$sql.=$this->db->order($sortfield, $sortorder);
+		//($order<0 ? ' ORDER BY rowid DESC ' : ' ORDER BY rowid ASC ');
 
 		if($limit > 0 )$sql.=' LIMIT '.$limit;
 

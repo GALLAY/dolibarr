@@ -3317,6 +3317,32 @@ class Product extends CommonObject
 	/**
 	 *  Return all parent products for current product (first level only)
 	 *
+	 *  @return 	int			Nb of father + child
+	 */
+	function hasFatherOrChild()
+	{
+		$nb = 0;
+
+		$sql = "SELECT COUNT(pa.rowid) as nb";
+		$sql.= " FROM ".MAIN_DB_PREFIX."product_association as pa";
+		$sql.= " WHERE pa.fk_product_fils = ".$this->id." OR pa.fk_product_pere = ".$this->id;
+		$resql = $this->db->query($sql);
+		if ($resql)
+		{
+			$obj = $this->db->fetch_object($resql);
+			if ($obj) $nb = $obj->nb;
+		}
+		else
+		{
+			return -1;
+		}
+
+		return $nb;
+	}
+
+	/**
+	 *  Return all parent products for current product (first level only)
+	 *
 	 *  @return 	array 		Array of product
 	 */
 	function getFather()
@@ -3468,7 +3494,11 @@ class Product extends CommonObject
     		if ($this->length)  $label.="<br><b>".$langs->trans("Length").'</b>: '.$this->length.' '.measuring_units_string($this->length_units,'length');
     		if ($this->surface) $label.="<br><b>".$langs->trans("Surface").'</b>: '.$this->surface.' '.measuring_units_string($this->surface_units,'surface');
     		if ($this->volume)  $label.="<br><b>".$langs->trans("Volume").'</b>: '.$this->volume.' '.measuring_units_string($this->volume_units,'volume');
-            if (! empty($conf->productbatch->enabled))
+        }
+
+        if ($this->type == Product::TYPE_PRODUCT || ! empty($conf->global->STOCK_SUPPORTS_SERVICES))
+        {
+    		if (! empty($conf->productbatch->enabled))
             {
             	$langs->load("productbatch");
                 $label.="<br><b>".$langs->trans("ManageLotSerial").'</b>: '.$this->getLibStatut(0,2);
@@ -3843,7 +3873,7 @@ class Product extends CommonObject
 					$this->stock_warehouse[$row->fk_entrepot] = new stdClass();
 					$this->stock_warehouse[$row->fk_entrepot]->real = $row->reel;
 					$this->stock_warehouse[$row->fk_entrepot]->id = $row->rowid;
-					if ((! preg_match('/nobatch/', $option)) && $this->hasbatch()) $this->stock_warehouse[$row->fk_entrepot]->detail_batch=Productbatch::findAll($this->db,$row->rowid,1);
+					if ((! preg_match('/nobatch/', $option)) && $this->hasbatch()) $this->stock_warehouse[$row->fk_entrepot]->detail_batch=Productbatch::findAll($this->db, $row->rowid, 1, $this->id);
 					$this->stock_reel+=$row->reel;
 					$i++;
 				}
