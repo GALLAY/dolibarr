@@ -49,7 +49,7 @@ $socid = GETPOST('socid','int');
 if ($user->societe_id) $socid=$user->societe_id;
 $result = restrictedArea($user,'societe',$socid,'');
 
-$search_all=trim(GETPOST('sall', 'alphanohtml'));
+$search_all=trim(GETPOST('search_all', 'alphanohtml')?GETPOST('search_all', 'alphanohtml'):GETPOST('sall', 'alphanohtml'));
 $search_cti=preg_replace('/^0+/', '', preg_replace('/[^0-9]/', '', GETPOST('search_cti', 'alphanohtml')));	// Phone number without any special chars
 
 $search_id=trim(GETPOST("search_id","int"));
@@ -1078,7 +1078,7 @@ while ($i < min($num, $limit))
 	if (! empty($arrayfields['typent.code']['checked']))
 	{
 		print '<td align="center">';
-		if (count($typenArray)==0) $typenArray = $formcompany->typent_array(1);
+		if (! is_array($typenArray) || count($typenArray)==0) $typenArray = $formcompany->typent_array(1);
 		print $typenArray[$obj->typent_code];
 		print '</td>';
 		if (! $i) $totalarray['nbfield']++;

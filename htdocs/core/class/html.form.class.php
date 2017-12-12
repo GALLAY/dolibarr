@@ -766,7 +766,7 @@ class Form
 				$out .= '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
 			}
 
-			$out.= '<select id="'.$htmlname.'" class="flat selectincoterm noenlargeonsmartphone" name="'.$htmlname.'" '.$htmloption.'>';
+			$out.= '<select id="'.$htmlname.'" class="flat selectincoterm minwidth100imp noenlargeonsmartphone" name="'.$htmlname.'" '.$htmloption.'>';
 			$out.= '<option value="0">&nbsp;</option>';
 			$num = $this->db->num_rows($resql);
 			$i = 0;
@@ -5462,7 +5462,7 @@ class Form
 				$out.='<option value="'.$key.'"';
 				$out.=$style.$disabled;
 				if ($id != '' && $id == $key && ! $disabled) $out.=' selected';		// To preselect a value
-				if ($nohtmlescape) $out.=' html="'.dol_escape_htmltag($selectOptionValue).'"';
+				if ($nohtmlescape) $out.=' data-html="'.dol_escape_htmltag($selectOptionValue).'"';
 				$out.='>';
 				//var_dump($selectOptionValue);
 				$out.=$selectOptionValue;
