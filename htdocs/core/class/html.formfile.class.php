@@ -113,7 +113,7 @@ class FormFile
 
 			if (! empty($options)) $out .= '<td>'.$options.'</td>';
 
-			$out .= '<td valign="middle">';
+			$out .= '<td class="valignmiddle nowrap">';
 
 			$max=$conf->global->MAIN_UPLOAD_DOC;		// En Kb
 			$maxphp=@ini_get('upload_max_filesize');	// En inconnu
@@ -1236,7 +1236,7 @@ class FormFile
 			print "</table>";
 			print '</div>';
 
-			if (! $editline && $nboflines > 1) {
+			if (! $editline && $nboflines > 1 && is_object($object)) {
 				if (! empty($conf->use_javascript_ajax) && $permtoeditline) {
 					$table_element_line = 'ecm_files';
 					include DOL_DOCUMENT_ROOT . '/core/tpl/ajaxrow.tpl.php';

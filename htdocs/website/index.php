@@ -110,6 +110,15 @@ if ($pageid < 0) $pageid = 0;
 if (($pageid > 0 || $pageref) && $action != 'addcontainer')
 {
 	$res = $objectpage->fetch($pageid, ($object->id > 0 ? $object->id : null), $pageref);
+	// Check if pageid is inside the new website, if not we reset param pageid
+	if ($object->id > 0 && ($objectpage->fk_website != $object->id))
+	{
+		$res = $objectpage->fetch(0, $object->id, '');;
+		if ($res == 0)	// Page was not found, we reset it
+		{
+			$objectpage=new WebsitePage($db);
+		}
+	}
 	$pageid = $objectpage->id;
 }
 
@@ -134,6 +143,14 @@ $diroutput = $conf->medias->multidir_output[$conf->entity];
 
 $relativepath=$section_dir;
 $upload_dir = $diroutput.'/'.$relativepath;
+
+$htmlheadercontentdefault ='<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />'."\n";
+$htmlheadercontentdefault.='<script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>'."\n";
+$htmlheadercontentdefault.='<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>'."\n";
+$htmlheadercontentdefault.='<script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js"></script>'."\n";
+$htmlheadercontentdefault.='<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.13.0/umd/popper.min.js"></script>'."\n";
+$htmlheadercontentdefault.='<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0-beta.2/js/bootstrap.min.js"></script>'."\n";
+$htmlheadercontentdefault.='<script src="/document.php?modulepart=medias&file=relativepathtomyfile.js"></script>'."\n";
 
 
 /*
@@ -505,7 +522,9 @@ if ($action == 'addcontainer')
 		$objectpage->lang = GETPOST('WEBSITE_LANG','aZ09');
 		$objectpage->htmlheader = GETPOST('htmlheader','none');
 
-		$objectpage->content = '<div class="dolcontenteditable" contenteditable="true"><div class="center"><h1>'.$langs->trans("MyContainerTitle").'</h1>'.$langs->trans("MyContainerContent").'</div><br><br></div>';
+		$substitutionarray=array();
+		$substitutionarray['__WEBSITE_CREATE_BY__']=$user->getFullName($langs);
+		$objectpage->content = make_substitutions(file_get_contents(DOL_DOCUMENT_ROOT.'/website/pagetemplate.html'), $substitutionarray);
 	}
 
 	if (! $error)
@@ -596,13 +615,15 @@ if ($action == 'addcontainer')
 
 		if (! dol_is_file($filehtmlheader))
 		{
-			$htmlheadercontent = "<!-- HTML header content (common for all pages) -->";
+			$htmlheadercontent ="<html>\n";
+			$htmlheadercontent.=$htmlheadercontentdefault;
+			$htmlheadercontent.="</html>";
 			$result=dolSaveHtmlHeader($filehtmlheader, $htmlheadercontent);
 		}
 
 		if (! dol_is_file($filecss))
 		{
-			$csscontent = "/* CSS content (all pages) */\nbody.bodywebsite { margin: 0; }";
+			$csscontent = "/* CSS content (all pages) */\nbody.bodywebsite { margin: 0; font-family: 'Open Sans', sans-serif; }\n.bodywebsite h1 { margin-top: 0; margin-bottom: 0; padding: 10px;}";
 			$result=dolSaveCssFile($filecss, $csscontent);
 		}
 
@@ -1168,7 +1189,7 @@ if (($action == 'updatesource' || $action == 'updatecontent' || $action == 'conf
 }
 
 // Export site
-if (GETPOST('exportsite'))
+if (GETPOST('exportsite','alpha'))
 {
 	$fileofzip = $object->exportWebSite();
 
@@ -1202,6 +1223,7 @@ $arrayofjs = array(
 	'/includes/ace/ext-statusbar.js',
 	'/includes/ace/ext-language_tools.js',
 	//'/includes/ace/ext-chromevox.js'
+	//'/includes/jquery/plugins/jqueryscoped/jquery.scoped.js',
 );
 $arrayofcss = array();
 
@@ -1606,7 +1628,7 @@ $head = array();
 
 
 /*
- * Edit mode
+ * Edit Site HTML header and CSS
  */
 
 if ($action == 'editcss')
@@ -1614,28 +1636,63 @@ if ($action == 'editcss')
 	print '<div class="fiche">';
 
 	print '<br>';
+	if (GETPOST('editcss','alpha') || GETPOST('refreshpage','alpha'))
+	{
+		$csscontent = @file_get_contents($filecss);
+		// Clean the php css file to remove php code and get only css part
+		$csscontent = preg_replace('/<\?php \/\/ BEGIN PHP[^\?]*END PHP \?>\n*/ims', '', $csscontent);
+	}
+	else
+	{
+		$csscontent = GETPOST('WEBSITE_CSS_INLINE');
+	}
+	if (! trim($csscontent)) $csscontent='/* CSS content (all pages) */'."\n"."body.bodywebsite { margin: 0; font-family: 'Open Sans', sans-serif; }\n.bodywebsite h1 { margin-top: 0; margin-bottom: 0; padding: 10px;}";
 
-	$csscontent = @file_get_contents($filecss);
-	// Clean the php css file to remove php code and get only css part
-	$csscontent = preg_replace('/<\?php \/\/ BEGIN PHP[^\?]*END PHP \?>\n*/ims', '', $csscontent);
-	$csscontent.= GETPOST('WEBSITE_CSS_INLINE');
-	if (! trim($csscontent)) $csscontent='/* CSS content (all pages) */'."\n".'body.bodywebsite { margin: 0; }';
-
-	$jscontent = @file_get_contents($filejs);
-	// Clean the php js file to remove php code and get only js part
-	$jscontent = preg_replace('/<\?php \/\/ BEGIN PHP[^\?]*END PHP \?>\n*/ims', '', $jscontent);
-	$jscontent.= GETPOST('WEBSITE_JS_INLINE');
+	if (GETPOST('editcss','alpha') || GETPOST('refreshpage','alpha'))
+	{
+		$jscontent = @file_get_contents($filejs);
+		// Clean the php js file to remove php code and get only js part
+		$jscontent = preg_replace('/<\?php \/\/ BEGIN PHP[^\?]*END PHP \?>\n*/ims', '', $jscontent);
+	}
+	else
+	{
+		$jscontent = GETPOST('WEBSITE_JS_INLINE');
+	}
 	if (! trim($jscontent)) $jscontent='/* JS content (all pages) */'."\n";
 
-	$htmlheader = @file_get_contents($filehtmlheader);
-	// Clean the php htmlheader file to remove php code and get only html part
-	$htmlheader = preg_replace('/<\?php \/\/ BEGIN PHP[^\?]*END PHP \?>\n*/ims', '', $htmlheader);
-	if (! trim($htmlheader)) $htmlheader='<!-- HTML header content (common for all pages) -->';
-	else $htmlheader='<html>'."\n".trim($htmlheader)."\n".'</html>';
+	if (GETPOST('editcss','alpha') || GETPOST('refreshpage','alpha'))
+	{
+		$htmlheadercontent = @file_get_contents($filehtmlheader);
+		// Clean the php htmlheader file to remove php code and get only html part
+		$htmlheadercontent = preg_replace('/<\?php \/\/ BEGIN PHP[^\?]*END PHP \?>\n*/ims', '', $htmlheadercontent);
+	}
+	else
+	{
+		$htmlheadercontent = GETPOST('WEBSITE_HTML_HEADER');
+	}
+	if (! trim($htmlheadercontent))
+	{
+		$htmlheadercontent ="<html>\n";
+		$htmlheadercontent.=$htmlheadercontentdefault;
+		$htmlheadercontent.="</html>";
+	}
+	else
+	{
+		$htmlheadercontent = preg_replace('/^\s*<html>/ims', '', $htmlheadercontent);
+		$htmlheadercontent = preg_replace('/<\/html>\s*$/ims', '', $htmlheadercontent);
+		$htmlheadercontent='<html>'."\n".trim($htmlheadercontent)."\n".'</html>';
+	}
 
-	$robotcontent = @file_get_contents($filerobot);
-	// Clean the php htmlheader file to remove php code and get only html part
-	$robotcontent = preg_replace('/<\?php \/\/ BEGIN PHP[^\?]*END PHP \?>\n*/ims', '', $robotcontent);
+	if (GETPOST('editcss','alpha') || GETPOST('refreshpage','alpha'))
+	{
+		$robotcontent = @file_get_contents($filerobot);
+		// Clean the php htmlheader file to remove php code and get only html part
+		$robotcontent = preg_replace('/<\?php \/\/ BEGIN PHP[^\?]*END PHP \?>\n*/ims', '', $robotcontent);
+	}
+	else
+	{
+		$robotcontent = GETPOST('WEBSITE_ROBOT');
+	}
 	if (! trim($robotcontent))
 	{
 		$robotcontent.="# Robot file. Generated with ".DOL_APPLICATION_TITLE."\n";
@@ -1644,9 +1701,16 @@ if ($action == 'editcss')
 		$robotcontent.="Disallow: /administrator/\n";
 	}
 
-	$htaccesscontent = @file_get_contents($filehtaccess);
-	// Clean the php htaccesscontent file to remove php code and get only html part
-	$htaccesscontent = preg_replace('/<\?php \/\/ BEGIN PHP[^\?]*END PHP \?>\n*/ims', '', $htaccesscontent);
+	if (GETPOST('editcss','alpha') || GETPOST('refreshpage','alpha'))
+	{
+		$htaccesscontent = @file_get_contents($filehtaccess);
+		// Clean the php htaccesscontent file to remove php code and get only html part
+		$htaccesscontent = preg_replace('/<\?php \/\/ BEGIN PHP[^\?]*END PHP \?>\n*/ims', '', $htaccesscontent);
+	}
+	else
+	{
+		$htaccesscontent = GETPOST('WEBSITE_HTACCESS');
+	}
 	if (! trim($htaccesscontent))
 	{
 		$htaccesscontent.="# Order allow,deny\n";
@@ -1688,10 +1752,12 @@ if ($action == 'editcss')
 
 	// Common HTML header
 	print '<tr><td class="tdtop">';
-	print $langs->trans('WEBSITE_HTML_HEADER');
+	$htmlhelp=$langs->trans("Example").' :<br>';
+	$htmlhelp.=dol_htmlentitiesbr($htmlheadercontentdefault);
+	print $form->textwithpicto($langs->trans('WEBSITE_HTML_HEADER'), $htmlhelp, 1, 'help', '', 0, 2, 'htmlheadertooltip');
 	print '</td><td>';
 
-	$doleditor=new DolEditor('WEBSITE_HTML_HEADER', $htmlheader, '', '220', 'ace', 'In', true, false, 'ace', 0, '100%', '');
+	$doleditor=new DolEditor('WEBSITE_HTML_HEADER', $htmlheadercontent, '', '220', 'ace', 'In', true, false, 'ace', 0, '100%', '');
 	print $doleditor->Create(1, '', true, 'HTML Header', 'html');
 
 	print '</td></tr>';
@@ -1912,7 +1978,12 @@ if ($action == 'editmeta' || $action == 'createcontainer')
 	print '</td></tr>';
 
 	print '<tr><td class="tdhtmlheader tdtop">';
-	print $langs->trans('HtmlHeaderPage');
+	$htmlhelp=$langs->trans("EditTheWebSiteForACommonHeader").'<br><br>';
+
+	$htmlhelp=$langs->trans("Example").' :<br>';
+	$htmlhelp.=dol_htmlentitiesbr($htmlheadercontentdefault);
+
+	print $form->textwithpicto($langs->trans('HtmlHeaderPage'), $htmlhelp, 1, 'help', '', 0, 2, 'htmlheadertooltip');
 	print '</td><td>';
 	$doleditor=new DolEditor('htmlheader', $pagehtmlheader, '', '220', 'ace', 'In', true, false, 'ace', 0, '100%', '');
 	print $doleditor->Create(1, '', true, 'HTML Header', 'html');
@@ -1951,6 +2022,7 @@ if ($action == 'editfile' || $action == 'file_manager')
 	include DOL_DOCUMENT_ROOT.'/core/tpl/filemanager.tpl.php';
 
 	print '</div>';
+
 }
 
 if ($action == 'editmenu')
@@ -2016,11 +2088,24 @@ if ($action == 'preview' || $action == 'createfromclone' || $action == 'createpa
 
 		// REPLACEMENT OF LINKS When page called by website editor
 
-		$out.='<style scoped>'."\n";        // "scoped" means "apply to parent element only". Not yet supported by browsers
-		$out.= '/* Include website CSS file */'."\n";
-		$out.=dolWebsiteReplacementOfLinks($object, $csscontent, 1);
-		$out.= '/* Include HTML header from the inline block */'."\n";
-		$out.= $objectpage->htmlheader."\n";
+		$out.='<style scoped>'."\n";        // "scoped" means "apply to parent element only". No more supported by browsers, snif !
+		$tmpout='';
+		$tmpout.= '/* Include website CSS file */'."\n";
+		$tmpout.= dolWebsiteReplacementOfLinks($object, $csscontent, 1);
+		$tmpout.= '/* Include style from the HTML header of page */'."\n";
+		// Clean the html header of page to get only <style> content
+		$tmp = preg_split('(<style[^>]*>|</style>)', $objectpage->htmlheader);
+		$tmpstyleinheader ='';
+		$i=0;
+		foreach($tmp as $valtmp)
+		{
+			$i++;
+			if ($i % 2 == 0) $tmpstyleinheader.=$valtmp."\n";
+		}
+		$tmpout.= $tmpstyleinheader."\n";
+		// Clean style that may affect global style of Dolibarr
+		$tmpout=preg_replace('/}[\s\n]*body\s*{[^}]+}/ims','}',$tmpout);
+		$out.=$tmpout;
 		$out.='</style>'."\n";
 
 		// Do not enable the contenteditable when page was grabbed, ckeditor is removing span and adding borders,
@@ -2032,9 +2117,12 @@ if ($action == 'preview' || $action == 'createfromclone' || $action == 'createpa
 
 		$out.='</div>';
 
-		$out.='</div>';
+		$out.='</div> <!-- End div id=websitecontentundertopmenu -->';
 
 		$out.= "\n".'<!-- End page content '.$filetpl.' -->'."\n\n";
+
+		// For jqueryscoped (does not work as expected)
+		//$out.="<script>$.scoped();</script>";
 
 		print $out;
 
@@ -2071,237 +2159,3 @@ if ($action == 'preview' || $action == 'createfromclone' || $action == 'createpa
 llxFooter();
 
 $db->close();
-
-
-
-
-/**
- * Save content of a page on disk
- *
- * @param	string		$filealias			Full path of filename to generate
- * @param	Website		$object				Object website
- * @param	WebsitePage	$objectpage			Object websitepage
- * @return	boolean							True if OK
- */
-function dolSavePageAlias($filealias, $object, $objectpage)
-{
-	global $conf;
-
-	// Now create the .tpl file (duplicate code with actions updatesource or updatecontent but we need this to save new header)
-	dol_syslog("We regenerate the alias page filealias=".$filealias);
-
-	$aliascontent = '<?php'."\n";
-	$aliascontent.= "// File generated to wrap the alias page - DO NOT MODIFY - It is just a wrapper to real page\n";
-	$aliascontent.= 'global $dolibarr_main_data_root;'."\n";
-	$aliascontent.= 'if (empty($dolibarr_main_data_root)) require \'./page'.$objectpage->id.'.tpl.php\'; ';
-	$aliascontent.= 'else require $dolibarr_main_data_root.\'/website/\'.$website->ref.\'/page'.$objectpage->id.'.tpl.php\';'."\n";
-	$aliascontent.= '?>'."\n";
-	$result = file_put_contents($filealias, $aliascontent);
-	if (! empty($conf->global->MAIN_UMASK))
-		@chmod($filealias, octdec($conf->global->MAIN_UMASK));
-
-	return ($result?true:false);
-}
-
-
-/**
- * Save content of a page on disk
- *
- * @param	string		$filetpl			Full path of filename to generate
- * @param	Website		$object				Object website
- * @param	WebsitePage	$objectpage			Object websitepage
- * @return	boolean							True if OK
- */
-function dolSavePageContent($filetpl, $object, $objectpage)
-{
-	global $conf;
-
-	// Now create the .tpl file (duplicate code with actions updatesource or updatecontent but we need this to save new header)
-	dol_syslog("We regenerate the tpl page filetpl=".$filetpl);
-
-	dol_delete_file($filetpl);
-
-	$shortlangcode = '';
-	if ($objectpage->lang) $shortlangcode=preg_replace('/[_-].*$/', '', $objectpage->lang);		// en_US or en-US -> en
-
-	$tplcontent ='';
-	$tplcontent.= "<?php // BEGIN PHP\n";
-	$tplcontent.= '$websitekey=basename(dirname(__FILE__));'."\n";
-	$tplcontent.= "if (! defined('USEDOLIBARRSERVER')) { require_once './master.inc.php'; } // Not already loaded"."\n";
-	$tplcontent.= "require_once DOL_DOCUMENT_ROOT.'/core/lib/website.lib.php';\n";
-	$tplcontent.= "require_once DOL_DOCUMENT_ROOT.'/core/website.inc.php';\n";
-	$tplcontent.= "ob_start();\n";
-	$tplcontent.= "// END PHP ?>\n";
-	$tplcontent.= '<html'.($shortlangcode ? ' lang="'.$shortlangcode.'"':'').'>'."\n";
-	$tplcontent.= '<head>'."\n";
-	$tplcontent.= '<title>'.dol_string_nohtmltag($objectpage->title, 0, 'UTF-8').'</title>'."\n";
-	$tplcontent.= '<meta charset="UTF-8">'."\n";
-	$tplcontent.= '<meta http-equiv="content-type" content="text/html; charset=utf-8" />'."\n";
-	$tplcontent.= '<meta name="robots" content="index, follow" />'."\n";
-	$tplcontent.= '<meta name="viewport" content="width=device-width, initial-scale=1.0">'."\n";
-	$tplcontent.= '<meta name="keywords" content="'.dol_string_nohtmltag($objectpage->keywords).'" />'."\n";
-	$tplcontent.= '<meta name="title" content="'.dol_string_nohtmltag($objectpage->title, 0, 'UTF-8').'" />'."\n";
-	$tplcontent.= '<meta name="description" content="'.dol_string_nohtmltag($objectpage->description, 0, 'UTF-8').'" />'."\n";
-	$tplcontent.= '<meta name="generator" content="'.DOL_APPLICATION_TITLE.' '.DOL_VERSION.'" />'."\n";
-	$tplcontent.= '<!-- Include link to CSS file -->'."\n";
-	$tplcontent.= '<link rel="stylesheet" href="styles.css.php?websiteid='.$object->id.'" type="text/css" />'."\n";
-	$tplcontent.= '<!-- Include HTML header from common file -->'."\n";
-	$tplcontent.= '<?php print file_get_contents(DOL_DATA_ROOT."/website/'.$object->ref.'/htmlheader.html"); ?>'."\n";
-	$tplcontent.= '<!-- Include HTML header from page inline block -->'."\n";
-	$tplcontent.= $objectpage->htmlheader."\n";
-	$tplcontent.= '</head>'."\n";
-
-	$tplcontent.= '<!-- File generated by Dolibarr website module editor -->'."\n";
-	$tplcontent.= '<body id="bodywebsite" class="bodywebsite">'."\n";
-	$tplcontent.= $objectpage->content."\n";
-	$tplcontent.= '</body>'."\n";
-	$tplcontent.= '</html>'."\n";
-
-	$tplcontent.= '<?php // BEGIN PHP'."\n";
-	$tplcontent.= '$tmp = ob_get_contents(); ob_end_clean(); dolWebsiteOutput($tmp);'."\n";
-	$tplcontent.= "// END PHP ?>"."\n";
-
-	//var_dump($filetpl);exit;
-	$result = file_put_contents($filetpl, $tplcontent);
-	if (! empty($conf->global->MAIN_UMASK))
-		@chmod($filetpl, octdec($conf->global->MAIN_UMASK));
-
-	return $result;
-}
-
-
-/**
- * Save content of a page on disk
- *
- * @param	string		$filehtmlheader		Full path of filename to generate
- * @param	string		$htmlheadercontent	Content of file
- * @return	boolean							True if OK
- */
-function dolSaveHtmlHeader($filehtmlheader, $htmlheadercontent)
-{
-	global $conf, $pathofwebsite;
-
-	dol_syslog("Save html header into ".$filehtmlheader);
-
-	dol_mkdir($pathofwebsite);
-	$result = file_put_contents($filehtmlheader, $htmlheadercontent);
-	if (! empty($conf->global->MAIN_UMASK))
-		@chmod($filehtmlheader, octdec($conf->global->MAIN_UMASK));
-
-	if (! $result)
-	{
-		setEventMessages('Failed to write file '.$filehtmlheader, null, 'errors');
-		return false;
-	}
-
-	return true;
-}
-
-/**
- * Save content of a page on disk
- *
- * @param	string		$filecss			Full path of filename to generate
- * @param	string		$csscontent			Content of file
- * @return	boolean							True if OK
- */
-function dolSaveCssFile($filecss, $csscontent)
-{
-	global $conf, $pathofwebsite;
-
-	dol_syslog("Save html header into ".$filecss);
-
-	dol_mkdir($pathofwebsite);
-	$result = file_put_contents($filecss, $csscontent);
-	if (! empty($conf->global->MAIN_UMASK))
-		@chmod($filecss, octdec($conf->global->MAIN_UMASK));
-
-	if (! $result)
-	{
-		setEventMessages('Failed to write file '.$filecss, null, 'errors');
-		return false;
-	}
-
-	return true;
-}
-
-/**
- * Save content of a page on disk
- *
- * @param	string		$filejs				Full path of filename to generate
- * @param	string		$jscontent			Content of file
- * @return	boolean							True if OK
- */
-function dolSaveJsFile($filejs, $jscontent)
-{
-	global $conf, $pathofwebsite;
-
-	dol_syslog("Save html header into ".$filejs);
-
-	dol_mkdir($pathofwebsite);
-	$result = file_put_contents($filejs, $jscontent);
-	if (! empty($conf->global->MAIN_UMASK))
-		@chmod($filejs, octdec($conf->global->MAIN_UMASK));
-
-	if (! $result)
-	{
-		setEventMessages('Failed to write file '.$filejs, null, 'errors');
-		return false;
-	}
-
-	return true;
-}
-
-/**
- * Save content of a page on disk
- *
- * @param	string		$filerobot			Full path of filename to generate
- * @param	string		$robotcontent		Content of file
- * @return	boolean							True if OK
- */
-function dolSaveRobotFile($filerobot, $robotcontent)
-{
-	global $conf, $pathofwebsite;
-
-	dol_syslog("Save html header into ".$filerobot);
-
-	dol_mkdir($pathofwebsite);
-	$result = file_put_contents($filerobot, $robotcontent);
-	if (! empty($conf->global->MAIN_UMASK))
-		@chmod($filerobot, octdec($conf->global->MAIN_UMASK));
-
-	if (! $result)
-	{
-		setEventMessages('Failed to write file '.$filerobot, null, 'errors');
-		return false;
-	}
-
-	return true;
-}
-
-/**
- * Save content of a page on disk
- *
- * @param	string		$filehtaccess		Full path of filename to generate
- * @param	string		$htaccess			Content of file
- * @return	boolean							True if OK
- */
-function dolSaveHtaccessFile($filehtaccess, $htaccess)
-{
-	global $conf, $pathofwebsite;
-
-	dol_syslog("Save html header into ".$filehtaccess);
-
-	dol_mkdir($pathofwebsite);
-	$result = file_put_contents($filehtaccess, $htaccess);
-	if (! empty($conf->global->MAIN_UMASK))
-		@chmod($filehtaccess, octdec($conf->global->MAIN_UMASK));
-
-	if (! $result)
-	{
-		setEventMessages('Failed to write file '.$filehtaccess, null, 'errors');
-		return false;
-	}
-
-	return true;
-}
-

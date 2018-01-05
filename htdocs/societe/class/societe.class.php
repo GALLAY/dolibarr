@@ -53,6 +53,11 @@ class Societe extends CommonObject
 	 * @var int
 	 */
 	public $ismultientitymanaged = 1;
+	/**
+	 * 0=Default, 1=View may be restricted to sales representative only if no permission to see all or to company of external user if external user
+	 * @var integer
+	 */
+	public $restrictiononfksoc = 1;
 
 
 	// BEGIN MODULEBUILDER PROPERTIES
@@ -1151,7 +1156,7 @@ class Societe extends CommonObject
 		if ($idprof4) $sql .= " AND s.idprof4 = '".$this->db->escape($idprof4)."'";
 		if ($idprof5) $sql .= " AND s.idprof5 = '".$this->db->escape($idprof5)."'";
 		if ($idprof6) $sql .= " AND s.idprof6 = '".$this->db->escape($idprof6)."'";
-		if ($email)   $sql .= " AND email = '".$this->db->escape($email)."'";
+		if ($email)   $sql .= " AND s.email = '".$this->db->escape($email)."'";
 
 		$resql=$this->db->query($sql);
 		if ($resql)
@@ -1960,12 +1965,12 @@ class Societe extends CommonObject
 			$label.= '<br><b>' . $langs->trans('Country') . ':</b> '. $this->country_code;
 		if (! empty($this->tva_intra))
 			$label.= '<br><b>' . $langs->trans('VATIntra') . ':</b> '. $this->tva_intra;
-			if (! empty($this->code_client) && $this->client)
+		if (! empty($this->code_client) && $this->client)
 			$label.= '<br><b>' . $langs->trans('CustomerCode') . ':</b> '. $this->code_client;
 		if (! empty($this->code_fournisseur) && $this->fournisseur)
 			$label.= '<br><b>' . $langs->trans('SupplierCode') . ':</b> '. $this->code_fournisseur;
 		if (! empty($conf->accounting->enabled) && $this->client)
-			$label.= '<br><b>' . $langs->trans('CustomerAccountancyCode') . ':</b> '. $this->code_compta_client;
+			$label.= '<br><b>' . $langs->trans('CustomerAccountancyCode') . ':</b> '. ($this->code_compta ? $this->code_compta : $this->code_compta_client);
 		if (! empty($conf->accounting->enabled) && $this->fournisseur)
 			$label.= '<br><b>' . $langs->trans('SupplierAccountancyCode') . ':</b> '. $this->code_compta_fournisseur;
 

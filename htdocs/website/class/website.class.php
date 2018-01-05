@@ -107,6 +107,8 @@ class Website extends CommonObject
 	 */
 	public function create(User $user, $notrigger = false)
 	{
+		global $conf;
+
 		dol_syslog(__METHOD__, LOG_DEBUG);
 
 		$error = 0;
@@ -129,7 +131,7 @@ class Website extends CommonObject
 		if (empty($this->date_modification)) $this->date_modification = $now;
 
 		// Check parameters
-		// Put here code to add control on parameters values
+		if (empty($this->entity)) { $this->entity = $conf->entity; }
 
 		// Insert request
 		$sql = 'INSERT INTO ' . MAIN_DB_PREFIX . $this->table_element . '(';
@@ -797,6 +799,12 @@ class Website extends CommonObject
 
 		$srcdir = DOL_DATA_ROOT.'/medias/image/'.$website->ref;
 		$destdir = $conf->website->dir_temp.'/'.$website->ref.'/medias/image/'.$website->ref;
+
+		dol_syslog("Copy content from ".$srcdir." into ".$destdir);
+		dolCopyDir($srcdir, $destdir, 0, 1, $arrayreplacement);
+
+		$srcdir = DOL_DATA_ROOT.'/medias/js/'.$website->ref;
+		$destdir = $conf->website->dir_temp.'/'.$website->ref.'/medias/js/'.$website->ref;
 
 		dol_syslog("Copy content from ".$srcdir." into ".$destdir);
 		dolCopyDir($srcdir, $destdir, 0, 1, $arrayreplacement);
