@@ -147,7 +147,7 @@ class Paiement extends CommonObject
 	 *    @param    int		$closepaidinvoices   	1=Also close payed invoices to paid, 0=Do nothing more
 	 *    @return   int                 			id of created payment, < 0 if error
 	 */
-	function create($user,$closepaidinvoices=0)
+	function create($user, $closepaidinvoices=0)
 	{
 		global $conf, $langs;
 
@@ -190,6 +190,7 @@ class Paiement extends CommonObject
 		// Check parameters
         if (empty($totalamount) && empty($atleastonepaymentnotnull))	 // We accept negative amounts for withdraw reject but not empty arrays
         {
+        	$this->errors[]='TotalAmountEmpty';
         	$this->error='TotalAmountEmpty';
         	return -1;
         }
@@ -1132,5 +1133,31 @@ class Paiement extends CommonObject
 	    }*/
 		return '';
 	}
+	
+	/**
+     *    	Load the third party of object, from id into this->thirdparty
+     *
+     *		@param		int		$force_thirdparty_id	Force thirdparty id
+     *		@return		int								<0 if KO, >0 if OK
+     */
+    function fetch_thirdparty($force_thirdparty_id=0)
+    {
+		require_once DOL_DOCUMENT_ROOT . '/compta/facture/class/facture.class.php';
+		
+		if (empty($force_thirdparty_id))
+		{
+			$billsarray = $this->getBillsArray(); // From payment, the fk_soc isn't available, we should load the first invoice to get him
+			if (!empty($billsarray))
+			{
+				$supplier_invoice = new FactureFournisseur($this->db);
+				if ($supplier_invoice->fetch($billsarray[0]) > 0)
+				{
+					$force_thirdparty_id = $supplier_invoice->fk_soc;
+				}
+			}
+		}
+		
+		return parent::fetch_thirdparty($force_thirdparty_id);
+    }
 
 }
