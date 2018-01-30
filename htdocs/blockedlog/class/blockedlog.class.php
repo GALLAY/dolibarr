@@ -349,8 +349,11 @@ class BlockedLog
 		}
 
 		// Add user info
-		$this->fk_user = $user->id;
-		$this->user_fullname = $user->getFullName($langs);
+		if (! empty($user))
+		{
+			$this->fk_user = $user->id;
+			$this->user_fullname = $user->getFullName($langs);
+		}
 
 		// Field specific to object
 
@@ -360,10 +363,30 @@ class BlockedLog
 			{
 				if (in_array($key, array('fields'))) continue;	// Discard some properties
 				if (! in_array($key, array(
-				'ref','facnumber','ref_client','ref_supplier','datef','type','total_ht','total_tva','total_ttc','localtax1','localtax2','revenuestamp','datepointoftax','note_public'
+				'ref','facnumber','ref_client','ref_supplier','date','datef','type','total_ht','total_tva','total_ttc','localtax1','localtax2','revenuestamp','datepointoftax','note_public','lines'
 				))) continue;									// Discard if not into a dedicated list
-				if (!is_object($value)) $this->object_data->{$key} = $value;
+				if ($key == 'lines')
+				{
+					$lineid=0;
+					foreach($value as $tmpline)	// $tmpline is object FactureLine
+					{
+						$lineid++;
+						foreach($tmpline as $keyline => $valueline)
+						{
+							if (! in_array($keyline, array(
+							'ref','multicurrency_code','multicurrency_total_ht','multicurrency_total_tva','multicurrency_total_ttc','qty','product_type','vat_src_code','tva_tx','info_bits','localtax1_tx','localtax2_tx','total_ht','total_tva','total_ttc','total_localtax1','total_localtax2'
+							))) continue;									// Discard if not into a dedicated list
+
+							if (! is_object($this->object_data->invoiceline[$lineid])) $this->object_data->invoiceline[$lineid] = new stdClass();
+
+							$this->object_data->invoiceline[$lineid]->{$keyline} = $valueline;
+						}
+					}
+				}
+				else if (!is_object($value)) $this->object_data->{$key} = $value;
 			}
+
+			if (! empty($object->newref)) $this->object_data->ref = $object->newref;
 		}
 		elseif ($this->element == 'invoice_supplier')
 		{
@@ -371,10 +394,12 @@ class BlockedLog
 			{
 				if (in_array($key, array('fields'))) continue;	// Discard some properties
 				if (! in_array($key, array(
-				'ref','facnumber','ref_client','ref_supplier','datef','type','total_ht','total_tva','total_ttc','localtax1','localtax2','revenuestamp','datepointoftax','note_public'
+				'ref','facnumber','ref_client','ref_supplier','date','datef','type','total_ht','total_tva','total_ttc','localtax1','localtax2','revenuestamp','datepointoftax','note_public'
 				))) continue;									// Discard if not into a dedicated list
 				if (!is_object($value)) $this->object_data->{$key} = $value;
 			}
+
+			if (! empty($object->newref)) $this->object_data->ref = $object->newref;
 		}
 		elseif ($this->element == 'payment' || $this->element == 'payment_supplier' || $this->element == 'payment_donation')
 		{
@@ -398,6 +423,7 @@ class BlockedLog
 
 				$totalamount += $amount;
 
+				$tmpobject = null;
 				if ($this->element == 'payment_supplier')
 				{
 					include_once DOL_DOCUMENT_ROOT.'/fourn/class/fournisseur.facture.class.php';
@@ -412,6 +438,10 @@ class BlockedLog
 				{
 					include_once DOL_DOCUMENT_ROOT.'/don/class/don.class.php';
 					$tmpobject = new Don($this->db);
+				}
+				if (! is_object($tmpobject))
+				{
+					continue;
 				}
 
 				$result = $tmpobject->fetch($objid);
@@ -455,7 +485,7 @@ class BlockedLog
 				{
 					if (in_array($key, array('fields'))) continue;	// Discard some properties
 					if (! in_array($key, array(
-					'ref','facnumber','ref_client','ref_supplier','datef','type','total_ht','total_tva','total_ttc','localtax1','localtax2','revenuestamp','datepointoftax','note_public'
+					'ref','facnumber','ref_client','ref_supplier','date','datef','type','total_ht','total_tva','total_ttc','localtax1','localtax2','revenuestamp','datepointoftax','note_public'
 					))) continue;									// Discard if not into a dedicated list
 					if (!is_object($value))
 					{
@@ -469,10 +499,14 @@ class BlockedLog
 			}
 
 			$this->object_data->amount = $totalamount;
+
+			if (! empty($object->newref)) $this->object_data->ref = $object->newref;
 		}
 		elseif($this->element == 'payment_salary')
 		{
 			$this->object_data->amounts = array($object->amount);
+
+			if (! empty($object->newref)) $this->object_data->ref = $object->newref;
 		}
 
 		return 1;
@@ -708,7 +742,9 @@ class BlockedLog
 	}
 
 	/**
-	 * Return a string for signature
+	 * Return a string for signature.
+	 * Note: rowid of line not included as it is not a business data and this allow to make backup of a year
+	 * and restore it into another database with different id wihtout comprimising checksums
 	 *
 	 * @return string		Key for signature
 	 */
@@ -775,7 +811,7 @@ class BlockedLog
 	 *  @param	string	$search_ref		search ref
 	 *  @param	string	$search_amount	search amount
 	 *  @param	string	$search_code	search code
-	 *	@return	array					array of object log
+	 *	@return	array|int				Array of object log or <0 if error
 	 */
 	public function getLog($element, $fk_object, $limit = 0, $sortfield = '', $sortorder = '', $search_fk_user = -1, $search_start = -1, $search_end = -1, $search_ref='', $search_amount='', $search_code='')
 	{
@@ -813,16 +849,25 @@ class BlockedLog
 		if ($search_code != '' && $search_code != '-1')   $sql.=natural_search("action", $search_code, 3);
 
 		$sql.=$this->db->order($sortfield, $sortorder);
-		$sql.=$this->db->plimit($limit);
+		$sql.=$this->db->plimit($limit+1);					// We want more, because we will stop into loop later with error if we reach max
 
 		$res = $this->db->query($sql);
 		if($res) {
 
 			$results=array();
 
-			while ($obj = $this->db->fetch_object($res)) {
+			$i = 0;
+			while ($obj = $this->db->fetch_object($res))
+			{
+				$i++;
+				if ($i > $limit)
+				{
+					// Too many record, we will consume too much memory
+					return -2;
+				}
 
-				if (!isset($cachedlogs[$obj->rowid])) {
+				if (!isset($cachedlogs[$obj->rowid]))
+				{
 					$b=new BlockedLog($this->db);
 					$b->fetch($obj->rowid);
 
@@ -834,9 +879,8 @@ class BlockedLog
 
 			return $results;
 		}
-		else{
-			return false;
-		}
+
+		return -1;
 	}
 
 	/**
