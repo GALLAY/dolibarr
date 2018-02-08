@@ -101,6 +101,31 @@ if (empty($reshook))
 		$result=$object->setPaymentMethods(GETPOST('mode_reglement_supplier_id','int'));
 		if ($result < 0) dol_print_error($db,$object->error);
 	}
+	
+	// update supplier order min amount
+	if ($action == 'setsupplier_order_min_amount')
+	{
+		$object->fetch($id);
+		$object->supplier_order_min_amount=GETPOST('supplier_order_min_amount');
+		$result=$object->update($object->id, $user);
+		if ($result < 0) setEventMessages($object->error, $object->errors, 'errors');
+	}
+
+	if ($action == 'update_extras') {
+        $object->fetch($id);
+
+        // Fill array 'array_options' with data from update form
+        $extralabels = $extrafields->fetch_name_optionals_label($object->table_element);
+        $ret = $extrafields->setOptionalsFromPost($extralabels, $object, GETPOST('attribute'));
+		
+        if ($ret < 0) $error++;
+        if (! $error)
+        {
+            $result = $object->insertExtraFields();
+            if ($result < 0) $error++;
+        }
+        if ($error) $action = 'edit_extras';
+    }
 }
 
 
@@ -229,6 +254,16 @@ if ($object->id > 0)
 		$form->form_modes_reglement($_SERVER['PHP_SELF'].'?socid='.$object->id,$object->mode_reglement_supplier_id,'none');
 	}
 	print "</td>";
+	print '</tr>';
+	
+	print '<tr class="nowrap">';
+	print '<td>';
+	print $form->editfieldkey("OrderMinAmount",'supplier_order_min_amount',$object->supplier_order_min_amount,$object,$user->rights->societe->creer);
+	print '</td><td>';
+	$limit_field_type = (! empty($conf->global->MAIN_USE_JQUERY_JEDITABLE)) ? 'numeric' : 'amount';
+	print $form->editfieldval("OrderMinAmount",'supplier_order_min_amount',$object->supplier_order_min_amount,$object,$user->rights->societe->creer,$limit_field_type,($object->supplier_order_min_amount != '' ? price($object->supplier_order_min_amount) : ''));
+	
+	print '</td>';
 	print '</tr>';
 
 	// Categories
@@ -779,7 +814,7 @@ if ($object->id > 0)
 	print '</div>';
 
 
-	if (! empty($conf->global->MAIN_REPEATCONTACTONEACHTAB))
+	if (! empty($conf->global->MAIN_DUPLICATE_CONTACTS_TAB_ON_MAIN_CARD))
 	{
     	print '<br>';
     	// List of contacts

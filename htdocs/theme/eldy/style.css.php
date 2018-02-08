@@ -357,7 +357,7 @@ input.buttonpayment {
 	background: none;
 	padding-left: 30px;
 	text-align: <?php echo $left; ?>;
-	border: 2px solid #ccc;
+	border: 1px solid #ddd;
 	background-color: #eee;
 	white-space: normal;
 }
@@ -588,6 +588,9 @@ textarea.centpercent {
 }
 .wordwrap {
 	word-wrap: break-word;
+}
+.wordbreak {
+	word-break: break-all;
 }
 .nobold {
 	font-weight: normal !important;
@@ -1211,6 +1214,12 @@ div.ficheaddleft {
 	<?php if ($conf->browser->layout != 'phone')   { print "padding-".$left.": 16px;\n"; }
 	else print "margin-top: 10px;\n"; ?>
 }
+div.firstcolumn div.box {
+	padding-right: 10px;
+}
+div.secondcolumn div.box {
+	padding-left: 10px;
+}
 /* Force values on one colum for small screen */
 @media only screen and (max-width: 1000px)
 {
@@ -1248,6 +1257,12 @@ div.ficheaddleft {
     	<?php print "padding-".$left.": 0px;\n"; ?>
     	margin-top: 10px;
     }
+    div.firstcolumn div.box {
+		padding-right: 0px;
+	}
+	div.secondcolumn div.box {
+		padding-left: 0px;
+	}
 }
 
 /* For table into table into card */
@@ -1442,14 +1457,14 @@ a.tmenudisabled:link, a.tmenudisabled:visited, a.tmenudisabled:hover, a.tmenudis
 
 a.tmenu:link, a.tmenu:visited, a.tmenu:hover, a.tmenu:active {
     font-weight: normal;
-	padding: 0px 5px 0px 3px;
+	padding: 0px 4px 0px 4px;
 	white-space: nowrap;
 	color: #<?php echo $colortextbackhmenu; ?>;
     text-decoration: none;
 }
 a.tmenusel:link, a.tmenusel:visited, a.tmenusel:hover, a.tmenusel:active {
 	font-weight: normal;
-	padding: 0px 5px 0px 3px;
+	padding: 0px 4px 0px 4px;
 	margin: 0px 0px 0px 0px;
 	white-space: nowrap;
 	color: #<?php echo $colortextbackhmenu; ?>;
@@ -1538,12 +1553,8 @@ div.menu_titre {
 }
 .mainmenuaspan
 {
-<?php if ($disableimages) { ?>
-	padding-<?php print $left; ?>: 4px;
+	padding-<?php print $left; ?>: 2px;
 	padding-<?php print $right; ?>: 2px;
-<?php } else { ?>
-	padding-<?php print $right; ?>: 4px;
-<?php } ?>
 }
 
 div.mainmenu {
@@ -2789,6 +2800,12 @@ tr.liste_titre, tr.liste_titre_sel, form.liste_titre, form.liste_titre_sel, tabl
 {
 	height: 26px !important;
 }
+div.colorback
+{
+	background: rgb(<?php echo $colorbacktitle1; ?>);
+	padding: 10px;
+	margin-top: 5px;
+}
 div.liste_titre_bydiv, .liste_titre div.tagtr, tr.liste_titre, tr.liste_titre_sel, form.liste_titre, form.liste_titre_sel, table.dataTable thead tr
 {
 	background: rgb(<?php echo $colorbacktitle1; ?>);
@@ -2946,14 +2963,15 @@ ul.noborder li:nth-child(even):not(.liste_titre) {
     border: none;
 }*/
 .boxstatsborder {
-    border: 1px solid #CCC !important;
+    /* border: 1px solid #CCC !important; */
 }
 .boxstats, .boxstats130 {
     display: inline-block;
     margin: 3px;
-    border: 1px solid #CCC;
+    /* border: 1px solid #CCC; */
     text-align: center;
     border-radius: 2px;
+    background: #eee;
 }
 .boxstats, .boxstats130, .boxstatscontent {
 	white-space: nowrap;
@@ -3595,7 +3613,7 @@ table.cal_event td.cal_event_right { padding: 4px 4px !important; }
 .cal_event a:active  { color: #111111; font-size: 11px; font-weight: normal !important; }
 .cal_event_busy a:hover   { color: #111111; font-size: 11px; font-weight: normal !important; color:rgba(255,255,255,.75); }
 .cal_event_busy      { }
-.cal_peruserviewname { max-width: 100px; height: 22px; }
+.cal_peruserviewname { max-width: 140px; height: 22px; }
 
 
 /* ============================================================================== */
@@ -4592,7 +4610,7 @@ dl.dropdown {
     position:absolute;
     top:2px;
     list-style:none;
-    max-height: 270px;
+    max-height: 264px;
     overflow: auto;
 }
 .dropdown span.value {
@@ -5015,8 +5033,8 @@ div.tabsElem a.tab {
     	margin-left: 1px;
 	}
 	.mainmenuaspan {
-    	/*display: none;*/
   		font-size: 10px;
+  		padding-left: 0;
   		padding-right: 0;
     }
     .topmenuimage {

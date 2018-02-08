@@ -177,6 +177,15 @@ if (empty($reshook))
 		if ($result < 0) setEventMessages($object->error, $object->errors, 'errors');
 	}
 
+	// update order min amount
+	if ($action == 'setorder_min_amount')
+	{
+		$object->fetch($id);
+		$object->order_min_amount=GETPOST('order_min_amount');
+		$result=$object->update($object->id, $user);
+		if ($result < 0) setEventMessages($object->error, $object->errors, 'errors');
+	}
+
 	if ($action == 'update_extras') {
         $object->fetch($id);
 
@@ -403,7 +412,17 @@ if ($object->id > 0)
 
 	    print '</td>';
 	    print '</tr>';
+
+		print '<tr class="nowrap">';
+	    print '<td>';
+	    print $form->editfieldkey("OrderMinAmount",'order_min_amount',$object->order_min_amount,$object,$user->rights->societe->creer);
+	    print '</td><td>';
+	    print $form->editfieldval("OrderMinAmount",'order_min_amount',$object->order_min_amount,$object,$user->rights->societe->creer,$limit_field_type,($object->order_min_amount != '' ? price($object->order_min_amount) : ''));
+
+	    print '</td>';
+	    print '</tr>';
 	}
+
 
 	// Multiprice level
 	if (! empty($conf->global->PRODUIT_MULTIPRICES))
@@ -773,7 +792,7 @@ if ($object->id > 0)
 	}
 
     /*
-     *   Last sendings
+     *   Last shipments
      */
     if (! empty($conf->expedition->enabled) && $user->rights->expedition->lire) {
         $sendingstatic = new Expedition($db);
@@ -1245,7 +1264,7 @@ if ($object->id > 0)
 
 	print '</div>';
 
-	if (! empty($conf->global->MAIN_REPEATCONTACTONEACHTAB))
+	if (! empty($conf->global->MAIN_DUPLICATE_CONTACTS_TAB_ON_CUSTOMER_CARD))
 	{
 		// List of contacts
 		show_contacts($conf,$langs,$db,$object,$_SERVER["PHP_SELF"].'?socid='.$object->id);

@@ -591,6 +591,9 @@ textarea.centpercent {
 .wordwrap {
 	word-wrap: break-word;
 }
+.wordbreak {
+	word-break: break-all;
+}
 .nobold {
 	font-weight: normal !important;
 }
@@ -1220,6 +1223,12 @@ div.ficheaddleft {
 	<?php if ($conf->browser->layout != 'phone')   { print "padding-".$left.": 16px;\n"; }
 	else print "margin-top: 10px;\n"; ?>
 }
+div.firstcolumn div.box {
+	padding-right: 10px;
+}
+div.secondcolumn div.box {
+	padding-left: 10px;
+}
 /* Force values on one colum for small screen */
 @media only screen and (max-width: 900px)
 {
@@ -1258,6 +1267,12 @@ div.ficheaddleft {
     	<?php print "padding-".$left.": 0px;\n"; ?>
     	margin-top: 10px;
     }
+    div.firstcolumn div.box {
+		padding-right: 0px;
+	}
+	div.secondcolumn div.box {
+		padding-left: 0px;
+	}
 }
 
 /* For table into table into card */
@@ -1563,12 +1578,8 @@ div.menu_titre {
 }
 .mainmenuaspan
 {
-<?php if ($disableimages) { ?>
-	padding-<?php print $left; ?>: 4px;
+	padding-<?php print $left; ?>: 2px;
 	padding-<?php print $right; ?>: 2px;
-<?php } else { ?>
-	padding-<?php print $right; ?>: 4px;
-<?php } ?>
 }
 
 div.mainmenu {
@@ -2480,6 +2491,12 @@ td.border, div.tagtable div div.border {
 .ficheaddleft table.noborder {
 	margin: 0px 0px 0px 0px;
 }
+div.colorback
+{
+	background: rgb(<?php echo $colorbacktitle1; ?>);
+	padding: 10px;
+	margin-top: 5px;
+}
 .liste_titre_bydiv {
     border-right: 1px solid #ccc;
     border-left: 1px solid #ccc;
@@ -3021,14 +3038,15 @@ div .tdtop {
     border: none;
 }*/
 .boxstatsborder {
-    border: 1px solid #CCC !important;
+    /* border: 1px solid #CCC !important; */
 }
 .boxstats, .boxstats130 {
     display: inline-block;
     margin: 3px;
-    border: 1px solid #CCC;
+    /* border: 1px solid #CCC; */
     text-align: center;
     border-radius: 2px;
+    background: #eee;
 }
 .boxstats, .boxstats130, .boxstatscontent {
 	white-space: nowrap;
@@ -3646,7 +3664,7 @@ table.cal_event td.cal_event_right { padding: 4px 4px !important; }
 .cal_event a:active  { color: #111111; font-size: 11px; font-weight: normal !important; }
 .cal_event_busy a:hover   { color: #111111; font-size: 11px; font-weight: normal !important; color:rgba(255,255,255,.75); }
 .cal_event_busy      { }
-.cal_peruserviewname { max-width: 100px; height: 22px; }
+.cal_peruserviewname { max-width: 140px; height: 22px; }
 
 .topmenuimage {
 	background-size: 28px auto;
@@ -4602,7 +4620,7 @@ dl.dropdown {
     position:absolute;
     top:2px;
     list-style:none;
-    max-height: 270px;
+    max-height: 264px;
     overflow: auto;
 }
 .dropdown span.value {
@@ -5019,7 +5037,6 @@ border-top-right-radius: 6px;
   		color: #<?php echo $colortextbackhmenu; ?>;
 	}
 	.mainmenuaspan {
-    	/*display: none;*/
   		font-size: 12px;
     }
     .topmenuimage {
@@ -5044,8 +5061,9 @@ border-top-right-radius: 6px;
   		text-overflow: clip;
 	}
 	.mainmenuaspan {
-    	/*display: none;*/
   		font-size: 10px;
+  		padding-left: 0;
+  		padding-right: 0;
     }
     .topmenuimage {
     	background-size: 20px auto;
