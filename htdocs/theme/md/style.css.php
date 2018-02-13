@@ -290,7 +290,7 @@ textarea.cke_source:focus
 
 .liste_titre input[name=month_date_when], .liste_titre input[name=monthvalid], .liste_titre input[name=search_ordermonth], .liste_titre input[name=search_deliverymonth],
 .liste_titre input[name=search_smonth], .liste_titre input[name=search_month], .liste_titre input[name=search_emonth], .liste_titre input[name=smonth], .liste_titre input[name=month],
-.liste_titre input[name=month_lim], .liste_titre input[name=month_create] {
+.liste_titre input[name=month_lim], .liste_titre input[name=month_start], .liste_titre input[name=month_end], .liste_titre input[name=month_create] {
 	margin-right: 4px;
 }
 input, input.flat, textarea, textarea.flat, form.flat select, select, select.flat, .dataTables_length label select {
@@ -408,6 +408,10 @@ td.onholidayallday {
 td.actionbuttons a {
     padding-left: 6px;
 }
+td.leftborder, td.hide0 {
+	border-left: 1px solid #ccc;
+}
+
 select.flat, form.flat select {
 	font-weight: normal;
 	font-size: unset;
@@ -593,6 +597,9 @@ textarea.centpercent {
 }
 .wordbreak {
 	word-break: break-all;
+}
+.bold {
+	font-weight: bold !important;
 }
 .nobold {
 	font-weight: normal !important;
@@ -3262,6 +3269,22 @@ a.impayee:link { font-weight: bold; color: #550000; }
 a.impayee:visited { font-weight: bold; color: #550000; }
 a.impayee:active { font-weight: bold; color: #550000; }
 a.impayee:hover { font-weight: bold; color: #550000; }
+
+
+
+/*
+ *  External web site
+ */
+
+.framecontent {
+    width: 100%;
+    height: 100%;
+}
+
+.framecontent iframe {
+    width: 100%;
+    height: 100%;
+}
 
 
 
