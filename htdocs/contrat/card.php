@@ -94,6 +94,7 @@ $permissionnote=$user->rights->contrat->creer;	// Used by the include of actions
 $permissiondellink=$user->rights->contrat->creer;	// Used by the include of actions_dellink.inc.php
 
 
+
 /*
  * Actions
  */
@@ -810,18 +811,30 @@ if (empty($reshook))
 	else if ($action == 'reopen' && $user->rights->contrat->creer)
 	{
 		$result = $object->reopen($user);
+		if ($result < 0)
+		{
+			setEventMessages($object->error, $object->errors, 'errors');
+		}
 	}
 
 	// Close all lines
 	else if ($action == 'confirm_close' && $confirm == 'yes' && $user->rights->contrat->creer)
 	{
-		$object->closeAll($user);
+		$result = $object->closeAll($user);
+		if ($result < 0)
+		{
+			setEventMessages($object->error, $object->errors, 'errors');
+		}
 	}
 
 	// Close all lines
 	else if ($action == 'confirm_activate' && $confirm == 'yes' && $user->rights->contrat->creer)
 	{
-		$object->activateAll($user);
+		$result = $object->activateAll($user);
+		if ($result < 0)
+		{
+			setEventMessages($object->error, $object->errors, 'errors');
+		}
 	}
 
 	else if ($action == 'confirm_delete' && $confirm == 'yes' && $user->rights->contrat->supprimer)
@@ -829,7 +842,7 @@ if (empty($reshook))
 		$result=$object->delete($user);
 		if ($result >= 0)
 		{
-			header("Location: index.php");
+			header("Location: list.php?restore_lastsearch_values=1");
 			return;
 		}
 		else
@@ -863,13 +876,15 @@ if (empty($reshook))
 	}
 	else if ($action == 'update_extras')
 	{
+		$object->oldcopy = dol_clone($object);
+
 		// Fill array 'array_options' with data from update form
 		$extralabels = $extrafields->fetch_name_optionals_label($object->table_element);
-		$ret = $extrafields->setOptionalsFromPost($extralabels, $object, GETPOST('attribute'));
+		$ret = $extrafields->setOptionalsFromPost($extralabels, $object, GETPOST('attribute','none'));
 		if ($ret < 0) $error++;
 
 		if (! $error) {
-			$result = $object->insertExtraFields();
+			$result = $object->insertExtraFields('CONTRACT_MODIFY');
 			if ($result < 0)
 			{
 				setEventMessages($object->error, $object->errors, 'errors');
@@ -1512,10 +1527,10 @@ else
 		// Title line for service
 		$cursorline=1;
 		print '<div id="contrat-lines-container" data-contractid="'.$object->id.'"  data-element="'.$object->element.'" >';
-        	while ($cursorline <= $nbofservices)
+		while ($cursorline <= $nbofservices)
 		{
 			print '<div id="contrat-line-container'.$object->lines[$cursorline-1]->id.'" data-contratlineid = "'.$object->lines[$cursorline-1]->id.'" data-element="'.$object->lines[$cursorline-1]->element.'" >';
-            		print '<form name="update" action="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'" method="post">';
+			print '<form name="update" action="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'" method="post">';
 			print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
 			print '<input type="hidden" name="action" value="updateline">';
 			print '<input type="hidden" name="elrowid" value="'.$object->lines[$cursorline-1]->id.'">';
@@ -1694,7 +1709,7 @@ else
 					if (is_array($extralabelslines) && count($extralabelslines)>0) {
 						print '<tr '.$bcnd[$var].'>';
 						$line = new ContratLigne($db);
-						$line->fetch_optionals($objp->rowid,$extralabelslines);
+						$line->fetch_optionals($objp->rowid);
 						print $line->showOptionals($extrafieldsline, 'view', array('style'=>$bcnd[$var], 'colspan'=>$colspan));
 						print '</tr>';
 					}
@@ -1768,7 +1783,7 @@ else
 					if (is_array($extralabelslines) && count($extralabelslines)>0) {
 						print '<tr '.$bcnd[$var].'>';
 						$line = new ContratLigne($db);
-						$line->fetch_optionals($objp->rowid,$extralabelslines);
+						$line->fetch_optionals($objp->rowid);
 						print $line->showOptionals($extrafieldsline, 'edit', array('style'=>$bcnd[$var], 'colspan'=>$colspan));
 						print '</tr>';
 					}
@@ -1860,7 +1875,7 @@ else
 			// Area with status and activation info of line
 			if ($object->statut > 0)
 			{
-				print '<table class="notopnoleftnoright tableforservicepart2" width="100%">';
+				print '<table class="notopnoleftnoright tableforservicepart2'.($cursorline < $nbofservices ?' boxtablenobottom':'').'" width="100%">';
 
 				print '<tr '.$bcnd[$var].'>';
 				print '<td>'.$langs->trans("ServiceStatus").': '.$object->lines[$cursorline-1]->getLibStatut(4).'</td>';
@@ -1880,7 +1895,7 @@ else
 						}
 						if (($tmpaction=='activateline' && $user->rights->contrat->activer) || ($tmpaction=='unactivateline' && $user->rights->contrat->desactiver))
 						{
-							print '<a href="' . $_SERVER["PHP_SELF"] . '?id=' . $object->id . '&amp;ligne=' . $object->lines[$cursorline - 1]->id . '&amp;action=' . $tmpaction . '">';
+							print '<a class="reposition" href="' . $_SERVER["PHP_SELF"] . '?id=' . $object->id . '&amp;ligne=' . $object->lines[$cursorline - 1]->id . '&amp;action=' . $tmpaction . '">';
 							print img_picto($tmpactiontext, $tmpactionpicto);
 							print '</a>';
 						}
@@ -1981,7 +1996,7 @@ else
 				print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
 				print '<input type="hidden" name="action" value="closeline">';
 
-				print '<table class="noborder tableforservicepart2 boxtablenobottom" width="100%">';
+				print '<table class="noborder tableforservicepart2'.($cursorline < $nbofservices ?' boxtablenobottom':'').'" width="100%">';
 
 				// Definie date debut et fin par defaut
 				$dateactstart = $objp->date_debut_reelle;

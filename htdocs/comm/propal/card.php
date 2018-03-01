@@ -104,8 +104,11 @@ if ($id > 0 || ! empty($ref)) {
 	$ret = $object->fetch($id, $ref);
 	if ($ret > 0)
 		$ret = $object->fetch_thirdparty();
-	if ($ret < 0)
-		dol_print_error('', $object->error);
+	if ($ret <= 0)
+	{
+		setEventMessages($object->error, $object->errors, 'errors');
+		$action = '';
+	}
 }
 
 // Initialize technical object to manage hooks of page. Note that conf->hooks_modules contains array of hook context
@@ -198,7 +201,7 @@ if (empty($reshook))
 	{
 		$result = $object->delete($user);
 		if ($result > 0) {
-			header('Location: ' . DOL_URL_ROOT . '/comm/propal/list.php');
+			header('Location: ' . DOL_URL_ROOT . '/comm/propal/list.php?restore_lastsearch_values=1');
 			exit();
 		} else {
 			$langs->load("errors");
@@ -502,7 +505,7 @@ if (empty($reshook))
 
 										// Extrafields
 										if (empty($conf->global->MAIN_EXTRAFIELDS_DISABLED) && method_exists($lines[$i], 'fetch_optionals')) {
-											$lines[$i]->fetch_optionals($lines[$i]->rowid);
+											$lines[$i]->fetch_optionals();
 											$array_options = $lines[$i]->array_options;
 										}
 
@@ -1225,13 +1228,15 @@ if (empty($reshook))
 	}
 
 	else if ($action == 'update_extras') {
+		$object->oldcopy = dol_clone($object);
+
 		// Fill array 'array_options' with data from update form
 		$extralabels = $extrafields->fetch_name_optionals_label($object->table_element);
-		$ret = $extrafields->setOptionalsFromPost($extralabels, $object, GETPOST('attribute'));
+		$ret = $extrafields->setOptionalsFromPost($extralabels, $object, GETPOST('attribute','none'));
 		if ($ret < 0) $error++;
 		if (! $error)
 		{
-			$result = $object->insertExtraFields();
+			$result = $object->insertExtraFields('PROPAL_MODIFY');
 			if ($result < 0)
 			{
 				setEventMessages($object->error, $object->errors, 'errors');
@@ -1711,7 +1716,7 @@ if ($action == 'create')
 		print '</table>';
 	}
 
-} else {
+} elseif ($object->id > 0) {
 	/*
 	 * Show object in view mode
 	 */
@@ -1817,7 +1822,6 @@ if ($action == 'create')
 	// Proposal card
 
 	$linkback = '<a href="' . DOL_URL_ROOT . '/comm/propal/list.php?restore_lastsearch_values=1' . (! empty($socid) ? '&socid=' . $socid : '') . '">' . $langs->trans("BackToList") . '</a>';
-
 
 	$morehtmlref='<div class="refidno">';
 	// Ref customer

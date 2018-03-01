@@ -97,7 +97,7 @@ if ($id > 0 || ! empty($ref))
 {
 	if ($object->fetch($id,$ref) > 0)
 	{
-		$res=$object->fetch_optionals($object->id,$extralabels);
+		$res=$object->fetch_optionals();
 
 		$result=$projectstatic->fetch($object->fk_project);
 		if (! empty($projectstatic->socid)) $projectstatic->fetch_thirdparty();
@@ -152,9 +152,12 @@ if ($id > 0 || ! empty($ref))
 
             // Date start - end
             print '<tr><td>'.$langs->trans("DateStart").' - '.$langs->trans("DateEnd").'</td><td>';
-            print dol_print_date($projectstatic->date_start,'day');
-            $end=dol_print_date($projectstatic->date_end,'day');
-            if ($end) print ' - '.$end;
+            $start = dol_print_date($projectstatic->date_start,'day');
+            print ($start?$start:'?');
+            $end = dol_print_date($projectstatic->date_end,'day');
+            print ' - ';
+            print ($end?$end:'?');
+            if ($projectstatic->hasDelay()) print img_warning("Late");
             print '</td></tr>';
 
             // Budget
@@ -263,7 +266,7 @@ if ($id > 0 || ! empty($ref))
 
 		dol_fiche_end();
 
-	
+
 		// Include comment tpl view
 		include DOL_DOCUMENT_ROOT . '/core/tpl/bloc_comment.tpl.php';
 

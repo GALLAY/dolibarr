@@ -643,10 +643,7 @@ class FactureFournisseur extends CommonInvoice
 
                 // Retreive all extrafield
                 // fetch optionals attributes and labels
-                require_once(DOL_DOCUMENT_ROOT.'/core/class/extrafields.class.php');
-                $extrafields=new ExtraFields($this->db);
-                $extralabels=$extrafields->fetch_name_optionals_label($this->table_element,true);
-                $this->fetch_optionals($this->id,$extralabels);
+                $this->fetch_optionals();
 
                 if ($this->statut == self::STATUS_DRAFT) $this->brouillon = 1;
 
@@ -1929,6 +1926,8 @@ class FactureFournisseur extends CommonInvoice
             $label .= '<br><b>' . $langs->trans('Ref') . ':</b> ' . $this->ref;
         if (! empty($this->ref_supplier))
             $label.= '<br><b>' . $langs->trans('RefSupplier') . ':</b> ' . $this->ref_supplier;
+        if (! empty($this->libelle))
+        	$label.= '<br><b>' . $langs->trans('Label') . ':</b> ' . $this->libelle;
         if (! empty($this->total_ht))
             $label.= '<br><b>' . $langs->trans('AmountHT') . ':</b> ' . price($this->total_ht, 0, $langs, 0, -1, -1, $conf->currency);
         if (! empty($this->total_tva))
