@@ -81,9 +81,10 @@ class Form
 	 * @param	string	$moreparam		More param to add on a href URL.
 	 * @param   int     $fieldrequired  1 if we want to show field as mandatory using the "fieldrequired" CSS.
 	 * @param   int     $notabletag     1=Do not output table tags but output a ':', 2=Do not output table tags and no ':', 3=Do not output table tags but output a ' '
+	 * @param	string	$paramid		Key of parameter for id ('id', 'socid')
 	 * @return	string					HTML edit field
 	 */
-	function editfieldkey($text, $htmlname, $preselected, $object, $perm, $typeofdata='string', $moreparam='', $fieldrequired=0, $notabletag=0)
+	function editfieldkey($text, $htmlname, $preselected, $object, $perm, $typeofdata='string', $moreparam='', $fieldrequired=0, $notabletag=0, $paramid='id')
 	{
 		global $conf,$langs;
 
@@ -117,7 +118,7 @@ class Form
 			if (! empty($notabletag)) $ret.=' ';
 			if (empty($notabletag) && GETPOST('action','aZ09') != 'edit'.$htmlname && $perm) $ret.='</td>';
 			if (empty($notabletag) && GETPOST('action','aZ09') != 'edit'.$htmlname && $perm) $ret.='<td align="right">';
-			if ($htmlname && GETPOST('action','aZ09') != 'edit'.$htmlname && $perm) $ret.='<a href="'.$_SERVER["PHP_SELF"].'?action=edit'.$htmlname.'&amp;id='.$object->id.$moreparam.'">'.img_edit($langs->trans('Edit'), ($notabletag ? 0 : 1)).'</a>';
+			if ($htmlname && GETPOST('action','aZ09') != 'edit'.$htmlname && $perm) $ret.='<a href="'.$_SERVER["PHP_SELF"].'?action=edit'.$htmlname.'&amp;'.$paramid.'='.$object->id.$moreparam.'">'.img_edit($langs->trans('Edit'), ($notabletag ? 0 : 1)).'</a>';
 			if (! empty($notabletag) && $notabletag == 1) $ret.=' : ';
 			if (! empty($notabletag) && $notabletag == 3) $ret.=' ';
 			if (empty($notabletag) && GETPOST('action','aZ09') != 'edit'.$htmlname && $perm) $ret.='</td>';
@@ -139,12 +140,13 @@ class Form
 	 * @param	string	$editvalue		When in edit mode, use this value as $value instead of value (for example, you can provide here a formated price instead of value). Use '' to use same than $value
 	 * @param	object	$extObject		External object
 	 * @param	mixed	$custommsg		String or Array of custom messages : eg array('success' => 'MyMessage', 'error' => 'MyMessage')
-	 * @param	string	$moreparam		More param to add on a href URL
+	 * @param	string	$moreparam		More param to add on the form action href URL
 	 * @param   int     $notabletag     Do no output table tags
 	 * @param	string	$formatfunc		Call a specific function to output field
+	 * @param	string	$paramid		Key of parameter for id ('id', 'socid')
 	 * @return  string					HTML edit field
 	 */
-	function editfieldval($text, $htmlname, $value, $object, $perm, $typeofdata='string', $editvalue='', $extObject=null, $custommsg=null, $moreparam='', $notabletag=0, $formatfunc='')
+	function editfieldval($text, $htmlname, $value, $object, $perm, $typeofdata='string', $editvalue='', $extObject=null, $custommsg=null, $moreparam='', $notabletag=0, $formatfunc='', $paramid='id')
 	{
 		global $conf,$langs,$db;
 
@@ -166,7 +168,7 @@ class Form
 				$ret.='<form method="post" action="'.$_SERVER["PHP_SELF"].($moreparam?'?'.$moreparam:'').'">';
 				$ret.='<input type="hidden" name="action" value="set'.$htmlname.'">';
 				$ret.='<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
-				$ret.='<input type="hidden" name="id" value="'.$object->id.'">';
+				$ret.='<input type="hidden" name="'.$paramid.'" value="'.$object->id.'">';
 				if (empty($notabletag)) $ret.='<table class="nobordernopadding" cellpadding="0" cellspacing="0">';
 				if (empty($notabletag)) $ret.='<tr><td>';
 				if (preg_match('/^(string|email)/',$typeofdata))
@@ -1445,7 +1447,7 @@ class Form
 	/**
 	 *	Return select list of users
 	 *
-	 *  @param	string	$selected       User id or user object of user preselected. If -1, we use id of current user.
+	 *  @param	string	$selected       User id or user object of user preselected. If 0 or < -2, we use id of current user. If -1, keep unselected (if empty is allowed)
 	 *  @param  string	$htmlname       Field name in form
 	 *  @param  int		$show_empty     0=list with no empty value, 1=add also an empty value into list
 	 *  @param  array	$exclude        Array list of users id to exclude
@@ -1455,7 +1457,7 @@ class Form
 	 *  @param	int		$force_entity	0 or Id of environment to force
 	 *  @param	int		$maxlength		Maximum length of string into list (0=no limit)
 	 *  @param	int		$showstatus		0=show user status only if status is disabled, 1=always show user status into label, -1=never show user status
-	 *  @param	string	$morefilter		Add more filters into sql request
+	 *  @param	string	$morefilter		Add more filters into sql request (Example: 'employee = 1')
 	 *  @param	integer	$show_every		0=default list, 1=add also a value "Everybody" at beginning of list
 	 *  @param	string	$enableonlytext	If option $enableonlytext is set, we use this text to explain into label why record is disabled. Not used if enableonly is empty.
 	 *  @param	string	$morecss		More css
@@ -1527,7 +1529,6 @@ class Form
 		}else{
 			$sql.= " ORDER BY u.lastname ASC";
 		}
-
 
 		dol_syslog(get_class($this)."::select_dolusers", LOG_DEBUG);
 		$resql=$this->db->query($sql);
@@ -4778,7 +4779,7 @@ class Form
 	 *  @param	string		$addplusone		Add a link "+1 hour". Value must be name of another select_date field.
 	 *  @param  datetime    $adddateof      Add a link "Date of invoice" using the following date.
 	 * 	@return	string|null						Nothing or string if nooutput is 1
-	 *  @see	form_date
+	 *  @see	form_date, select_month, select_year, select_dayofweek
 	 */
 	function select_date($set_time='', $prefix='re', $h=0, $m=0, $empty=0, $form_name="", $d=1, $addnowlink=0, $nooutput=0, $disabled=0, $fullday='', $addplusone='', $adddateof='')
 	{
@@ -5630,6 +5631,123 @@ class Form
 	}
 
 	/**
+	 *	Return a HTML select string, built from an array of key+value but content returned into select come from an Ajax call of an URL.
+	 *  Note: Do not apply langs->trans function on returned content of Ajax service, content may be entity encoded twice.
+	 *
+	 *	@param	string	$htmlname       		Name of html select area
+	 *	@param	string	$array					Array (key=>array('text'=>'A text', 'url'=>'An url'), ...)
+	 *	@param	string	$id             		Preselected key
+	 *	@param  string	$moreparam      		Add more parameters onto the select tag
+	 *	@param	int		$disableFiltering		If set to 1, results are not filtered with searched string
+	 * 	@param	int		$disabled				Html select box is disabled
+	 *  @param	int		$minimumInputLength		Minimum Input Length
+	 *  @param	string	$morecss				Add more class to css styles
+	 *  @param  int     $callurlonselect        If set to 1, some code is added so an url return by the ajax is called when value is selected.
+	 *  @param  string  $placeholder            String to use as placeholder
+	 *  @param  integer $acceptdelayedhtml      1 if caller request to have html js content not returned but saved into global $delayedhtmlcontent (so caller can show it at end of page to avoid flash FOUC effect)
+	 * 	@return	string   						HTML select string
+	 *  @see ajax_combobox in ajax.lib.php
+	 */
+	static function selectArrayFilter($htmlname, $array, $id='', $moreparam='', $disableFiltering=0, $disabled=0, $minimumInputLength=1, $morecss='', $callurlonselect=0, $placeholder='', $acceptdelayedhtml=0)
+	{
+		global $conf, $langs;
+		global $delayedhtmlcontent;
+
+		// TODO Use an internal dolibarr component instead of select2
+		if (empty($conf->global->MAIN_USE_JQUERY_MULTISELECT) && ! defined('REQUIRE_JQUERY_MULTISELECT')) return '';
+
+		$out='<select type="text" class="'.$htmlname.($morecss?' '.$morecss:'').'" '.($moreparam?$moreparam.' ':'').'name="'.$htmlname.'"><option></option></select>';
+
+		$formattedarrayresult = array();
+
+		foreach($array as $key => $value) {
+			$o = new stdClass();
+			$o->id = $key;
+			$o->text = $value['text'];
+			$o->url = $value['url'];
+			$formattedarrayresult[] = $o;
+		}
+
+		$tmpplugin='select2';
+		$outdelayed="\n".'<!-- JS CODE TO ENABLE '.$tmpplugin.' for id '.$htmlname.' -->
+			<script type="text/javascript">
+			$(document).ready(function () {
+				var data = '.json_encode($formattedarrayresult).';
+
+				'.($callurlonselect ? 'var saveRemoteData = '.json_encode($array).';':'').'
+
+				$(".'.$htmlname.'").select2({
+					data: data,
+					language: select2arrayoflanguage,
+					containerCssClass: \':all:\',					/* Line to add class of origin SELECT propagated to the new <span class="select2-selection...> tag */
+					placeholder: "'.dol_escape_js($placeholder).'",
+					escapeMarkup: function (markup) { return markup; }, 	// let our custom formatter work
+					minimumInputLength: '.$minimumInputLength.',
+					formatResult: function(result, container, query, escapeMarkup) {
+						return escapeMarkup(result.text);
+					},
+					matcher: function (params, data) {
+
+						if(! data.id) return null;';
+
+		if($callurlonselect) {
+			$outdelayed.='
+
+						var urlBase = data.url;
+						var separ = urlBase.indexOf("?") >= 0 ? "&" : "?";
+
+						saveRemoteData[data.id].url = urlBase + separ + "sall=" + params.term;';
+		}
+
+		if(! $disableFiltering) {
+			$outdelayed.='
+
+						if(data.text.match(new RegExp(params.term))) {
+							return data;
+						}
+
+						return null;';
+		} else {
+			$outdelayed.='
+
+						return data;';
+		}
+
+		$outdelayed.='
+					}
+				});
+
+				'.($callurlonselect ? '
+				/* Code to execute a GET when we select a value */
+				$(".'.$htmlname.'").change(function() {
+					var selected = $(".'.$htmlname.'").val();
+					console.log("We select "+selected)
+
+					$(".'.$htmlname.'").val("");  /* reset visible combo value */
+					$.each( saveRemoteData, function( key, value ) {
+						if (key == selected)
+						{
+							console.log("selectArrayAjax - Do a redirect to "+value.url)
+							location.assign(value.url);
+						}
+					});
+				});' : '' ) . '
+
+			});
+			</script>';
+
+		if ($acceptdelayedhtml)
+		{
+			$delayedhtmlcontent.=$outdelayed;
+		}
+		else
+		{
+			$out.=$outdelayed;
+		}
+		return $out;
+	}
+
+	/**
 	 *	Show a multiselect form from an array.
 	 *
 	 *	@param	string	$htmlname		Name of select
@@ -6288,8 +6406,8 @@ class Form
 
 			// accesskey is for Windows or Linux:  ALT + key for chrome, ALT + SHIFT + KEY for firefox
 			// accesskey is for Mac:               CTRL + key for all browsers
-			$previous_ref = $object->ref_previous?'<a accesskey="p" href="'.$navurl.'?'.$paramid.'='.urlencode($object->ref_previous).$moreparam.'"><i class="fa fa-chevron-left"></i></a>':'<span class="inactive"><i class="fa fa-chevron-left opacitymedium"></i></span>';
-			$next_ref     = $object->ref_next?'<a accesskey="n" href="'.$navurl.'?'.$paramid.'='.urlencode($object->ref_next).$moreparam.'"><i class="fa fa-chevron-right"></i></a>':'<span class="inactive"><i class="fa fa-chevron-right opacitymedium"></i></span>';
+			$previous_ref = $object->ref_previous?'<a accesskey="p" title="'.$langs->trans("KeyboardShortcut").' ALT+p|ALT+SHIFT+p|CTRL+p" href="'.$navurl.'?'.$paramid.'='.urlencode($object->ref_previous).$moreparam.'"><i class="fa fa-chevron-left"></i></a>':'<span class="inactive"><i class="fa fa-chevron-left opacitymedium"></i></span>';
+			$next_ref     = $object->ref_next?'<a accesskey="n" title="'.$langs->trans("KeyboardShortcut").' ALT+n|ALT+SHIFT+n|CTRL+n" href="'.$navurl.'?'.$paramid.'='.urlencode($object->ref_next).$moreparam.'"><i class="fa fa-chevron-right"></i></a>':'<span class="inactive"><i class="fa fa-chevron-right opacitymedium"></i></span>';
 		}
 
 		//print "xx".$previous_ref."x".$next_ref;

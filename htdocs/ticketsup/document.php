@@ -33,12 +33,10 @@ require_once DOL_DOCUMENT_ROOT . '/core/lib/images.lib.php';
 require_once DOL_DOCUMENT_ROOT . "/core/lib/company.lib.php";
 require_once DOL_DOCUMENT_ROOT . '/core/class/html.formfile.class.php';
 
-$langs->load("companies");
-$langs->load('other');
-$langs->load("ticketsup");
+$langs->loadLangs(array("companies","other","ticketsup"));
 
-$action = GETPOST('action');
-$confirm = GETPOST('confirm');
+$action = GETPOST('action','alpha');
+$confirm = GETPOST('confirm','alpha');
 $id = GETPOST('id', 'int');
 $track_id = GETPOST('track_id', 'alpha');
 $ref = GETPOST('ref', 'alpha');
@@ -61,7 +59,6 @@ $pagenext = $page + 1;
 if (!$sortorder) {
     $sortorder = "ASC";
 }
-
 if (!$sortfield) {
     $sortfield = "name";
 }
@@ -75,21 +72,21 @@ $object->ref = $object->track_id;
 
 
 if ($result < 0) {
-    setEventMessage($object->error, 'errors');
+	setEventMessages($object->error, $object->errors, 'errors');
 } else {
     $upload_dir = $conf->ticketsup->dir_output . "/" . dol_sanitizeFileName($object->track_id);
 }
 
+
 /*
  * Actions
  */
-// Included file moved into Dolibarr 4, keep it for compatibility
-$res=@include_once DOL_DOCUMENT_ROOT . '/core/actions_linkedfiles.inc.php';
-if (! $res) {
-    include_once DOL_DOCUMENT_ROOT . '/core/tpl/document_actions_pre_headers.tpl.php';
-}
+
+include_once DOL_DOCUMENT_ROOT . '/core/actions_linkedfiles.inc.php';
 
 $object->ref = $old_ref;
+
+
 
 /*
  * View
@@ -109,7 +106,7 @@ if ($object->id) {
     }
 
     $form = new Form($db);
-    if ($object->fk_soc > 0) {
+    if ($socid > 0) {
         $object->fetch_thirdparty();
         $head = societe_prepare_head($object->thirdparty);
         dol_fiche_head($head, 'ticketsup', $langs->trans("ThirdParty"), 0, 'company');
@@ -123,18 +120,29 @@ if ($object->id) {
         $object->next_prev_filter = "te.fk_soc = '" . $user->societe_id . "'";
     }
     $head = ticketsup_prepare_head($object);
+
     dol_fiche_head($head, 'tabTicketDocument', $langs->trans("Ticket"), 0, 'ticketsup');
-    $object->label = $object->ref;
+
+    $morehtmlref ='<div class="refidno">';
+    $morehtmlref.= $object->subject;
     // Author
     if ($object->fk_user_create > 0) {
-        $object->label .= ' - ' . $langs->trans("CreatedBy") . '  ';
-        $langs->load("users");
-        $fuser = new User($db);
-        $fuser->fetch($object->fk_user_create);
-        $object->label .= $fuser->getNomUrl(0);
+    	$morehtmlref .= '<br>' . $langs->trans("CreatedBy") . '  ';
+
+    	$langs->load("users");
+    	$fuser = new User($db);
+    	$fuser->fetch($object->fk_user_create);
+    	$morehtmlref .= $fuser->getNomUrl(0);
     }
+    if (!empty($object->origin_email)) {
+    	$morehtmlref .= '<br>' . $langs->trans("CreatedBy") . ' ';
+    	$morehtmlref .= $object->origin_email . ' <small>(' . $langs->trans("TicketEmailOriginIssuer") . ')</small>';
+    }
+    $morehtmlref.='</div>';
+
     $linkback = '<a href="' . dol_buildpath('/ticketsup/list.php', 1) . '"><strong>' . $langs->trans("BackToList") . '</strong></a> ';
-    $object->ticketsupBannerTab('ref', '', ($user->societe_id ? 0 : 1), 'ref', 'subject', '', '', '', $morehtmlleft, $linkback);
+
+    dol_banner_tab($object, 'ref', $linkback, ($user->societe_id ? 0 : 1), 'ref', 'ref', $morehtmlref);
 
     dol_fiche_end();
 
@@ -144,10 +152,12 @@ if ($object->id) {
     foreach ($filearray as $key => $file) {
         $totalsize += $file['size'];
     }
+
     // For compatibility we use track ID for directory
     $object->ref = $object->track_id;
     $modulepart = 'ticketsup';
   	$permission = $user->rights->ticketsup->write;
+  	$permtoedit = $user->rights->ticketsup->write;
   	include_once DOL_DOCUMENT_ROOT . '/core/tpl/document_actions_post_headers.tpl.php';
 
 

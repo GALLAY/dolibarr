@@ -169,19 +169,18 @@ class Ticketsup extends CommonObject
     public $regeximgext = '\.jpg|\.jpeg|\.bmp|\.gif|\.png|\.tiff';
 
     public $fields=array(
-        'rowid' => array('type'=>'integer', 'label'=>'TechnicalID', 'visible'=>-2, 'enabled'=>1, 'position'=>1, 'notnull'=>1, 'index'=>1, 'comment'=>"Id"),
-        'entity' => array('type'=>'integer', 'label'=>'Entity', 'visible'=>0, 'enabled'=>1, 'position'=>20, 'notnull'=>1, 'index'=>1),
+        'rowid' => array('type'=>'integer', 'label'=>'TechnicalID', 'position'=>1, 'visible'=>-2, 'enabled'=>1, 'position'=>1, 'notnull'=>1, 'index'=>1, 'comment'=>"Id"),
+    	'entity' => array('type'=>'integer', 'label'=>'Entity', 'visible'=>0, 'enabled'=>1, 'position'=>5, 'notnull'=>1, 'index'=>1),
+    	'ref' => array('type'=>'varchar(128)', 'label'=>'Ref', 'visible'=>1, 'enabled'=>1, 'position'=>10, 'notnull'=>1, 'index'=>1, 'searchall'=>1, 'comment'=>"Reference of object"),
         'notify_tiers_at_create' => array('type'=>'integer', 'label'=>'NotifyThirdparty', 'visible'=>-2, 'enabled'=>0, 'position'=>20, 'notnull'=>1, 'index'=>1),
-        'ref' => array('type'=>'varchar(128)', 'label'=>'Ref', 'visible'=>1, 'enabled'=>1, 'position'=>10, 'notnull'=>1, 'index'=>1, 'searchall'=>1, 'comment'=>"Reference of object"),
         'track_id' => array('type'=>'varchar(255)', 'label'=>'TrackID', 'visible'=>0, 'enabled'=>1, 'position'=>30, 'notnull'=>-1, 'searchall'=>1, 'help'=>"Help text"),
         'fk_soc' => array('type'=>'integer:Societe:societe/class/societe.class.php', 'label'=>'ThirdParty', 'visible'=>1, 'enabled'=>1, 'position'=>50, 'notnull'=>-1, 'index'=>1, 'searchall'=>1, 'help'=>"LinkToThirparty"),
         'fk_project' => array('type'=>'integer:Project:projet/class/project.class.php', 'label'=>'Project', 'visible'=>1, 'enabled'=>1, 'position'=>50, 'notnull'=>-1, 'index'=>1, 'searchall'=>1, 'help'=>"LinkToProject"),
-        'origin_email' => array('type'=>'mail', 'label'=>'OriginEmail', 'visible'=>1, 'enabled'=>1, 'position'=>10, 'notnull'=>1, 'index'=>1, 'searchall'=>1, 'comment'=>"Reference of object"),
+        'origin_email' => array('type'=>'mail', 'label'=>'OriginEmail', 'visible'=>1, 'enabled'=>1, 'position'=>11, 'notnull'=>1, 'index'=>1, 'searchall'=>1, 'comment'=>"Reference of object"),
         'fk_user_create' => array('type'=>'integer:User:user/class/user.class.php', 'label'=>'Author', 'visible'=>1, 'enabled'=>1, 'position'=>510, 'notnull'=>1),
         'fk_user_assign' => array('type'=>'integer:User:user/class/user.class.php', 'label'=>'AuthorAssign', 'visible'=>1, 'enabled'=>1, 'position'=>510, 'notnull'=>1),
-        'subject' => array('type'=>'varchar(255)', 'label'=>'Subject', 'visible'=>1, 'enabled'=>1, 'position'=>10, 'notnull'=>-1, 'searchall'=>1, 'help'=>""),
+        'subject' => array('type'=>'varchar(255)', 'label'=>'Subject', 'visible'=>1, 'enabled'=>1, 'position'=>12, 'notnull'=>-1, 'searchall'=>1, 'help'=>""),
         'message' => array('type'=>'text', 'label'=>'Message', 'visible'=>-2, 'enabled'=>1, 'position'=>60, 'notnull'=>-1,),
-        'fk_statut' => array('type'=>'integer', 'label'=>'Status', 'visible'=>1, 'enabled'=>1, 'position'=>10, 'notnull'=>1, 'index'=>1, 'arrayofkeyval'=>array(0 => 'NotRead', 1 => 'Read', 3 => 'Answered', 4 => 'Assigned', 5 => 'InProgress', 6 => 'Waiting', 8 => 'Closed', 9 => 'Deleted')),
         'resolution' => array('type'=>'integer', 'label'=>'Resolution', 'visible'=>-2, 'enabled'=>1, 'position'=>40, 'notnull'=>1),
         'progress' => array('type'=>'varchar(100)', 'label'=>'Progression', 'visible'=>1, 'enabled'=>1, 'position'=>41, 'notnull'=>-1, 'searchall'=>1, 'help'=>""),
         'timing' => array('type'=>'varchar(20)', 'label'=>'Timing', 'visible'=>-1, 'enabled'=>1, 'position'=>42, 'notnull'=>-1, 'searchall'=>1, 'help'=>""),
@@ -191,9 +190,24 @@ class Ticketsup extends CommonObject
         'datec' => array('type'=>'datetime', 'label'=>'DateCreation', 'visible'=>-2, 'enabled'=>1, 'position'=>500, 'notnull'=>1),
         'date_read' => array('type'=>'datetime', 'label'=>'TicketReadOn', 'visible'=>-2, 'enabled'=>1, 'position'=>500, 'notnull'=>1),
         'date_close' => array('type'=>'datetime', 'label'=>'TicketCloseOn', 'visible'=>-2, 'enabled'=>1, 'position'=>500, 'notnull'=>1),
-        'tms' => array('type'=>'timestamp', 'label'=>'DateModification', 'visible'=>-2, 'enabled'=>1, 'position'=>501, 'notnull'=>1)
-
+        'tms' => array('type'=>'timestamp', 'label'=>'DateModification', 'visible'=>-2, 'enabled'=>1, 'position'=>501, 'notnull'=>1),
+	    'fk_statut' => array('type'=>'integer', 'label'=>'Status', 'visible'=>1, 'enabled'=>1, 'position'=>600, 'notnull'=>1, 'index'=>1, 'arrayofkeyval'=>array(0 => 'Unread', 1 => 'Read', 3 => 'Answered', 4 => 'Assigned', 5 => 'InProgress', 6 => 'Waiting', 8 => 'Closed', 9 => 'Deleted'))
     );
+
+    /**
+     * Status
+     */
+    const STATUS_NOT_READ = 0;
+    const STATUS_READ = 1;
+    const STATUS_ANSWERED = 3;
+    const STATUS_ASSIGNED = 4;
+    const STATUS_IN_PROGRESS = 5;
+    const STATUS_WAITING = 6;
+    const STATUS_CLOSED = 8;
+    const STATUS_CANCELED = 9;
+
+
+
 
     /**
      *  Constructor
@@ -204,8 +218,8 @@ class Ticketsup extends CommonObject
     {
         $this->db = $db;
 
-        $this->statuts_short = array(0 => 'NotRead', 1 => 'Read', 3 => 'Answered', 4 => 'Assigned', 5 => 'InProgress', 6 => 'Waiting', 8 => 'Closed', 9 => 'Deleted');
-        $this->statuts = array(0 => 'NotRead', 1 => 'Read', 3 => 'Answered', 4 => 'Assigned', 5 => 'InProgress', 6 => 'Waiting', 8 => 'Closed', 9 => 'Deleted');
+        $this->statuts_short = array(0 => 'Unread', 1 => 'Read', 3 => 'Answered', 4 => 'Assigned', 5 => 'InProgress', 6 => 'Waiting', 8 => 'Closed', 9 => 'Deleted');
+        $this->statuts = array(0 => 'Unread', 1 => 'Read', 3 => 'Answered', 4 => 'Assigned', 5 => 'InProgress', 6 => 'Waiting', 8 => 'Closed', 9 => 'Deleted');
     }
 
     /**
@@ -332,21 +346,21 @@ class Ticketsup extends CommonObject
             $sql .= "severity_code,";
             $sql .= "datec,";
             $sql .= "date_read,";
-            $sql .= "date_close";
-            $sql .= ", entity";
-            $sql .= ", notify_tiers_at_create";
+            $sql .= "date_close,";
+            $sql .= "entity,";
+            $sql .= "notify_tiers_at_create";
             $sql .= ") VALUES (";
             $sql .= " " . (!isset($this->ref) ? '' : "'" . $this->db->escape($this->ref) . "'") . ",";
             $sql .= " " . (!isset($this->track_id) ? 'NULL' : "'" . $this->db->escape($this->track_id) . "'") . ",";
-            $sql .= " " . (!isset($this->fk_soc) ? '0' : "'" . $this->db->escape($this->fk_soc) . "'") . ",";
-            $sql .= " " . (!isset($this->fk_project) ? '0' : "'" . $this->db->escape($this->fk_project) . "'") . ",";
+            $sql .= " " . ($this->fk_soc > 0 ? $this->db->escape($this->fk_soc) : "null") . ",";
+            $sql .= " " . ($this->fk_project > 0 ? $this->db->escape($this->fk_project) : "null") . ",";
             $sql .= " " . (!isset($this->origin_email) ? 'NULL' : "'" . $this->db->escape($this->origin_email) . "'") . ",";
-            $sql .= " " . (!isset($this->fk_user_create) ? ($user->id ? $user->id : 'NULL') : "'" . $this->fk_user_create . "'") . ",";
-            $sql .= " " . (!isset($this->fk_user_assign) ? 'NULL' : "'" . $this->fk_user_assign . "'") . ",";
+            $sql .= " " . ($this->fk_user_create > 0 ? $this->fk_user_create : ($user->id > 0 ? $user->id : 'NULL')) . ",";
+            $sql .= " " . ($this->fk_user_assign > 0 ? $this->fk_user_assign : 'NULL') . ",";
             $sql .= " " . (!isset($this->subject) ? 'NULL' : "'" . $this->db->escape($this->subject) . "'") . ",";
             $sql .= " " . (!isset($this->message) ? 'NULL' : "'" . $this->db->escape($this->message) . "'") . ",";
-            $sql .= " " . (!isset($this->fk_statut) ? '0' : "'" . $this->fk_statut . "'") . ",";
-            $sql .= " " . (!isset($this->resolution) ? 'NULL' : "'" . $this->resolution . "'") . ",";
+            $sql .= " " . (!isset($this->fk_statut) ? '0' : "'" . $this->db->escape($this->fk_statut) . "'") . ",";
+            $sql .= " " . (!isset($this->resolution) ? 'NULL' : "'" . $this->db->escape($this->resolution) . "'") . ",";
             $sql .= " " . (!isset($this->progress) ? '0' : "'" . $this->db->escape($this->progress) . "'") . ",";
             $sql .= " " . (!isset($this->timing) ? 'NULL' : "'" . $this->db->escape($this->timing) . "'") . ",";
             $sql .= " " . (!isset($this->type_code) ? 'NULL' : "'" . $this->db->escape($this->type_code) . "'") . ",";
@@ -423,7 +437,7 @@ class Ticketsup extends CommonObject
         global $langs;
 
         // Check parameters
-        if (!$id && !$track_id && !$ref) {
+        if (! $id && ! $track_id && ! $ref) {
             $this->error = 'ErrorWrongParameters';
             dol_print_error(get_class($this) . "::fetch " . $this->error);
             return -1;
@@ -893,6 +907,26 @@ class Ticketsup extends CommonObject
         }
 
         if (!$error) {
+        	$sql = "DELETE FROM " . MAIN_DB_PREFIX . "ticketsup_logs";
+        	$sql .= " WHERE fk_track_id = '" . $this->db->escape($this->track_id) . "'";
+        	$resql = $this->db->query($sql);
+        }
+        if (!$error) {
+        	$sql = "DELETE FROM " . MAIN_DB_PREFIX . "ticketsup_msg";
+        	$sql .= " WHERE fk_track_id = '" . $this->db->escape($this->track_id) . "'";
+        	$resql = $this->db->query($sql);
+        }
+
+        // Removed extrafields
+        if (!$error) {
+        	$result = $this->deleteExtraFields();
+        	if ($result < 0) {
+        		$error++;
+        		dol_syslog(get_class($this) . "::delete error -3 " . $this->error, LOG_ERR);
+        	}
+        }
+
+        if (!$error) {
             $sql = "DELETE FROM " . MAIN_DB_PREFIX . "ticketsup";
             $sql .= " WHERE rowid=" . $this->id;
 
@@ -901,15 +935,6 @@ class Ticketsup extends CommonObject
             if (!$resql) {
                 $error++;
                 $this->errors[] = "Error " . $this->db->lasterror();
-            }
-        }
-
-        // Removed extrafields
-        if (!$error) {
-            $result = $this->deleteExtraFields();
-            if ($result < 0) {
-                $error++;
-                dol_syslog(get_class($this) . "::delete error -3 " . $this->error, LOG_ERR);
             }
         }
 
@@ -1385,13 +1410,13 @@ class Ticketsup extends CommonObject
      *    @param    User	$user				Object user
      *    @param    int 	$id_assign_user		ID of user assigned
      *    @param    int 	$notrigger        	Disable trigger
-     *    @return   int							<0 if KO, >0 if OK
+     *    @return   int							<0 if KO, 0=Nothing done, >0 if OK
      */
     public function assignUser($user, $id_assign_user, $notrigger = 0)
     {
         global $conf, $langs;
 
-        if ($id_assign_user > 0) { // no closed
+        if ($id_assign_user > 0) {
             $this->db->begin();
 
             $sql = "UPDATE " . MAIN_DB_PREFIX . "ticketsup";
@@ -1401,7 +1426,10 @@ class Ticketsup extends CommonObject
 
             dol_syslog(get_class($this) . "::assignUser sql=" . $sql);
             $resql = $this->db->query($sql);
-            if ($resql) {
+            if ($resql)
+            {
+            	$this->fk_user_assign = $id_assign_user;	// May be used by trigger
+
                 if (!$notrigger) {
                 	// Call trigger
                 	$result=$this->call_trigger('TICKET_ASSIGNED', $user);
@@ -1427,6 +1455,8 @@ class Ticketsup extends CommonObject
                 return -1;
             }
         }
+
+        return 0;
     }
 
     /**
@@ -1464,8 +1494,8 @@ class Ticketsup extends CommonObject
         $sql .= ") VALUES (";
         $sql .= " " . $conf->entity . ",";
         $sql .= " '" . $this->db->idate(dol_now()) . "',";
-        $sql .= " '" . $this->track_id . "',";
-        $sql .= " " . ($user->id ? "'" . $user->id . "'" : 'NULL') . ",";
+        $sql .= " '" . $this->db->escape($this->track_id) . "',";
+        $sql .= " " . ($user->id > 0 ? $user->id : 'NULL') . ",";
         $sql .= " '" . $this->db->escape($message) . "'";
         $sql .= ")";
 
@@ -1596,9 +1626,8 @@ class Ticketsup extends CommonObject
 
         $sql = "SELECT rowid, fk_user_create, datec, message";
         $sql .= " FROM " . MAIN_DB_PREFIX . "ticketsup_logs";
-        $sql .= " WHERE fk_track_id ='" . $this->track_id . "'";
+        $sql .= " WHERE fk_track_id ='" . $this->db->escape($this->track_id) . "'";
         $sql .= " ORDER BY datec DESC";
-        dol_syslog(get_class($this) . "::load_cache_actions_ticket sql=" . $sql, LOG_DEBUG);
 
         $resql = $this->db->query($sql);
         if ($resql) {
@@ -1615,7 +1644,7 @@ class Ticketsup extends CommonObject
             return $num;
         } else {
             $this->error = "Error " . $this->db->lasterror();
-            dol_syslog(get_class($this) . "::load_cache_actions_ticket " . $this->error, LOG_ERR);
+            dol_syslog(get_class($this) . "::loadCacheLogsTicket " . $this->error, LOG_ERR);
             return -1;
         }
     }
@@ -1651,7 +1680,7 @@ class Ticketsup extends CommonObject
         $sql .= "private";
         $sql .= ") VALUES (";
         $sql .= " " . (!isset($this->fk_track_id) ? "'" . $this->db->escape($this->track_id) . "'" : "'" . $this->db->escape($this->fk_track_id) . "'") . ",";
-        $sql .= " " . (!isset($this->fk_user_action) ? $user->id : "'" . $this->fk_user_action . "'") . ",";
+        $sql .= " " . ($this->fk_user_action > 0 ? $this->fk_user_action : $user->id) . ",";
         $sql .= " '" . $this->db->idate(dol_now()) . "',";
         $sql .= " " . (!isset($this->message) ? 'NULL' : "'" . $this->db->escape($this->message) . "'") . ",";
         $sql .= " " . (empty($this->private) ? '0' : "'" . $this->db->escape($this->private) . "'") . "";
@@ -1709,7 +1738,7 @@ class Ticketsup extends CommonObject
 
         $sql = "SELECT rowid, fk_user_action, datec, message, private";
         $sql .= " FROM " . MAIN_DB_PREFIX . "ticketsup_msg";
-        $sql .= " WHERE fk_track_id ='" . $this->track_id . "'";
+        $sql .= " WHERE fk_track_id ='" . $this->db->escape($this->track_id) . "'";
         $sql .= " ORDER BY datec DESC";
         dol_syslog(get_class($this) . "::load_cache_actions_ticket sql=" . $sql, LOG_DEBUG);
 
@@ -1747,7 +1776,7 @@ class Ticketsup extends CommonObject
             $this->db->begin();
 
             $sql = "UPDATE " . MAIN_DB_PREFIX . "ticketsup";
-            $sql .= " SET fk_statut=8, progress=100,date_close='" . $this->db->idate(dol_now()) . "'";
+            $sql .= " SET fk_statut=8, progress=100, date_close='" . $this->db->idate(dol_now()) . "'";
             $sql .= " WHERE rowid = " . $this->id;
 
             dol_syslog(get_class($this) . "::close sql=" . $sql);
@@ -1757,27 +1786,30 @@ class Ticketsup extends CommonObject
 
                 // Valid and close fichinter linked
                 $this->fetchObjectLinked($this->id, $this->element, null, 'fichinter');
-                foreach ($this->linkedObjectsIds['fichinter'] as $fichinter_id) {
-                    $fichinter = new Fichinter($this->db);
-                    $fichinter->fetch($fichinter_id);
-                    if($fichinter->statut == 0) {
-                        $result = $fichinter->setValid($user);
-                        if (!$result) {
-                            $this->errors[] = $fichinter->error;
-                            $error++;
-                        }
-                    }
-                    if ($fichinter->statut < 3) {
-                        $result = $fichinter->setStatut(3);
-                        if (!$result) {
-                            $this->errors[] = $fichinter->error;
-                            $error++;
-                        }
-                    }
+                if ($this->linkedObjectsIds)
+                {
+	                foreach ($this->linkedObjectsIds['fichinter'] as $fichinter_id) {
+	                    $fichinter = new Fichinter($this->db);
+	                    $fichinter->fetch($fichinter_id);
+	                    if($fichinter->statut == 0) {
+	                        $result = $fichinter->setValid($user);
+	                        if (!$result) {
+	                            $this->errors[] = $fichinter->error;
+	                            $error++;
+	                        }
+	                    }
+	                    if ($fichinter->statut < 3) {
+	                        $result = $fichinter->setStatut(3);
+	                        if (!$result) {
+	                            $this->errors[] = $fichinter->error;
+	                            $error++;
+	                        }
+	                    }
+	                }
                 }
 
             	// Call trigger
-            	$result=$this->call_trigger('TICKET_CLOSED', $user);
+            	$result=$this->call_trigger('TICKET_CLOSE', $user);
             	if ($result < 0) {
                     $error++;
                 }
@@ -2162,12 +2194,7 @@ class Ticketsup extends CommonObject
                             $link = '/comm/propal.php?id=' . $objet_id;
                             break;
                         case 'facture':
-                            if (DOL_VERSION < '6.0.0') {
-                                $link = '/compta/facture.php?facid=' . $objet_id;
-                        	} else {
-                                $link = '/compta/facture/card.php?facid=' . $objet_id;
-                            }
-
+                            $link = '/compta/facture/card.php?facid=' . $objet_id;
                             break;
                         case 'order':
                             $link = '/commande/card.php?facid=' . $objet_id;
@@ -2217,7 +2244,7 @@ class Ticketsup extends CommonObject
                         $sendto = htmlentities($sendto);
 
                         $sql = "INSERT INTO " . MAIN_DB_PREFIX . "notify (daten, fk_action, fk_contact, objet_type, objet_id, email)";
-                        $sql .= " VALUES ('" . $this->db->idate($now) . "', " . $actiondefid . ", " . $obj->cid . ", '" . $objet_type . "', " . $objet_id . ", '" . $this->db->escape($obj->email) . "')";
+                        $sql .= " VALUES ('" . $this->db->idate($now) . "', " . $actiondefid . ", " . $obj->cid . ", '" . $this->db->escape($objet_type) . "', " . $objet_id . ", '" . $this->db->escape($obj->email) . "')";
                         dol_syslog("Notify::send sql=" . $sql);
                         if (!$this->db->query($sql)) {
                             dol_print_error($this->db);
@@ -2249,7 +2276,7 @@ class Ticketsup extends CommonObject
      *    @param    string  $code       Filter on this code of contact type ('SHIPPING', 'BILLING', ...)
      *    @return 	array          		Array of contacts
      */
-    function liste_contact($statut = -1, $source = 'external', $list = 0, $code = '')
+    function listeContact($statut = -1, $source = 'external', $list = 0, $code = '')
     {
         global $langs;
 
@@ -2286,7 +2313,7 @@ class Ticketsup extends CommonObject
 
         $sql .= " WHERE ec.element_id =" . $this->id;
         $sql .= " AND ec.fk_c_type_contact=tc.rowid";
-        $sql .= " AND tc.element='" . $this->element . "'";
+        $sql .= " AND tc.element='" . $this->db->escape($this->element) . "'";
         if ($source == 'internal') {
             $sql .= " AND tc.source = 'internal'";
         }
@@ -2385,77 +2412,6 @@ class Ticketsup extends CommonObject
         return $defaultref;
     }
 
-    /**
-	 *  Show tab footer of a card
-	 *
-	 *  @param  string $paramid       Name of parameter to use to name the id into the URL next/previous link
-	 *  @param  string $morehtml      More html content to output just before the nav bar
-	 *  @param  int    $shownav       Show Condition (navigation is shown if value is 1)
-	 *  @param  string $fieldid       Nom du champ en base a utiliser pour select next et previous (we make the select max and min on this field)
-	 *  @param  string $fieldref      Nom du champ objet ref (object->ref) a utiliser pour select next et previous
-	 *  @param  string $morehtmlref   More html to show after ref
-	 *  @param  string $moreparam     More param to add in nav link url.
-	 *  @param  int    $nodbprefix    Do not include DB prefix to forge table name
-	 *  @param  string $morehtmlleft  More html code to show before ref
-	 *  @param  string $morehtmlright More html code to show before navigation arrows
-	 *  @return void
-	 */
-    public function ticketsupBannerTab($paramid, $morehtml = '', $shownav = 1, $fieldid = 'id', $fieldref = 'ref', $morehtmlref = '', $moreparam = '', $nodbprefix = 0, $morehtmlleft = '', $morehtmlright = '')
-    {
-        global $conf, $form, $user, $langs;
-
-        $maxvisiblephotos = 1;
-        $showimage = 1;
-        $showbarcode = empty($conf->barcode->enabled) ? 0 : ($this->barcode ? 1 : 0);
-        if (!empty($conf->global->MAIN_USE_ADVANCED_PERMS) && empty($user->rights->barcode->lire_advance)) {
-            $showbarcode = 0;
-        }
-
-        $modulepart = 'ticketsup';
-        print '<div class="arearef heightref valignmiddle" width="100%">';
-
-        $width = 80;
-        $height = 70;
-        $cssclass = 'photoref';
-        //$showimage=$this->is_photo_available($conf->ticketsup->multidir_output[$this->entity]);
-        $showimage = $this->is_photo_available($conf->ticketsup->dir_output . '/' . $this->track_id);
-        $maxvisiblephotos = (isset($conf->global->PRODUCT_MAX_VISIBLE_PHOTO) ? $conf->global->PRODUCT_MAX_VISIBLE_PHOTO : $maxvisiblephotos);
-        if ($conf->browser->phone) {
-            $maxvisiblephotos = 1;
-        }
-
-        if ($showimage) {
-            $morehtmlleft .= '<div class="floatleft inline-block valignmiddle divphotoref">'
-            . $this->show_photos($conf->ticketsup->dir_output, 'small', $maxvisiblephotos, 0, 0, 0, $height, $width, 0)
-                . '</div>';
-        } else {
-            $nophoto = '/public/theme/common/nophoto.png';
-            $morehtmlleft .= '<div class="floatleft inline-block valignmiddle divphotoref"><img class="photo' . $modulepart . ($cssclass ? ' ' . $cssclass : '') . '" alt="No photo" border="0"' . ($width ? ' width="' . $width . '"' : '') . ($height ? ' height="' . $height . '"' : '') . ' src="' . DOL_URL_ROOT . $nophoto . '"></div>';
-        }
-        $morehtmlright .= $this->getLibStatut(2);
-
-        if (!empty($this->name_alias)) {
-            $morehtmlref .= '<div class="refidno">' . $this->name_alias . '</div>';
-        }
-        // For thirdparty
-        if (!empty($this->label)) {
-            $morehtmlref .= '<div class="refidno">' . $this->label . '</div>';
-        }
-        // For product
-        if ($this->element != 'product') {
-            $morehtmlref .= '<div class="refidno">';
-            $morehtmlref .= $this->getBannerAddress('refaddress', $this);
-            $morehtmlref .= '</div>';
-        }
-        if (!empty($conf->global->MAIN_SHOW_TECHNICAL_ID)) {
-            $morehtmlref .= '<div style="clear: both;"></div><div class="refidno">';
-            $morehtmlref .= $langs->trans("TechnicalID") . ': ' . $this->id;
-            $morehtmlref .= '</div>';
-        }
-        print $form->showrefnav($this, 'ref', $morehtml, $shownav, $fieldid, $fieldref, $morehtmlref, $moreparam, $nodbprefix, $morehtmlleft, $morehtmlright);
-        print '</div>';
-        print '<div class="underrefbanner clearboth"></div>';
-    }
 
     /**
 	 *  Return if at least one photo is available
@@ -2599,7 +2555,7 @@ class Ticketsup extends CommonObject
                                 }
                                 if ($user->rights->produit->creer || $user->rights->service->creer) {
                                     // Link to resize
-                                    $return .= '<a href="' . DOL_URL_ROOT . '/core/photos_resize.php?modulepart=' . urlencode('ticketsup') . '&id=' . $this->id . '&amp;file=' . urlencode($pdir . $viewfilename) . '" title="' . dol_escape_htmltag($langs->trans("Resize")) . '">' . img_picto($langs->trans("Resize"), DOL_URL_ROOT . '/theme/common/transform-crop-and-resize', '', 1) . '</a> &nbsp; ';
+                                    $return .= '<a href="' . DOL_URL_ROOT . '/core/photos_resize.php?modulepart=' . urlencode('ticketsup') . '&id=' . $this->id . '&amp;file=' . urlencode($pdir . $viewfilename) . '" title="' . dol_escape_htmltag($langs->trans("Resize")) . '">' . img_picto($langs->trans("Resize"), 'resize', '') . '</a> &nbsp; ';
 
                                     // Link to delete
                                     $return .= '<a href="' . $_SERVER["PHP_SELF"] . '?id=' . $this->id . '&amp;action=delete&amp;file=' . urlencode($pdir . $viewfilename) . '">';
@@ -2628,7 +2584,7 @@ class Ticketsup extends CommonObject
                             if ($showaction) {
                                 if ($user->rights->produit->creer || $user->rights->service->creer) {
                                     // Link to resize
-                                    $return .= '<a href="' . DOL_URL_ROOT . '/core/photos_resize.php?modulepart=' . urlencode('ticketsup') . '&id=' . $this->id . '&amp;file=' . urlencode($pdir . $viewfilename) . '" title="' . dol_escape_htmltag($langs->trans("Resize")) . '">' . img_picto($langs->trans("Resize"), DOL_URL_ROOT . '/theme/common/transform-crop-and-resize', '', 1) . '</a> &nbsp; ';
+                                    $return .= '<a href="' . DOL_URL_ROOT . '/core/photos_resize.php?modulepart=' . urlencode('ticketsup') . '&id=' . $this->id . '&amp;file=' . urlencode($pdir . $viewfilename) . '" title="' . dol_escape_htmltag($langs->trans("Resize")) . '">' . img_picto($langs->trans("Resize"), 'resize', '') . '</a> &nbsp; ';
 
                                     // Link to delete
                                     $return .= '<a href="' . $_SERVER["PHP_SELF"] . '?id=' . $this->id . '&amp;action=delete&amp;file=' . urlencode($pdir . $viewfilename) . '">';

@@ -13,8 +13,9 @@
  * Copyright (C) 2012      Cédric Salvador       <csalvador@gpcsolutions.fr>
  * Copyright (C) 2012-2014 Raphaël Doursenaud    <rdoursenaud@gpcsolutions.fr>
  * Copyright (C) 2013      Cedric Gross          <c.gross@kreiz-it.fr>
- * Copyright (C) 2013      Florian Henry		  	<florian.henry@open-concept.pro>
- * Copyright (C) 2016      Ferran Marcet        <fmarcet@2byte.es>
+ * Copyright (C) 2013      Florian Henry         <florian.henry@open-concept.pro>
+ * Copyright (C) 2016      Ferran Marcet         <fmarcet@2byte.es>
+ * Copyright (C) 2018      Alexandre Spangaro    <aspangaro@zendsi.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -42,6 +43,9 @@ require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
 require_once DOL_DOCUMENT_ROOT.'/societe/class/client.class.php';
 require_once DOL_DOCUMENT_ROOT.'/margin/lib/margins.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/multicurrency/class/multicurrency.class.php';
+
+if (! empty($conf->accounting->enabled)) require_once DOL_DOCUMENT_ROOT.'/core/class/html.formaccounting.class.php';
+if (! empty($conf->accounting->enabled)) require_once DOL_DOCUMENT_ROOT.'/accountancy/class/accountingaccount.class.php';
 
 /**
  *	Class to manage invoices
@@ -287,6 +291,10 @@ class Facture extends CommonInvoice
 
 		$this->db->begin();
 
+		$originaldatewhen=null;
+		$nextdatewhen=null;
+		$previousdaynextdatewhen=null;
+
 		// Create invoice from a template invoice
 		if ($this->fac_rec > 0)
 		{
@@ -297,7 +305,10 @@ class Facture extends CommonInvoice
 			$result=$_facrec->fetch($this->fac_rec);
 			$result=$_facrec->fetchObjectLinked();       // This load $_facrec->linkedObjectsIds
 
+			// Define some dates
 			$originaldatewhen = $_facrec->date_when;
+			$nextdatewhen=dol_time_plus_duree($originaldatewhen, $_facrec->frequency, $_facrec->unit_frequency);
+			$previousdaynextdatewhen=dol_time_plus_duree($nextdatewhen, -1, 'd');
 
 			$this->socid 		     = $_facrec->socid;  // Invoice created on same thirdparty than template
 			$this->entity            = $_facrec->entity; // Invoice created in same entity than template
@@ -374,7 +385,8 @@ class Facture extends CommonInvoice
 			$substitutionarray['__INVOICE_NEXT_YEAR__'] = dol_print_date(dol_time_plus_duree($this->date, 1, 'y'), '%Y');
 			// Only for tempalte invoice
 			$substitutionarray['__INVOICE_DATE_NEXT_INVOICE_BEFORE_GEN__'] = dol_print_date($originaldatewhen, 'dayhour');
-			$substitutionarray['__INVOICE_DATE_NEXT_INVOICE_AFTER_GEN__'] = dol_print_date(dol_time_plus_duree($originaldatewhen, $_facrec->frequency, $_facrec->unit_frequency), 'dayhour');
+			$substitutionarray['__INVOICE_DATE_NEXT_INVOICE_AFTER_GEN__'] = dol_print_date($nextdatewhen, 'dayhour');
+			$substitutionarray['__INVOICE_PREVIOUS_DATE_NEXT_INVOICE_AFTER_GEN__'] = dol_print_date($previousdaynextdatewhen, 'dayhour');
 
 			//var_dump($substitutionarray);exit;
 
@@ -494,6 +506,7 @@ class Facture extends CommonInvoice
 				}
 			}
 
+			// Propagate contacts
 			if (! $error && $this->id && ! empty($conf->global->MAIN_PROPAGATE_CONTACTS_FROM_ORIGIN) && ! empty($this->origin) && ! empty($this->origin_id))   // Get contact from origin object
 			{
 				$originforcontact = $this->origin;
@@ -531,11 +544,10 @@ class Facture extends CommonInvoice
 				else dol_print_error($resqlcontact);
 			}
 
-
 			/*
-			 *  Insert lines of invoices into database
+			 *  Insert lines of invoices, if not from template invoice, into database
 			 */
-			if (count($this->lines) && is_object($this->lines[0]))	// If this->lines is array of InvoiceLines (preferred mode)
+			if (! $error && empty($this->fac_rec) && count($this->lines) && is_object($this->lines[0]))	// If this->lines is array of InvoiceLines (preferred mode)
 			{
 				$fk_parent_line = 0;
 
@@ -545,9 +557,18 @@ class Facture extends CommonInvoice
 					$newinvoiceline=$this->lines[$i];
 					$newinvoiceline->fk_facture=$this->id;
 
-					// TODO This seems not used. Here we put origin 'facture' but after,  we put an id of object !
-					$newinvoiceline->origin = $this->element;
-                    $newinvoiceline->origin_id = $this->lines[$i]->id;
+					$newinvoiceline->origin = $this->lines[$i]->element;
+					$newinvoiceline->origin_id = $this->lines[$i]->id;
+
+					// Auto set date of service ?
+					if ($this->lines[$i]->date_start_fill == 1 && $originaldatewhen)			// $originaldatewhen is defined when generating from recurring invoice only
+					{
+						$newinvoiceline->date_start = $originaldatewhen;
+					}
+					if ($this->lines[$i]->date_end_fill == 1 && $previousdaynextdatewhen)	// $previousdaynextdatewhen is defined when generating from recurring invoice only
+					{
+						$newinvoiceline->date_end = $previousdaynextdatewhen;
+					}
 
 					if ($result >= 0)
 					{
@@ -581,7 +602,7 @@ class Facture extends CommonInvoice
 					}
 				}
 			}
-			else	// If this->lines is an array of invoice line arrays
+			elseif (! $error && empty($this->fac_rec)) 		// If this->lines is an array of invoice line arrays
 			{
 				$fk_parent_line = 0;
 
@@ -689,7 +710,9 @@ class Facture extends CommonInvoice
 						$localtax2_tx,
 						$_facrec->lines[$i]->fk_product,
 						$_facrec->lines[$i]->remise_percent,
-						'','',0,
+						($_facrec->lines[$i]->date_start_fill == 1 && $originaldatewhen)?$originaldatewhen:'',
+						($_facrec->lines[$i]->date_end_fill == 1 && $previousdaynextdatewhen)?$previousdaynextdatewhen:'',
+						0,
 						$tva_npr,
 						'',
 						'HT',
@@ -1457,6 +1480,9 @@ class Facture extends CommonInvoice
 				$line->fk_prev_id       = $objp->fk_prev_id;
 				$line->fk_unit	        = $objp->fk_unit;
 
+				// Accountancy
+				$line->fk_accounting_account	= $objp->fk_code_ventilation;
+
 				// Multicurrency
 				$line->fk_multicurrency 		= $objp->fk_multicurrency;
 				$line->multicurrency_code 		= $objp->multicurrency_code;
@@ -1541,19 +1567,18 @@ class Facture extends CommonInvoice
 
 		// Update request
 		$sql = "UPDATE ".MAIN_DB_PREFIX."facture SET";
-
 		$sql.= " facnumber=".(isset($this->ref)?"'".$this->db->escape($this->ref)."'":"null").",";
-		$sql.= " type=".(isset($this->type)?$this->type:"null").",";
+		$sql.= " type=".(isset($this->type)?$this->db->escape($this->type):"null").",";
 		$sql.= " ref_client=".(isset($this->ref_client)?"'".$this->db->escape($this->ref_client)."'":"null").",";
 		$sql.= " increment=".(isset($this->increment)?"'".$this->db->escape($this->increment)."'":"null").",";
-		$sql.= " fk_soc=".(isset($this->socid)?$this->socid:"null").",";
+		$sql.= " fk_soc=".(isset($this->socid)?$this->db->escape($this->socid):"null").",";
 		$sql.= " datec=".(strval($this->date_creation)!='' ? "'".$this->db->idate($this->date_creation)."'" : 'null').",";
 		$sql.= " datef=".(strval($this->date)!='' ? "'".$this->db->idate($this->date)."'" : 'null').",";
 		$sql.= " date_pointoftax=".(strval($this->date_pointoftax)!='' ? "'".$this->db->idate($this->date_pointoftax)."'" : 'null').",";
 		$sql.= " date_valid=".(strval($this->date_validation)!='' ? "'".$this->db->idate($this->date_validation)."'" : 'null').",";
-		$sql.= " paye=".(isset($this->paye)?$this->paye:"null").",";
-		$sql.= " remise_percent=".(isset($this->remise_percent)?$this->remise_percent:"null").",";
-		$sql.= " remise_absolue=".(isset($this->remise_absolue)?$this->remise_absolue:"null").",";
+		$sql.= " paye=".(isset($this->paye)?$this->db->escape($this->paye):"null").",";
+		$sql.= " remise_percent=".(isset($this->remise_percent)?$this->db->escape($this->remise_percent):"null").",";
+		$sql.= " remise_absolue=".(isset($this->remise_absolue)?$this->db->escape($this->remise_absolue):"null").",";
 		$sql.= " close_code=".(isset($this->close_code)?"'".$this->db->escape($this->close_code)."'":"null").",";
 		$sql.= " close_note=".(isset($this->close_note)?"'".$this->db->escape($this->close_note)."'":"null").",";
 		$sql.= " tva=".(isset($this->total_tva)?$this->total_tva:"null").",";
@@ -1561,23 +1586,22 @@ class Facture extends CommonInvoice
 		$sql.= " localtax2=".(isset($this->total_localtax2)?$this->total_localtax2:"null").",";
 		$sql.= " total=".(isset($this->total_ht)?$this->total_ht:"null").",";
 		$sql.= " total_ttc=".(isset($this->total_ttc)?$this->total_ttc:"null").",";
-		$sql.= " revenuestamp=".((isset($this->revenuestamp) && $this->revenuestamp != '')?$this->revenuestamp:"null").",";
-		$sql.= " fk_statut=".(isset($this->statut)?$this->statut:"null").",";
-		$sql.= " fk_user_author=".(isset($this->user_author)?$this->user_author:"null").",";
-		$sql.= " fk_user_valid=".(isset($this->fk_user_valid)?$this->fk_user_valid:"null").",";
-		$sql.= " fk_facture_source=".(isset($this->fk_facture_source)?$this->fk_facture_source:"null").",";
-		$sql.= " fk_projet=".(isset($this->fk_project)?$this->fk_project:"null").",";
-		$sql.= " fk_cond_reglement=".(isset($this->cond_reglement_id)?$this->cond_reglement_id:"null").",";
-		$sql.= " fk_mode_reglement=".(isset($this->mode_reglement_id)?$this->mode_reglement_id:"null").",";
+		$sql.= " revenuestamp=".((isset($this->revenuestamp) && $this->revenuestamp != '')?$this->db->escape($this->revenuestamp):"null").",";
+		$sql.= " fk_statut=".(isset($this->statut)?$this->db->escape($this->statut):"null").",";
+		$sql.= " fk_user_author=".(isset($this->user_author)?$this->db->escape($this->user_author):"null").",";
+		$sql.= " fk_user_valid=".(isset($this->fk_user_valid)?$this->db->escape($this->fk_user_valid):"null").",";
+		$sql.= " fk_facture_source=".(isset($this->fk_facture_source)?$this->db->escape($this->fk_facture_source):"null").",";
+		$sql.= " fk_projet=".(isset($this->fk_project)?$this->db->escape($this->fk_project):"null").",";
+		$sql.= " fk_cond_reglement=".(isset($this->cond_reglement_id)?$this->db->escape($this->cond_reglement_id):"null").",";
+		$sql.= " fk_mode_reglement=".(isset($this->mode_reglement_id)?$this->db->escape($this->mode_reglement_id):"null").",";
 		$sql.= " date_lim_reglement=".(strval($this->date_lim_reglement)!='' ? "'".$this->db->idate($this->date_lim_reglement)."'" : 'null').",";
 		$sql.= " note_private=".(isset($this->note_private)?"'".$this->db->escape($this->note_private)."'":"null").",";
 		$sql.= " note_public=".(isset($this->note_public)?"'".$this->db->escape($this->note_public)."'":"null").",";
 		$sql.= " model_pdf=".(isset($this->modelpdf)?"'".$this->db->escape($this->modelpdf)."'":"null").",";
-		$sql.= " import_key=".(isset($this->import_key)?"'".$this->db->escape($this->import_key)."'":"null");
-		$sql.= ", situation_cycle_ref=".(empty($this->situation_cycle_ref)?"null":$this->situation_cycle_ref);
-		$sql.= ", situation_counter=".(empty($this->situation_counter)?"null":$this->situation_counter);
-		$sql.= ", situation_final=".(empty($this->situation_counter)?"0":$this->situation_counter);
-
+		$sql.= " import_key=".(isset($this->import_key)?"'".$this->db->escape($this->import_key)."'":"null").",";
+		$sql.= " situation_cycle_ref=".(empty($this->situation_cycle_ref)?"null":$this->db->escape($this->situation_cycle_ref)).",";
+		$sql.= " situation_counter=".(empty($this->situation_counter)?"null":$this->db->escape($this->situation_counter)).",";
+		$sql.= " situation_final=".(empty($this->situation_counter)?"0":$this->db->escape($this->situation_counter));
 		$sql.= " WHERE rowid=".$this->id;
 
 		$this->db->begin();
@@ -2522,8 +2546,8 @@ class Facture extends CommonInvoice
 	 *  	@param		double		$txlocaltax2		Local tax 2 rate (deprecated, use instead txtva with code inside)
 	 *		@param    	int			$fk_product      	Id of predefined product/service
 	 * 		@param    	double		$remise_percent  	Percent of discount on line
-	 * 		@param    	int	$date_start      	Date start of service
-	 * 		@param    	int	$date_end        	Date end of service
+	 * 		@param    	int			$date_start      	Date start of service
+	 * 		@param    	int			$date_end        	Date end of service
 	 * 		@param    	int			$ventil          	Code of dispatching into accountancy
 	 * 		@param    	int			$info_bits			Bits de type de lignes
 	 *		@param    	int			$fk_remise_except	Id discount used

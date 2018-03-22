@@ -278,7 +278,9 @@ input.select2-input {
 .liste_titre input[name=month_date_when], .liste_titre input[name=monthvalid], .liste_titre input[name=search_ordermonth], .liste_titre input[name=search_deliverymonth],
 .liste_titre input[name=search_smonth], .liste_titre input[name=search_month], .liste_titre input[name=search_emonth], .liste_titre input[name=smonth], .liste_titre input[name=month], .liste_titre select[name=month],
 .liste_titre input[name=month_lim], .liste_titre input[name=month_start], .liste_titre input[name=month_end], .liste_titre input[name=month_create],
-.liste_titre input[name=search_day_date_when], .liste_titre input[name=search_month_date_when], .liste_titre input[name=search_year_date_when] {
+.liste_titre input[name=search_day_date_when], .liste_titre input[name=search_month_date_when], .liste_titre input[name=search_year_date_when],
+.liste_titre input[name=search_month_create], .liste_titre input[name=search_month_start], .liste_titre input[name=search_month_end]
+{
 	margin-right: 4px;
 }
 input[type=submit] {
@@ -625,6 +627,9 @@ textarea.centpercent {
 .paddingright2 {
 	padding-<?php print $right; ?>: 2px;
 }
+.cursordefault {
+	cursor: default;
+}
 .cursorpointer {
 	cursor: pointer;
 }
@@ -801,6 +806,9 @@ select.flat.selectlimit {
 .fa-file-text-o, .fa-file-code-o, .fa-file-powerpoint-o, .fa-file-excel-o, .fa-file-word-o, .fa-file-o, .fa-file-image-o, .fa-file-video-o, .fa-file-audio-o, .fa-file-archive-o, .fa-file-pdf-o {
 	color: #055;
 }
+.fa-trash, .fa-crop, .fa-pencil {
+	font-size: 1.4em;
+}
 
 /* DOL_XXX for future usage (when left menu has been removed). If we do not use datatable */
 /*.table-responsive {
@@ -826,6 +834,9 @@ div.fiche>form>div.div-table-responsive {
 }
 div.fiche>div.tabBar>form>div.div-table-responsive {
     min-height: 392px;
+}
+div.fiche {
+	text-align: justify;
 }
 
 .flexcontainer {
@@ -988,9 +999,14 @@ select.selectarrowonleft option {
     	width: 95%;
     }
 
+	select {
+		padding-top: 4px;
+		padding-bottom: 5px;
+	}
 	input, input[type=text], input[type=password], select, textarea     {
 		min-width: 20px;
-    	min-height: 1.4em;
+		font-size: <?php print $fontsize+3; ?>px;
+    	/* min-height: 1.4em; */
     	/* line-height: 1.4em; */
     	/* padding: .4em .1em; */
     	/* border-bottom: 1px solid #BBB; */
@@ -1325,11 +1341,12 @@ div.nopadding {
 .pictowarning, .pictopreview {
     padding-<?php echo $left; ?>: 3px;
 }
-.pictoedit, .pictowarning, .pictodelete {
+.pictowarning {
     vertical-align: text-bottom;
 }
-.fiche img.pictoedit {
-    opacity: 0.7;
+.fiche .arearef img.pictoedit, .fiche .arearef span.pictoedit,
+.fiche .fichecenter img.pictoedit, .fiche .fichecenter span.pictoedit {
+    opacity: 0.4;
 }
 .colorthumb {
 	padding-left: 1px !important;
@@ -1675,6 +1692,10 @@ div.mainmenu.project {
 	background-image: url(<?php echo dol_buildpath($path.'/theme/'.$theme.'/img/menus/project.png',1) ?>);
 }
 
+div.mainmenu.ticketsup {
+	background-image: url(<?php echo dol_buildpath($path.'/theme/'.$theme.'/img/menus/ticketsup.png',1) ?>);
+}
+
 div.mainmenu.tools {
 	background-image: url(<?php echo dol_buildpath($path.'/theme/'.$theme.'/img/menus/tools.png',1) ?>);
 }
@@ -1686,10 +1707,11 @@ div.mainmenu.website {
 <?php
 // Add here more div for other menu entries. moduletomainmenu=array('module name'=>'name of class for div')
 
-$moduletomainmenu=array('user'=>'','syslog'=>'','societe'=>'companies','projet'=>'project','propale'=>'commercial','commande'=>'commercial',
+$moduletomainmenu=array(
+	'user'=>'','syslog'=>'','societe'=>'companies','projet'=>'project','propale'=>'commercial','commande'=>'commercial',
 	'produit'=>'products','service'=>'products','stock'=>'products',
 	'don'=>'accountancy','tax'=>'accountancy','banque'=>'accountancy','facture'=>'accountancy','compta'=>'accountancy','accounting'=>'accountancy','adherent'=>'members','import'=>'tools','export'=>'tools','mailing'=>'tools',
-	'contrat'=>'commercial','ficheinter'=>'commercial','deplacement'=>'commercial',
+	'contrat'=>'commercial','ficheinter'=>'commercial','ticketsup'=>'ticketsup','deplacement'=>'commercial',
 	'fournisseur'=>'companies',
 	'barcode'=>'','fckeditor'=>'','categorie'=>'',
 );
@@ -1705,7 +1727,7 @@ $generic=1;
 // Put here list of menu entries when the div.mainmenu.menuentry was previously defined
 $divalreadydefined=array('home','companies','products','commercial','externalsite','accountancy','project','tools','members','agenda','ftp','holiday','hrm','bookmark','cashdesk','ecm','geoipmaxmind','gravatar','clicktodial','paypal','stripe','webservices','website');
 // Put here list of menu entries we are sure we don't want
-$divnotrequired=array('multicurrency','salaries','margin','opensurvey','paybox','expensereport','incoterm','prelevement','propal','workflow','notification','supplier_proposal','cron','product','productbatch','expedition');
+$divnotrequired=array('multicurrency','salaries','ticketsup','margin','opensurvey','paybox','expensereport','incoterm','prelevement','propal','workflow','notification','supplier_proposal','cron','product','productbatch','expedition');
 foreach($mainmenuusedarray as $val)
 {
 	if (empty($val) || in_array($val,$divalreadydefined)) continue;
@@ -3010,7 +3032,9 @@ div.tabBar .noborder {
 #tablelines tr.liste_titre td, .paymenttable tr.liste_titre td, .margintable tr.liste_titre td, .tableforservicepart1 tr.liste_titre td {
 	border-bottom: 1px solid rgb(<?php echo $colortopbordertitle1 ?>) !important;
 }
-
+#tablelines tr td {
+    height: unset;
+}
 
 /* Prepare to remove class pair - impair */
 
@@ -3106,8 +3130,8 @@ ul.noborder li:nth-child(even):not(.liste_titre) {
 {
 	.boxstats, .boxstats130 {
 		margin: 3px;
-	    border: 1px solid #ccc;
-    	box-shadow: none;
+	    /*border: 1px solid #ccc;
+    	box-shadow: none; */
     }
     .boxstats130 {
     	text-align: <?php echo $left; ?>

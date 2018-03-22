@@ -513,7 +513,7 @@ function dolibarr_set_const($db, $name, $value, $type='chaine', $visible=0, $not
         $sql.= " VALUES (";
         $sql.= $db->encrypt($name,1);
         $sql.= ", ".$db->encrypt($value,1);
-        $sql.= ",'".$type."',".$visible.",'".$db->escape($note)."',".$entity.")";
+        $sql.= ",'".$db->escape($type)."',".$visible.",'".$db->escape($note)."',".$entity.")";
 
         //print "sql".$value."-".pg_escape_string($value)."-".$sql;exit;
         //print "xx".$db->escape($value);
@@ -888,6 +888,7 @@ function activateModule($value,$withdeps=1)
     }
 
     $result=$objMod->init();    // Enable module
+
     if ($result <= 0)
     {
         $ret['errors'][]=$objMod->error;
@@ -1031,7 +1032,8 @@ function unActivateModule($value, $requiredby=1)
 
 
 /**
- *  Add external modules to list of dictionaries
+ *  Add external modules to list of dictionaries.
+ *  Addition is done into var $taborder, $tabname, etc... that are passed with pointers.
  *
  * 	@param		array		$taborder			Taborder
  * 	@param		array		$tabname			Tabname
@@ -1097,23 +1099,20 @@ function complete_dictionary_with_modules(&$taborder,&$tabname,&$tablib,&$tabsql
                         if ($modulequalified)
                         {
 							// Load languages files of module
-                        	if (isset($objMod->langfiles) && is_array($objMod->langfiles))
-                            	{
-                             		foreach($objMod->langfiles as $langfile)
-                              		{
-	                               		$langs->load($langfile);
-        	                       	}
-              			}
+							if (isset($objMod->langfiles) && is_array($objMod->langfiles)) {
+								foreach ($objMod->langfiles as $langfile) {
+									$langs->load($langfile);
+								}
+							}
 
-                            // Complete arrays
-                            //&$tabname,&$tablib,&$tabsql,&$tabsqlsort,&$tabfield,&$tabfieldvalue,&$tabfieldinsert,&$tabrowid,&$tabcond
+                            // Complete the arrays &$tabname,&$tablib,&$tabsql,&$tabsqlsort,&$tabfield,&$tabfieldvalue,&$tabfieldinsert,&$tabrowid,&$tabcond
                             if (empty($objMod->dictionaries) && ! empty($objMod->dictionnaries)) $objMod->dictionaries=$objMod->dictionnaries;		// For backward compatibility
 
                             if (! empty($objMod->dictionaries))
                             {
                                 //var_dump($objMod->dictionaries['tabname']);
                                 $nbtabname=$nbtablib=$nbtabsql=$nbtabsqlsort=$nbtabfield=$nbtabfieldvalue=$nbtabfieldinsert=$nbtabrowid=$nbtabcond=$nbtabfieldcheck=$nbtabhelp=0;
-                                foreach($objMod->dictionaries['tabname'] as $val)        { $nbtabname++; $taborder[] = max($taborder)+1; $tabname[] = $val; }
+                                foreach($objMod->dictionaries['tabname'] as $val)        { $nbtabname++; $taborder[] = max($taborder)+1; $tabname[] = $val; }		// Position
                                 foreach($objMod->dictionaries['tablib'] as $val)         { $nbtablib++; $tablib[] = $val; }
                                 foreach($objMod->dictionaries['tabsql'] as $val)         { $nbtabsql++; $tabsql[] = $val; }
                                 foreach($objMod->dictionaries['tabsqlsort'] as $val)     { $nbtabsqlsort++; $tabsqlsort[] = $val; }
@@ -1129,6 +1128,10 @@ function complete_dictionary_with_modules(&$taborder,&$tabname,&$tablib,&$tabsql
                                 {
                                     print 'Error in descriptor of module '.$const_name.'. Array ->dictionaries has not same number of record for key "tabname", "tablib", "tabsql" and "tabsqlsort"';
                                     //print "$const_name: $nbtabname=$nbtablib=$nbtabsql=$nbtabsqlsort=$nbtabfield=$nbtabfieldvalue=$nbtabfieldinsert=$nbtabrowid=$nbtabcond=$nbtabfieldcheck=$nbtabhelp\n";
+                                }
+                                else
+                                {
+                                	$taborder[] = 0;	// Add an empty line
                                 }
                             }
 
@@ -1151,7 +1154,7 @@ function complete_dictionary_with_modules(&$taborder,&$tabname,&$tablib,&$tabsql
 }
 
 /**
- *  Activate external modules mandatroy when country is country_code
+ *  Activate external modules mandatory when country is country_code
  *
  * 	@param		string		$country_code	CountryCode
  * 	@return		int			1
@@ -1607,6 +1610,33 @@ function phpinfo_array()
 		}
 	}
 	return $info_arr;
+}
+
+/**
+ *  Return array head with list of tabs to view object informations.
+ *
+ *  @return	array   	    		    head array with tabs
+ */
+function company_admin_prepare_head()
+{
+	global $langs, $conf, $user;
+
+	$h = 0;
+	$head = array();
+
+	$head[$h][0] = DOL_URL_ROOT."/admin/company.php";
+	$head[$h][1] = $langs->trans("Company");
+	$head[$h][2] = 'company';
+	$h++;
+
+	$head[$h][0] = DOL_URL_ROOT."/admin/accountant.php";
+	$head[$h][1] = $langs->trans("Accountant");
+	$head[$h][2] = 'accountant';
+	$h++;
+
+	complete_head_from_modules($conf,$langs,null,$head,$h,'company_admin','remove');
+
+	return $head;
 }
 
 /**

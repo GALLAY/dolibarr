@@ -50,7 +50,7 @@ class Holiday extends CommonObject
 	var $date_fin='';			// Date end in PHP server TZ
 	var $date_debut_gmt='';		// Date start in GMT
 	var $date_fin_gmt='';		// Date end in GMT
-	var $halfday='';
+	var $halfday='';			// 0:Full days, 2:Start afternoon end morning, -1:Start afternoon end afternoon, 1:Start morning end morning
 	var $statut='';				// 1=draft, 2=validated, 3=approved
 	var $fk_validator;
 	var $date_valid='';
@@ -276,12 +276,12 @@ class Holiday extends CommonObject
 	}
 
 	/**
-	 *	List holidays for a particular user
+	 *	List holidays for a particular user or list of users
 	 *
-	 *  @param		int		$user_id    ID of user to list
-	 *  @param      string	$order      Sort order
-	 *  @param      string	$filter     SQL Filter
-	 *  @return     int      			-1 if KO, 1 if OK, 2 if no result
+	 *  @param		int|string		$user_id    ID of user to list, or comma separated list of IDs of users to list
+	 *  @param      string			$order      Sort order
+	 *  @param      string			$filter     SQL Filter
+	 *  @return     int      					-1 if KO, 1 if OK, 2 if no result
 	 */
 	function fetchByUser($user_id, $order='', $filter='')
 	{
@@ -321,8 +321,8 @@ class Holiday extends CommonObject
 
 		$sql.= " FROM ".MAIN_DB_PREFIX."holiday as cp, ".MAIN_DB_PREFIX."user as uu, ".MAIN_DB_PREFIX."user as ua";
 		$sql.= " WHERE cp.entity IN (".getEntity('holiday').")";
-		$sql.= " AND cp.fk_user = uu.rowid AND cp.fk_validator = ua.rowid "; // Hack pour la recherche sur le tableau
-		$sql.= " AND cp.fk_user = ".$user_id;
+		$sql.= " AND cp.fk_user = uu.rowid AND cp.fk_validator = ua.rowid"; // Hack pour la recherche sur le tableau
+		$sql.= " AND cp.fk_user IN (".$user_id.")";
 
 		// Filtre de séléction
 		if(!empty($filter)) {
@@ -957,10 +957,11 @@ class Holiday extends CommonObject
 	/**
 	 *   Affiche un select HTML des statuts de congés payés
 	 *
-	 *   @param 	int		$selected   int du statut séléctionné par défaut
-	 *   @return    string				affiche le select des statuts
+	 *   @param 	int		$selected   	Id of preselected status
+	 *   @param		string	$htmlname		Name of HTML select field
+	 *   @return    string					Show select of status
 	 */
-	function selectStatutCP($selected='') {
+	function selectStatutCP($selected='', $htmlname='select_statut') {
 
 		global $langs;
 
@@ -969,7 +970,7 @@ class Holiday extends CommonObject
 		$nb = count($name)+1;
 
 		// Select HTML
-		$statut = '<select name="select_statut" class="flat">'."\n";
+		$statut = '<select name="'.$htmlname.'" class="flat">'."\n";
 		$statut.= '<option value="-1">&nbsp;</option>'."\n";
 
 		// Boucle des statuts
