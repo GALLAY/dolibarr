@@ -169,7 +169,7 @@ class Form
 				$ret.='<input type="hidden" name="action" value="set'.$htmlname.'">';
 				$ret.='<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
 				$ret.='<input type="hidden" name="'.$paramid.'" value="'.$object->id.'">';
-				if (empty($notabletag)) $ret.='<table class="nobordernopadding" cellpadding="0" cellspacing="0">';
+				if (empty($notabletag)) $ret.='<table class="nobordernopadding centpercent" cellpadding="0" cellspacing="0">';
 				if (empty($notabletag)) $ret.='<tr><td>';
 				if (preg_match('/^(string|email)/',$typeofdata))
 				{
@@ -1072,11 +1072,11 @@ class Form
 		// On recherche les societes
 		$sql = "SELECT s.rowid, s.nom as name, s.name_alias, s.client, s.fournisseur, s.code_client, s.code_fournisseur";
 		$sql.= " FROM ".MAIN_DB_PREFIX ."societe as s";
-		if (!$user->rights->societe->client->voir && !$user->societe_id) $sql .= ", ".MAIN_DB_PREFIX."societe_commerciaux as sc";
+		if (!$user->rights->societe->client->voir && !$user->socid) $sql .= ", ".MAIN_DB_PREFIX."societe_commerciaux as sc";
 		$sql.= " WHERE s.entity IN (".getEntity('societe').")";
-		if (! empty($user->societe_id)) $sql.= " AND s.rowid = ".$user->societe_id;
+		if (! empty($user->socid)) $sql.= " AND s.rowid = ".$user->socid;
 		if ($filter) $sql.= " AND (".$filter.")";
-		if (!$user->rights->societe->client->voir && !$user->societe_id) $sql.= " AND s.rowid = sc.fk_soc AND sc.fk_user = " .$user->id;
+		if (!$user->rights->societe->client->voir && !$user->socid) $sql.= " AND s.rowid = sc.fk_soc AND sc.fk_user = " .$user->id;
 		if (! empty($conf->global->COMPANY_HIDE_INACTIVE_IN_COMBOBOX)) $sql.= " AND s.status <> 0";
 		// Add criteria
 		if ($filterkey && $filterkey != '')
@@ -1462,10 +1462,11 @@ class Form
 	 *  @param	string	$enableonlytext	If option $enableonlytext is set, we use this text to explain into label why record is disabled. Not used if enableonly is empty.
 	 *  @param	string	$morecss		More css
 	 *  @param  int     $noactive       Show only active users (this will also happened whatever is this option if USER_HIDE_INACTIVE_IN_COMBOBOX is on).
+	 *  @param  int		$outputmode     0=HTML select string, 1=Array
 	 * 	@return	string					HTML select string
 	 *  @see select_dolgroups
 	 */
-	function select_dolusers($selected='', $htmlname='userid', $show_empty=0, $exclude=null, $disabled=0, $include='', $enableonly='', $force_entity=0, $maxlength=0, $showstatus=0, $morefilter='', $show_every=0, $enableonlytext='', $morecss='', $noactive=0)
+	function select_dolusers($selected='', $htmlname='userid', $show_empty=0, $exclude=null, $disabled=0, $include='', $enableonly='', $force_entity=0, $maxlength=0, $showstatus=0, $morefilter='', $show_every=0, $enableonlytext='', $morecss='', $noactive=0, $outputmode=0)
 	{
 		global $conf,$user,$langs;
 
@@ -1491,6 +1492,7 @@ class Form
 		}
 
 		$out='';
+		$outarray = array();
 
 		// Forge request to select users
 		$sql = "SELECT DISTINCT u.rowid, u.lastname as lastname, u.firstname, u.statut, u.login, u.admin, u.entity";
@@ -1618,6 +1620,7 @@ class Form
 						$out.=' - '.$disableline;	// This is text from $enableonlytext parameter
 					}
 					$out.= '</option>';
+					$outarray[$userstatic->id] = $userstatic->getFullName($langs, $fullNameMode, -1, $maxlength);
 
 					$i++;
 				}
@@ -1634,6 +1637,7 @@ class Form
 			dol_print_error($this->db);
 		}
 
+		if ($outputmode) return $outarray;
 		return $out;
 	}
 
@@ -3592,8 +3596,8 @@ class Form
 	 *     @param	string		$question    	   	Question
 	 *     @param 	string		$action      	   	Action
 	 *	   @param  	array		$formquestion	   	An array with complementary inputs to add into forms: array(array('label'=> ,'type'=> , ))
-	 *												type can be 'hidden', 'text', 'password', 'checkbox', 'radio', 'date', ...
-	 * 	   @param  	string		$selectedchoice  	"" or "no" or "yes"
+	 *												type can be 'hidden', 'text', 'password', 'checkbox', 'radio', 'date', 'morecss', ...
+	 * 	   @param  	string		$selectedchoice  	'' or 'no', or 'yes' or '1' or '0'
 	 * 	   @param  	int			$useajax		   	0=No, 1=Yes, 2=Yes but submit page with &confirm=no if choice is No, 'xxx'=Yes and preoutput confirm box with div id=dialog-confirm-xxx
 	 *     @param  	int			$height          	Force height of box
 	 *     @param	int			$width				Force width of box ('999' or '90%'). Ignored and forced to 90% on smartphones.
@@ -5417,23 +5421,23 @@ class Form
 	 *	Return a HTML select string, built from an array of key+value.
 	 *  Note: Do not apply langs->trans function on returned content, content may be entity encoded twice.
 	 *
-	 *	@param	string			$htmlname       Name of html select area. Must start with "multi" if this is a multiselect
-	 *	@param	array			$array          Array (key => value)
-	 *	@param	string|string[]	$id             Preselected key or preselected keys for multiselect
-	 *	@param	int|string		$show_empty     0 no empty value allowed, 1 or string to add an empty value into list (key is -1 and value is '' or '&nbsp;' if 1, key is -1 and value is text if string), <0 to add an empty value with key that is this value.
-	 *	@param	int				$key_in_label   1 to show key into label with format "[key] value"
-	 *	@param	int				$value_as_key   1 to use value as key
-	 *	@param  string			$moreparam      Add more parameters onto the select tag. For example 'style="width: 95%"' to avoid select2 component to go over parent container
-	 *	@param  int				$translate		1=Translate and encode value
-	 * 	@param	int				$maxlen			Length maximum for labels
-	 * 	@param	int				$disabled		Html select box is disabled
-	 *  @param	string			$sort			'ASC' or 'DESC' = Sort on label, '' or 'NONE' or 'POS' = Do not sort, we keep original order
-	 *  @param	string			$morecss		Add more class to css styles
-	 *  @param	int				$addjscombo		    Add js combo
-	 *  @param  string          $moreparamonempty   Add more param on the empty option line. Not used if show_empty not set
-	 *  @param  int             $disablebademail    Check if an email is found into value and if not disable and colorize entry
-	 *  @param  int             $nohtmlescape       No html escaping.
-	 * 	@return	string							    HTML select string.
+	 *	@param	string			$htmlname			Name of html select area. Must start with "multi" if this is a multiselect
+	 *	@param	array			$array				Array (key => value)
+	 *	@param	string|string[]	$id					Preselected key or preselected keys for multiselect
+	 *	@param	int|string		$show_empty			0 no empty value allowed, 1 or string to add an empty value into list (key is -1 and value is '' or '&nbsp;' if 1, key is -1 and value is text if string), <0 to add an empty value with key that is this value.
+	 *	@param	int				$key_in_label		1 to show key into label with format "[key] value"
+	 *	@param	int				$value_as_key		1 to use value as key
+	 *	@param  string			$moreparam			Add more parameters onto the select tag. For example 'style="width: 95%"' to avoid select2 component to go over parent container
+	 *	@param  int				$translate			1=Translate and encode value
+	 * 	@param	int				$maxlen				Length maximum for labels
+	 * 	@param	int				$disabled			Html select box is disabled
+	 *  @param	string			$sort				'ASC' or 'DESC' = Sort on label, '' or 'NONE' or 'POS' = Do not sort, we keep original order
+	 *  @param	string			$morecss			Add more class to css styles
+	 *  @param	int				$addjscombo			Add js combo
+	 *  @param  string          $moreparamonempty	Add more param on the empty option line. Not used if show_empty not set
+	 *  @param  int             $disablebademail	Check if an email is found into value and if not disable and colorize entry
+	 *  @param  int             $nohtmlescape		No html escaping.
+	 * 	@return	string								HTML select string.
 	 *  @see multiselectarray
 	 */
 	static function selectarray($htmlname, $array, $id='', $show_empty=0, $key_in_label=0, $value_as_key=0, $moreparam='', $translate=0, $maxlen=0, $disabled=0, $sort='', $morecss='', $addjscombo=0, $moreparamonempty='',$disablebademail=0, $nohtmlescape=0)
@@ -6440,6 +6444,11 @@ class Form
 		else $morehtmlstatus=$hookmanager->resPrint;
 		if ($morehtmlstatus) $ret.='<div class="statusref">'.$morehtmlstatus.'</div>';
 
+		$parameters = array();
+		$reshook = $hookmanager->executeHooks('moreHtmlRef', $parameters, $object); // Note that $action and $object may have been modified by hook
+		if (empty($reshook)) $morehtmlref.=$hookmanager->resPrint;
+		elseif ($reshook > 0) $morehtmlref=$hookmanager->resPrint;
+
 		// Left part of banner
 		if ($morehtmlleft)
 		{
@@ -6458,7 +6467,7 @@ class Form
 		else if ($object->element == 'member')
 		{
 			$fullname=$object->getFullName($langs);
-			if ($object->morphy == 'mor') {
+			if ($object->morphy == 'mor' && $object->societe) {
 				$ret.= dol_htmlentities($object->societe) . ((! empty($fullname) && $object->societe != $fullname)?' ('.dol_htmlentities($fullname).')':'');
 			} else {
 				$ret.= dol_htmlentities($fullname) . ((! empty($object->societe) && $object->societe != $fullname)?' ('.dol_htmlentities($object->societe).')':'');
