@@ -75,18 +75,14 @@ class modVariants extends DolibarrModules
 		$this->dirs = array();
 
 		// Config pages. Put here list of php page, stored into mymodule/admin directory, to use to setup module.
-		$this->config_page_url = array(
-			'admin.php@variants'
-		);
+		$this->config_page_url = array('admin.php@variants');
 
 		// Dependencies
 		$this->hidden = false;			// A condition to hide module
-		$this->depends = array(
-			'modProduct'
-		);		// List of modules id that must be enabled if this module is enabled
-		$this->requiredby = array();	// List of modules id to disable if this one is disabled
-		$this->conflictwith = array();	// List of modules id this module is in conflict with
-		$this->phpmin = array(5,0);					// Minimum version of PHP required by module
+		$this->depends = array('modProduct');	// List of module class names as string that must be enabled if this module is enabled
+		$this->requiredby = array();	// List of module ids to disable if this one is disabled
+		$this->conflictwith = array();	// List of module class names as string this module is in conflict with
+		$this->phpmin = array(5,4);		// Minimum version of PHP required by module
 		$this->need_dolibarr_version = array(3,0);	// Minimum version of Dolibarr required by module
 		$this->langfiles = array("products");
 
@@ -112,24 +108,6 @@ class modVariants extends DolibarrModules
 
 		// Permissions
 		$this->rights = array();		// Permission array used by this module
-
-		// Main menu entries
-		$this->menu = array(
-			array(
-				'fk_menu' => 'fk_mainmenu=products,fk_leftmenu=product',
-				'type' => 'left',
-				'titre' => 'VariantAttributes',
-				'mainmenu' => 'products',
-				'leftmenu' => 'product',
-				'url' => '/variants/list.php',
-				'langs' => 'products',
-				'position' => 100,
-				'enabled' => '$conf->product->enabled',
-				'perms' => 1,
-				'target' => '',
-				'user' => 0
-			)
-		);			// List of menus to add
 	}
 }
 

@@ -35,6 +35,7 @@ class Holiday extends CommonObject
 	public $element='holiday';
 	public $table_element='holiday';
 	public $ismultientitymanaged = 0;	// 0=No test on entity, 1=Test with field entity, 2=Test with link by societe
+	var $fk_element = 'fk_holiday';
 	public $picto = 'holiday';
 
 	/**
@@ -69,6 +70,27 @@ class Holiday extends CommonObject
 	var $optName = '';
 	var $optValue = '';
 	var $optRowid = '';
+
+	/**
+	 * Draft status
+	 */
+	const STATUS_DRAFT = 1;
+	/**
+	 * Validated status
+	 */
+	const STATUS_VALIDATED = 2;
+	/**
+	 * Approved
+	 */
+	const STATUS_APPROVED = 3;
+	/**
+	 * Canceled
+	 */
+	const STATUS_CANCELED = 4;
+	/**
+	 * Refused
+	 */
+	const STATUS_REFUSED = 5;
 
 
 	/**
@@ -324,12 +346,12 @@ class Holiday extends CommonObject
 		$sql.= " AND cp.fk_user = uu.rowid AND cp.fk_validator = ua.rowid"; // Hack pour la recherche sur le tableau
 		$sql.= " AND cp.fk_user IN (".$user_id.")";
 
-		// Filtre de séléction
+		// Selection filter
 		if(!empty($filter)) {
 			$sql.= $filter;
 		}
 
-		// Ordre d'affichage du résultat
+		// Order of display of the result
 		if(!empty($order)) {
 			$sql.= $order;
 		}
@@ -337,19 +359,19 @@ class Holiday extends CommonObject
 		dol_syslog(get_class($this)."::fetchByUser", LOG_DEBUG);
 		$resql=$this->db->query($sql);
 
-		// Si pas d'erreur SQL
+		// If no SQL error
 		if ($resql) {
 
 			$i = 0;
 			$tab_result = $this->holiday;
 			$num = $this->db->num_rows($resql);
 
-			// Si pas d'enregistrement
+			// If no registration
 			if(!$num) {
 				return 2;
 			}
 
-			// Liste les enregistrements et les ajoutent au tableau
+			// List the records and add them to the table
 			while($i < $num) {
 
 				$obj = $this->db->fetch_object($resql);
@@ -390,13 +412,13 @@ class Holiday extends CommonObject
 				$i++;
 			}
 
-			// Retourne 1 avec le tableau rempli
+			// Returns 1 with the filled array
 			$this->holiday = $tab_result;
 			return 1;
 		}
 		else
 		{
-			// Erreur SQL
+			// SQL Error 
 			$this->error="Error ".$this->db->lasterror();
 			return -1;
 		}
@@ -449,12 +471,12 @@ class Holiday extends CommonObject
 		$sql.= " WHERE cp.entity IN (".getEntity('holiday').")";
 		$sql.= " AND cp.fk_user = uu.rowid AND cp.fk_validator = ua.rowid "; // Hack pour la recherche sur le tableau
 
-		// Filtrage de séléction
+		// Selection filtering
 		if(!empty($filter)) {
 			$sql.= $filter;
 		}
 
-		// Ordre d'affichage
+		// order of display
 		if(!empty($order)) {
 			$sql.= $order;
 		}
@@ -462,19 +484,19 @@ class Holiday extends CommonObject
 		dol_syslog(get_class($this)."::fetchAll", LOG_DEBUG);
 		$resql=$this->db->query($sql);
 
-		// Si pas d'erreur SQL
+		// If no SQL error
 		if ($resql) {
 
 			$i = 0;
 			$tab_result = $this->holiday;
 			$num = $this->db->num_rows($resql);
 
-			// Si pas d'enregistrement
+			// If no registration
 			if(!$num) {
 				return 2;
 			}
 
-			// On liste les résultats et on les ajoutent dans le tableau
+			// List the records and add them to the table
 			while($i < $num) {
 
 				$obj = $this->db->fetch_object($resql);
@@ -514,13 +536,13 @@ class Holiday extends CommonObject
 
 				$i++;
 			}
-			// Retourne 1 et ajoute le tableau à la variable
+			// Returns 1 and adds the array to the variable
 			$this->holiday = $tab_result;
 			return 1;
 		}
 		else
 		{
-			// Erreur SQL
+			// SQL Error 
 			$this->error="Error ".$this->db->lasterror();
 			return -1;
 		}
@@ -779,25 +801,27 @@ class Holiday extends CommonObject
 
 
 	/**
-	 *	Check a user is not on holiday for a particular timestamp
+	 *	Check that a user is not on holiday for a particular timestamp
 	 *
 	 * 	@param 	int			$fk_user				Id user
 	 *  @param	timestamp	$timestamp				Time stamp date for a day (YYYY-MM-DD) without hours  (= 12:00AM in english and not 12:00PM that is 12:00)
+	 *  @param	string		$status					Filter on holiday status. '-1' = no filter.
 	 * 	@return array								array('morning'=> ,'afternoon'=> ), Boolean is true if user is available for day timestamp.
 	 *  @see verifDateHolidayCP
 	 */
-	function verifDateHolidayForTimestamp($fk_user, $timestamp)
+	function verifDateHolidayForTimestamp($fk_user, $timestamp, $status='-1')
 	{
 		global $langs, $conf;
 
 		$isavailablemorning=true;
 		$isavailableafternoon=true;
 
-		$sql = "SELECT cp.rowid, cp.date_debut as date_start, cp.date_fin as date_end, cp.halfday";
+		$sql = "SELECT cp.rowid, cp.date_debut as date_start, cp.date_fin as date_end, cp.halfday, cp.statut";
 		$sql.= " FROM ".MAIN_DB_PREFIX."holiday as cp";
 		$sql.= " WHERE cp.entity IN (".getEntity('holiday').")";
 		$sql.= " AND cp.fk_user = ".(int) $fk_user;
-		$sql.= " AND date_debut <= '".$this->db->idate($timestamp)."' AND date_fin >= '".$this->db->idate($timestamp)."'";
+		$sql.= " AND cp.date_debut <= '".$this->db->idate($timestamp)."' AND cp.date_fin >= '".$this->db->idate($timestamp)."'";
+		if ($status != '-1') $sql.=" AND cp.statut IN (".$this->db->escape($status).")";
 
 		$resql = $this->db->query($sql);
 		if ($resql)
@@ -1544,6 +1568,48 @@ class Holiday extends CommonObject
 			}
 		}
 	}
+
+
+	/**
+	 * Return list of people with permission to validate leave requests.
+	 * Search for permission "approve leave requests"
+	 *
+	 * @return  array       Array of user ids
+	 */
+	function fetch_users_approver_holiday()
+	{
+		$users_validator=array();
+
+		$sql = "SELECT DISTINCT ur.fk_user";
+		$sql.= " FROM ".MAIN_DB_PREFIX."user_rights as ur, ".MAIN_DB_PREFIX."rights_def as rd";
+		$sql.= " WHERE ur.fk_id = rd.id and rd.module = 'holiday' AND rd.perms = 'approve'";                                              // Permission 'Approve';
+		$sql.= "UNION";
+		$sql.= " SELECT DISTINCT ugu.fk_user";
+		$sql.= " FROM ".MAIN_DB_PREFIX."usergroup_user as ugu, ".MAIN_DB_PREFIX."usergroup_rights as ur, ".MAIN_DB_PREFIX."rights_def as rd";
+		$sql.= " WHERE ugu.fk_usergroup = ur.fk_usergroup AND ur.fk_id = rd.id and rd.module = 'holiday' AND rd.perms = 'approve'";       // Permission 'Approve';
+		//print $sql;
+
+		dol_syslog(get_class($this)."::fetch_users_approver_holiday sql=".$sql);
+		$result = $this->db->query($sql);
+		if($result)
+		{
+			$num_lignes = $this->db->num_rows($result); $i = 0;
+			while ($i < $num_lignes)
+			{
+				$objp = $this->db->fetch_object($result);
+				array_push($users_validator,$objp->fk_user);
+				$i++;
+			}
+			return $users_validator;
+		}
+		else
+		{
+			$this->error=$this->db->lasterror();
+			dol_syslog(get_class($this)."::fetch_users_approver_holiday  Error ".$this->error, LOG_ERR);
+			return -1;
+		}
+	}
+
 
 	/**
 	 *	Compte le nombre d'utilisateur actifs dans Dolibarr

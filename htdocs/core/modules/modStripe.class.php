@@ -65,10 +65,11 @@ class modStripe extends DolibarrModules
         // Data directories to create when module is enabled.
         $this->dirs = array();
 
-        // Config pages. Put here list of php page names stored in admmin directory used to setup module.
+        // Config pages. Put here list of php page names stored in admin directory used to setup module.
         $this->config_page_url = array("stripe.php@stripe");
 
         // Dependencies
+        $this->hidden = false;			// A condition to hide module
         $this->depends = array();		// List of modules id that must be enabled if this module is enabled
         $this->requiredby = array();	// List of modules id to disable if this one is disabled
         $this->phpmin = array(5,4);					// Minimum version of PHP required by module
@@ -113,10 +114,10 @@ class modStripe extends DolibarrModules
 			'titre'=>'StripeAccount',
 			'mainmenu'=>'bank',
 			'leftmenu'=>'stripe',
-			'url' => '/stripe/charge.php',
+			'url' => '',
 			'langs' => 'stripe',
 			'position' => 100,
-			'enabled' => '$conf->global->MAIN_FEATURES_LEVEL >= 2',
+			'enabled' => '$conf->global->MAIN_FEATURES_LEVEL >= 1',
 			'perms' => '$user->rights->banque->configurer',
 			'target' => '',
 			'user' => 0

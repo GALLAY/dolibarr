@@ -2,9 +2,9 @@
 /* Copyright (C) 2001-2004 Rodolphe Quiedeville <rodolphe@quiedeville.org>
  * Copyright (C) 2002-2003 Jean-Louis Bergamo   <jlb@j1b.org>
  * Copyright (C) 2004-2012 Laurent Destailleur  <eldy@users.sourceforge.net>
- * Copyright (C) 2005-2017 Regis Houssin        <regis.houssin@capnetworks.com>
+ * Copyright (C) 2005-2018 Regis Houssin        <regis.houssin@capnetworks.com>
  * Copyright (C) 2012      Marcos García        <marcosgdf@gmail.com>
- * Copyright (C) 2012-2016 Philippe Grand       <philippe.grand@atoo-net.com>
+ * Copyright (C) 2012-2018 Philippe Grand       <philippe.grand@atoo-net.com>
  * Copyright (C) 2015-2016 Alexandre Spangaro   <aspangaro.dolibarr@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -41,11 +41,8 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/extrafields.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 
-$langs->load("companies");
-$langs->load("bills");
-$langs->load("members");
-$langs->load("users");
-$langs->load('other');
+// Load translation files required by the page
+$langs->loadLangs(array("companies","bills","members","users","other"));
 
 $action=GETPOST('action','alpha');
 $cancel=GETPOST('cancel','alpha');
@@ -301,7 +298,7 @@ if (empty($reshook))
 			$object->phone       = trim(GETPOST("phone",'alpha'));
 			$object->phone_perso = trim(GETPOST("phone_perso",'alpha'));
 			$object->phone_mobile= trim(GETPOST("phone_mobile",'alpha'));
-			$object->email       = trim(GETPOST("member_email",'alpha'));
+			$object->email       = preg_replace('/\s+/', '', GETPOST("member_email",'alpha'));
 			$object->skype       = trim(GETPOST("skype",'alpha'));
 			$object->birth       = $birthdate;
 
@@ -445,7 +442,7 @@ if (empty($reshook))
 		$phone_perso=GETPOST("phone_perso",'alpha');
 		$phone_mobile=GETPOST("phone_mobile",'alpha');
 		$skype=GETPOST("member_skype",'alpha');
-		$email=GETPOST("member_email",'alpha');
+		$email=preg_replace('/\s+/', '', GETPOST("member_email",'alpha'));
 		$login=GETPOST("member_login",'alpha');
 		$pass=GETPOST("password",'alpha');
 		$photo=GETPOST("photo",'alpha');
@@ -1001,13 +998,7 @@ else
 		}
 
 		// Other attributes
-		$parameters=array();
-		$reshook=$hookmanager->executeHooks('formObjectOptions',$parameters,$object,$action);    // Note that $action and $object may have been modified by hook
-        print $hookmanager->resPrint;
-		if (empty($reshook) && ! empty($extrafields->attribute_label))
-		{
-			print $object->showOptionals($extrafields,'edit');
-		}
+		include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_add.tpl.php';
 
         print '<tbody>';
 		print "</table>\n";
@@ -1277,13 +1268,7 @@ else
 		print '</td></tr>';
 
 		// Other attributes
-		$parameters=array();
-		$reshook=$hookmanager->executeHooks('formObjectOptions',$parameters,$object,$action);    // Note that $action and $object may have been modified by hook
-        print $hookmanager->resPrint;
-		if (empty($reshook) && ! empty($extrafields->attribute_label))
-		{
-			print $object->showOptionals($extrafields,'edit',$parameters);
-		}
+		include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_add.tpl.php';
 
 		print '</table>';
 
@@ -1399,7 +1384,7 @@ else
 			$outputlangs = new Translate('', $conf);
 			$outputlangs->setDefaultLang(empty($object->thirdparty->default_lang) ? $mysoc->default_lang : $object->thirdparty->default_lang);
 			$outputlangs->loadLangs(array("main", "members"));
-			// Get email content fro mtemplae
+			// Get email content from template
 			$arraydefaultmessage=null;
 			$labeltouse = $conf->global->ADHERENT_EMAIL_TEMPLATE_MEMBER_VALIDATION;
 

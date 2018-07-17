@@ -43,7 +43,7 @@ $toselect = GETPOST('toselect', 'array');
 $result=restrictedArea($user,'adherent');
 
 $filter=GETPOST("filter",'alpha');
-$statut=GETPOST("statut",'alpha');
+$statut=GETPOST("statut",'intcomma');
 $search=GETPOST("search",'alpha');
 $search_ref=GETPOST("search_ref",'alpha');
 $search_lastname=GETPOST("search_lastname",'alpha');
@@ -262,6 +262,11 @@ if (empty($conf->global->MAIN_DISABLE_FULL_SCANLIST))
 	$resql = $db->query($sql);
 	if ($resql) $nbtotalofrecords = $db->num_rows($resql);
 	else dol_print_error($db);
+	if (($page * $limit) > $nbtotalofrecords)	// if total resultset is smaller then paging size (filtering), goto and load page 0
+	{
+		$page = 0;
+		$offset = 0;
+	}
 }
 // Add limit
 $sql.= $db->plimit($limit+1, $offset);
@@ -345,6 +350,14 @@ if ($user->rights->adherent->supprimer) $arrayofmassactions['predelete']=$langs-
 if (in_array($massaction, array('presend','predelete'))) $arrayofmassactions=array();
 $massactionbutton=$form->selectMassAction('', $arrayofmassactions);
 
+$newcardbutton='';
+if ($user->rights->adherent->creer)
+{
+	$newcardbutton='<a class="butActionNew" href="'.DOL_URL_ROOT.'/adherents/card.php?action=create"><span class="valignmiddle">'.$langs->trans('NewMember').'</span>';
+	$newcardbutton.= '<span class="fa fa-plus-circle valignmiddle"></span>';
+	$newcardbutton.= '</a>';
+}
+
 print '<form method="POST" id="searchFormList" action="'.$_SERVER["PHP_SELF"].'">';
 if ($optioncss != '') print '<input type="hidden" name="optioncss" value="'.$optioncss.'">';
 print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
@@ -355,7 +368,7 @@ print '<input type="hidden" name="sortorder" value="'.$sortorder.'">';
 print '<input type="hidden" name="page" value="'.$page.'">';
 print '<input type="hidden" name="contextpage" value="'.$contextpage.'">';
 
-print_barre_liste($titre, $page, $_SERVER["PHP_SELF"], $param, $sortfield, $sortorder, $massactionbutton, $num, $nbtotalofrecords, 'title_generic.png', 0, '', '', $limit);
+print_barre_liste($titre, $page, $_SERVER["PHP_SELF"], $param, $sortfield, $sortorder, $massactionbutton, $num, $nbtotalofrecords, 'title_generic.png', 0, $newcardbutton, '', $limit);
 
 $topicmail="Information";
 $modelmail="member";
@@ -366,7 +379,7 @@ include DOL_DOCUMENT_ROOT.'/core/tpl/massactions_pre.tpl.php';
 if ($sall)
 {
 	foreach($fieldstosearchall as $key => $val) $fieldstosearchall[$key]=$langs->trans($val);
-	print $langs->trans("FilterOnInto", $sall) . implode(', ',$fieldstosearchall);
+	print '<div class="divsearchfieldfilter">'.$langs->trans("FilterOnInto", $sall) . join(', ',$fieldstosearchall).'</div>';
 }
 
 // Filter on categories
