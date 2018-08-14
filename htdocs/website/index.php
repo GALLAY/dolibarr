@@ -1115,6 +1115,7 @@ if (($action == 'updatesource' || $action == 'updatecontent' || $action == 'conf
 			$object = $objectnew;
 			$id = $object->id;
 			$pageid = $object->fk_default_home;
+			$websitekey = GETPOST('siteref','aZ09');
 		}
 	}
 
@@ -2439,8 +2440,6 @@ if ($action == 'preview' || $action == 'createfromclone' || $action == 'createpa
 	}
 }
 
-
-
+// End of page
 llxFooter();
-
 $db->close();

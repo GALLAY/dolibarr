@@ -21,9 +21,7 @@ define("NOCSRFCHECK",1);	// We accept to go on this page from external web site.
 $entity=(! empty($_GET['entity']) ? (int) $_GET['entity'] : (! empty($_POST['entity']) ? (int) $_POST['entity'] : 1));
 if (is_numeric($entity)) define("DOLENTITY", $entity);
 
-$res=0;
-if (! $res && file_exists("../../main.inc.php")) $res=@include("../../main.inc.php");		// to work if your module directory is into a subdir of root htdocs directory
-if (! $res) die("Include of main fails");
+require '../../main.inc.php';
 
 if (empty($conf->stripe->enabled)) accessforbidden('',0,0,1);
 require_once DOL_DOCUMENT_ROOT.'/user/class/user.class.php';
@@ -42,11 +40,13 @@ if (isset($_GET['connect'])){
 	{
 		$endpoint_secret =  $conf->global->STRIPE_TEST_WEBHOOK_CONNECT_KEY;
 		$service = 'StripeTest';
+    $servicestatus = 0;
 	}
 	else
 	{
 		$endpoint_secret =  $conf->global->STRIPE_LIVE_WEBHOOK_CONNECT_KEY;
 		$service = 'StripeLive';
+    $servicestatus = 1;    
 	}
 }
 else {
@@ -54,11 +54,13 @@ else {
 	{
 		$endpoint_secret =  $conf->global->STRIPE_TEST_WEBHOOK_KEY;
 		$service = 'StripeTest';
+    $servicestatus = 0;
 	}
 	else
 	{
 		$endpoint_secret =  $conf->global->STRIPE_LIVE_WEBHOOK_KEY;
 		$service = 'StripeLive';
+    $servicestatus = 1;
 	}
 }
 $payload = @file_get_contents("php://input");
@@ -110,7 +112,7 @@ if (! empty($conf->multicompany->enabled) && ! empty($conf->stripeconnect->enabl
 		$key=1;
 	}
 	$ret=$mc->switchEntity($key);
-	if (! $res && file_exists("../../main.inc.php")) $res=@include("../../main.inc.php");
+	if (! $res && file_exists("../../main.inc.php")) $res=@include "../../main.inc.php";
 	if (! $res) die("Include of main fails");
 }
 
@@ -222,24 +224,41 @@ elseif ($event->type == 'charge.failed') {
 
 	$subject = 'Your payment has been received: '.$event->data->object->id.'';
 	$headers = 'From: "'.$conf->global->MAIN_INFO_SOCIETE_MAIL.'" <'.$conf->global->MAIN_INFO_SOCIETE_MAIL.'>';
-	//mail('ptibogxiv@msn.com', $subject, 'test', $headers);
 
 }
 elseif (($event->type == 'source.chargeable') && ($event->data->object->type == 'three_d_secure') && ($event->data->object->three_d_secure->authenticated==true)) {
 
-	$stripe=new Stripe($db);
-	$charge=$stripe->CreatePaymentStripe($event->data->object->amount/100,$event->data->object->currency,$event->data->object->metadata->source,$event->data->object->metadata->idsource,$event->data->object->id,$event->data->object->metadata->customer,$stripe->getStripeAccount($service));
+  $fulltag=$event->data->object->metadata->FULLTAG;
+	// Save into $tmptag all metadata
+	$tmptag=dolExplodeIntoArray($fulltag,'.','=');
+  
+  if (! empty($tmptag['ORD'])){
+  $order=new Commande($db);
+	$order->fetch('',$tmptag['ORD']);
+  $origin='order';
+  $item=$order->id;
+  } elseif (! empty($tmptag['INV'])) {
+  $invoice = new Facture($db);
+	$invoice->fetch('',$tmptag['INV']);
+  $origin='invoice';
+  $item=$invoice->id;
+  }
 
+  $stripe=new Stripe($db); 
+  $stripeacc = $stripe->getStripeAccount($service);								// Stripe OAuth connect account of dolibarr user (no network access here)
+  $stripecu = $stripe->getStripeCustomerAccount($tmptag['CUS'], $servicestatus);		// Get thirdparty cu_...
+	$charge=$stripe->createPaymentStripe($event->data->object->amount/100,$event->data->object->currency,$origin,$item,$event->data->object->id,$stripecu,$stripeacc,$servicestatus);
+  
 	if (isset($charge->id) && $charge->statut=='error'){
 		$msg=$charge->message;
 		$code=$charge->code;
 		$error++;
-	}
-	elseif (isset($charge->id) && $charge->statut=='success' && $event->data->object->metadata->source=='order') {
-		$order=new Commande($db);
-		$order->fetch($event->data->object->metadata->idsource);
+	}              
+	elseif (isset($charge->id) && $charge->statut=='success' && (! empty($tmptag['ORD']))) {
+    //$order=new Commande($db);
+	  //$order->fetch('',$tmptag['ORD']);
 		$invoice = new Facture($db);
-		$idinv=$invoice->createFromOrder($order);
+		$idinv=$invoice->createFromOrder($order,$user);
 
 		if ($idinv > 0)
 		{
@@ -265,7 +284,7 @@ elseif (($event->type == 'source.chargeable') && ($event->data->object->type == 
 
 	if (!$error){
 		$datepaye = dol_now();
-		$paiementcode ="CB";
+		$paymentType ="CB";
 		$amounts=array();
 		$amounts[$invoice->id] = $total;
 		$multicurrency_amounts=array();
@@ -274,7 +293,7 @@ elseif (($event->type == 'source.chargeable') && ($event->data->object->type == 
 		$paiement->datepaye     = $datepaye;
 		$paiement->amounts      = $amounts;   // Array with all payments dispatching
 		$paiement->multicurrency_amounts = $multicurrency_amounts;   // Array with all payments dispatching
-		$paiement->paiementid   = dol_getIdFromCode($db,$paiementcode,'c_paiement');
+		$paiement->paiementid   = dol_getIdFromCode($db, $paymentType, 'c_paiement', 'code', 'id', 1);
 		$paiement->num_paiement = $charge->message;
 		$paiement->note         = '';
 	}
@@ -321,7 +340,6 @@ elseif (($event->type == 'source.chargeable') && ($event->data->object->type == 
 	$body = "";
 	$subject = 'Facture '.$invoice->ref;
 	$headers = 'From: "'.$conf->global->MAIN_INFO_SOCIETE_MAIL.'" <'.$conf->global->MAIN_INFO_SOCIETE_MAIL.'>';
-	//mail('ptibogxiv@msn.com', $subject, $body, $headers); TODO  convert in dolibarr standard
 }
 elseif ($event->type == 'customer.deleted') {
 	$db->begin();

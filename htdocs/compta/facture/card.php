@@ -1705,8 +1705,10 @@ if (empty($reshook))
 
 				if ($res = $prodcomb->fetchByProductCombination2ValuePairs($idprod, $combinations)) {
 					$idprod = $res->fk_product_child;
-				} else {
-					setEventMessage($langs->trans('ErrorProductCombinationNotFound'), 'errors');
+				}
+				else
+				{
+					setEventMessages($langs->trans('ErrorProductCombinationNotFound'), null, 'errors');
 					$error ++;
 				}
 			}
@@ -2430,7 +2432,7 @@ if (empty($reshook))
 
 	        if($error)
 	        {
-	            setEventMessage($langs->trans('ErrorsOnXLines',$error), 'errors');
+	            setEventMessages($langs->trans('ErrorsOnXLines',$error), null, 'errors');
 	        }
 	    }
 	}
@@ -4730,7 +4732,7 @@ else if ($id > 0 || ! empty($ref))
 			}
 
 			// For situation invoice with excess received
-			if ($object->statut == Facture::STATUS_VALIDATED
+			if ($object->statut > Facture::STATUS_DRAFT
 			    && ($object->total_ttc - $totalpaye - $totalcreditnotes - $totaldeposits) > 0
 			    && $user->rights->facture->creer
 			    && !$objectidnext
@@ -4748,7 +4750,7 @@ else if ($id > 0 || ! empty($ref))
 			}
 
 			// remove situation from cycle
-			if ($object->statut == Facture::STATUS_VALIDATED
+			if ($object->statut > Facture::STATUS_DRAFT
 			    && $object->type == Facture::TYPE_SITUATION
 			    && $user->rights->facture->creer
 			    && !$objectidnext
@@ -4884,5 +4886,6 @@ else if ($id > 0 || ! empty($ref))
 	include DOL_DOCUMENT_ROOT.'/core/tpl/card_presend.tpl.php';
 }
 
+// End of page
 llxFooter();
 $db->close();
