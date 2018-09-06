@@ -35,12 +35,25 @@ require_once DOL_DOCUMENT_ROOT . '/fichinter/class/fichinter.class.php';
  */
 class ActionsTicket
 {
+    /**
+     * @var DoliDB Database handler.
+     */
     public $db;
+
     public $dao;
 
     public $mesg;
-    public $error;
-    public $errors = array();
+
+    /**
+	 * @var string Error code (or message)
+	 */
+	public $error;
+
+    /**
+	 * @var string[] Error codes (or messages)
+	 */
+	public $errors = array();
+
     //! Numero de l'erreur
     public $errno = 0;
 
@@ -48,9 +61,17 @@ class ActionsTicket
     public $template;
 
     public $label;
-    public $description;
+
+    /**
+	 * @var string description
+	 */
+	public $description;
 
     public $fk_statut;
+
+    /**
+	 * @var int Thirdparty ID
+	 */
     public $fk_soc;
 
     /**
@@ -579,6 +600,7 @@ class ActionsTicket
      *
      * @param User $user        User for action
      * @param string $action    Action string
+     * @return int
      */
     private function newMessage($user, &$action)
     {
@@ -792,6 +814,7 @@ class ActionsTicket
      *
      * @param User $user        User for action
      * @param string $action    Action string
+     * @return void
      */
     private function newMessagePublic($user, &$action)
     {
@@ -949,7 +972,7 @@ class ActionsTicket
      * Print statut
      *
      * @param		int		$mode		Display mode
-     * @return 		void
+     * @return 		string				Label of status
      */
     public function getLibStatut($mode = 0)
     {
@@ -962,6 +985,7 @@ class ActionsTicket
      * Get ticket info
      *
      * @param  int $id    Object id
+     * @return void
      */
     public function getInfo($id)
     {
@@ -975,7 +999,8 @@ class ActionsTicket
     /**
      * Get action title
      *
-     * @param string $action    Type of action
+     * @param string 	$action    	Type of action
+     * @return string			Title of action
      */
     public function getTitle($action = '')
     {
@@ -998,6 +1023,7 @@ class ActionsTicket
      * View html list of logs
      *
      * @param boolean $show_user Show user who make action
+     * @return void
      */
     public function viewTicketLogs($show_user = true)
     {
@@ -1058,6 +1084,7 @@ class ActionsTicket
      *
      * @param 	boolean 	$show_user 	Show user who make action
      * @param	Ticket	$object		Object
+     * @return void
      */
     public function viewTimelineTicketLogs($show_user = true, $object = true)
     {
@@ -1165,6 +1192,7 @@ class ActionsTicket
      *
      * @param boolean $show_private Show private messages
      * @param boolean $show_user    Show user who make action
+     * @return void
      */
     public function viewTicketMessages($show_private, $show_user = true)
     {
@@ -1237,6 +1265,7 @@ class ActionsTicket
      * @param 	boolean 	$show_private Show private messages
      * @param 	boolean 	$show_user    Show user who make action
      * @param	Ticket	$object		 Object ticket
+     * @return void
      */
     public function viewTicketTimelineMessages($show_private, $show_user, Ticket $object)
     {
@@ -1295,6 +1324,7 @@ class ActionsTicket
      * @param int			$fieldid		Id
      * @return int			0
      */
+    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
     function load_previous_next_ref($filter, $fieldid)
     {
         $this->getInstanceDao();
@@ -1308,6 +1338,7 @@ class ActionsTicket
      * @param string $message          Email message
      * @param int    $send_internal_cc Receive a copy on internal email ($conf->global->TICKET_NOTIFICATION_EMAIL_FROM)
      * @param array  $array_receiver   Array of receiver. exemple array('name' => 'John Doe', 'email' => 'john@doe.com', etc...)
+     * @return void
      */
     public function sendTicketMessageByEmail($subject, $message, $send_internal_cc = 0, $array_receiver = array())
     {

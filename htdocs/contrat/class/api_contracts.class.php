@@ -55,13 +55,13 @@ class Contracts extends DolibarrApi
     }
 
     /**
-     * Get properties of a contrat object
+     * Get properties of a contract object
      *
-     * Return an array with contrat informations
+     * Return an array with contract informations
      *
      * @param       int         $id         ID of contract
      * @return 	array|mixed data without useless information
-	 *
+     *
      * @throws 	RestException
      */
     function get($id)
@@ -100,7 +100,8 @@ class Contracts extends DolibarrApi
      *
 	 * @throws RestException
      */
-    function index($sortfield = "t.rowid", $sortorder = 'ASC', $limit = 100, $page = 0, $thirdparty_ids = '', $sqlfilters = '') {
+    function index($sortfield = "t.rowid", $sortorder = 'ASC', $limit = 100, $page = 0, $thirdparty_ids = '', $sqlfilters = '')
+    {
         global $db, $conf;
 
         $obj_ret = array();
@@ -216,7 +217,8 @@ class Contracts extends DolibarrApi
      *
      * @return int
      */
-    function getLines($id) {
+    function getLines($id)
+    {
       if(! DolibarrApiAccess::$user->rights->contrat->lire) {
 		  	throw new RestException(401);
 		  }
@@ -247,7 +249,8 @@ class Contracts extends DolibarrApi
      *
      * @return int
      */
-    function postLine($id, $request_data = null) {
+    function postLine($id, $request_data = null)
+    {
         if(! DolibarrApiAccess::$user->rights->contrat->creer) {
 			throw new RestException(401);
 		}
@@ -300,7 +303,8 @@ class Contracts extends DolibarrApi
      *
      * @return object
      */
-    function putLine($id, $lineid, $request_data = null) {
+    function putLine($id, $lineid, $request_data = null)
+    {
         if(! DolibarrApiAccess::$user->rights->contrat->creer) {
 			throw new RestException(401);
 		}
@@ -359,7 +363,8 @@ class Contracts extends DolibarrApi
      *
      * @return object
      */
-    function activateLine($id, $lineid, $datestart, $dateend = null, $comment = null) {
+    function activateLine($id, $lineid, $datestart, $dateend = null, $comment = null)
+    {
     	if(! DolibarrApiAccess::$user->rights->contrat->creer) {
     		throw new RestException(401);
     	}
@@ -396,7 +401,8 @@ class Contracts extends DolibarrApi
      *
      * @return object
      */
-    function unactivateLine($id, $lineid, $datestart, $comment = null) {
+    function unactivateLine($id, $lineid, $datestart, $comment = null)
+    {
     	if(! DolibarrApiAccess::$user->rights->contrat->creer) {
     		throw new RestException(401);
     	}
@@ -436,7 +442,8 @@ class Contracts extends DolibarrApi
      * @throws 401
      * @throws 404
      */
-    function deleteLine($id, $lineid) {
+    function deleteLine($id, $lineid)
+    {
         if(! DolibarrApiAccess::$user->rights->contrat->creer) {
 			throw new RestException(401);
 		}
@@ -450,7 +457,7 @@ class Contracts extends DolibarrApi
 			throw new RestException(401, 'Access not allowed for login '.DolibarrApiAccess::$user->login);
         }
 
-        // TODO Check the lineid $lineid is a line of ojbect
+        // TODO Check the lineid $lineid is a line of object
 
         $updateRes = $this->contract->deleteline($lineid, DolibarrApiAccess::$user);
         if ($updateRes > 0) {
@@ -465,12 +472,13 @@ class Contracts extends DolibarrApi
     /**
      * Update contract general fields (won't touch lines of contract)
      *
-     * @param int   $id             Id of contrat to update
+     * @param int   $id             Id of contract to update
      * @param array $request_data   Datas
      *
      * @return int
      */
-    function put($id, $request_data = null) {
+    function put($id, $request_data = null)
+    {
         if(! DolibarrApiAccess::$user->rights->contrat->creer) {
 			throw new RestException(401);
 		}
@@ -529,11 +537,10 @@ class Contracts extends DolibarrApi
                 'message' => 'Contract deleted'
             )
         );
-
     }
 
     /**
-     * Validate an contract
+     * Validate a contract
      *
      * @param   int $id             Contract ID
      * @param   int $notrigger      1=Does not execute triggers, 0= execute triggers
@@ -632,7 +639,8 @@ class Contracts extends DolibarrApi
      * @param   object  $object    Object to clean
      * @return    array    Array of cleaned object properties
      */
-    function _cleanObjectDatas($object) {
+    function _cleanObjectDatas($object)
+    {
 
         $object = parent::_cleanObjectDatas($object);
 

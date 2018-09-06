@@ -1167,7 +1167,16 @@ function get_next_value($db,$mask,$table,$field,$where='',$objsoc='',$date='',$m
     return $numFinal;
 }
 
-function get_string_between($string, $start, $end){
+/**
+ * Get string between
+ *
+ * @param   string  $string     String to test
+ * @param   int     $start      Value for start
+ * @param   int     $end        Value for end
+ * @return  string              Return part of string
+ */
+function get_string_between($string, $start, $end)
+{
     $string = " ".$string;
      $ini = strpos($string,$start);
      if ($ini == 0) return "";
@@ -1770,7 +1779,7 @@ function getSoapParams()
  */
 function dolGetElementUrl($objectid,$objecttype,$withpicto=0,$option='')
 {
-	global $db,$conf;
+	global $db, $conf, $langs;
 
 	$ret='';
 
@@ -2197,7 +2206,8 @@ function colorStringToArray($stringcolor,$colorifnotfound=array(88,88,88))
  * @param   array $input    Array of products
  * @return  array           Array of combinations
  */
-function cartesianArray(array $input) {
+function cartesianArray(array $input)
+{
     // filter out empty values
     $input = array_filter($input);
 
@@ -2305,8 +2315,9 @@ function getModuleDirForApiClass($module)
  * @param	$max	int	Between 0 and 255
  * @return String
  */
-function random_color_part($min=0,$max=255) {
-	return str_pad( dechex( mt_rand( $min, $max) ), 2, '0', STR_PAD_LEFT);
+function random_color_part($min=0,$max=255)
+{
+    return str_pad( dechex( mt_rand( $min, $max) ), 2, '0', STR_PAD_LEFT);
 }
 
 /*
@@ -2316,6 +2327,7 @@ function random_color_part($min=0,$max=255) {
  * @param	$max	int	Between 0 and 255
  * @return String
  */
-function random_color($min=0, $max=255) {
-	return random_color_part($min, $max) . random_color_part($min, $max) . random_color_part($min, $max);
+function random_color($min=0, $max=255)
+{
+    return random_color_part($min, $max) . random_color_part($min, $max) . random_color_part($min, $max);
 }

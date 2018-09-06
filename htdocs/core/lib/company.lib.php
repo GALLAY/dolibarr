@@ -89,7 +89,7 @@ function societe_prepare_head(Societe $object)
         $head[$h][0] = DOL_URL_ROOT.'/comm/card.php?socid='.$object->id;
         $head[$h][1] = '';
         if (empty($conf->global->SOCIETE_DISABLE_PROSPECTS) && ($object->client==2 || $object->client==3)) $head[$h][1] .= $langs->trans("Prospect");
-        if (empty($conf->global->SOCIETE_DISABLE_PROSPECTS) && empty($conf->global->SOCIETE_DISABLE_CUSTOMERS) && $object->client==3) $head[$h][1] .= '/';
+        if (empty($conf->global->SOCIETE_DISABLE_PROSPECTS) && empty($conf->global->SOCIETE_DISABLE_CUSTOMERS) && $object->client==3) $head[$h][1] .= ' | ';
         if (empty($conf->global->SOCIETE_DISABLE_CUSTOMERS) && ($object->client==1 || $object->client==3)) $head[$h][1] .= $langs->trans("Customer");
         $head[$h][2] = 'customer';
         $h++;
@@ -1485,13 +1485,14 @@ function show_actions_done($conf, $langs, $db, $filterobj, $objcon='', $noprint=
     {
         $delay_warning=$conf->global->MAIN_DELAY_ACTIONS_TODO*24*60*60;
 
+        require_once DOL_DOCUMENT_ROOT.'/core/lib/functions2.lib.php';
+        require_once DOL_DOCUMENT_ROOT.'/core/class/html.formactions.class.php';
         require_once DOL_DOCUMENT_ROOT.'/comm/action/class/actioncomm.class.php';
-        include_once DOL_DOCUMENT_ROOT.'/core/lib/functions2.lib.php';
-	    require_once DOL_DOCUMENT_ROOT.'/core/class/html.formactions.class.php';
+        require_once DOL_DOCUMENT_ROOT.'/contact/class/contact.class.php';
 
-	    $formactions=new FormActions($db);
+        $formactions=new FormActions($db);
 
-	    $actionstatic=new ActionComm($db);
+        $actionstatic=new ActionComm($db);
         $userstatic=new User($db);
         $contactstatic = new Contact($db);
 

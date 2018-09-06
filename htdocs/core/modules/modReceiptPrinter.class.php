@@ -40,7 +40,7 @@ class modReceiptPrinter extends DolibarrModules
      *
      *  @param      DoliDB      $db      Database handler
      */
-    function  __construct($db)
+    function __construct($db)
     {
         $this->db = $db ;
         $this->numero = 67000;
@@ -119,8 +119,6 @@ class modReceiptPrinter extends DolibarrModules
         //                        'user'=>0);                     // 0=Menu for internal users, 1=external users, 2=both
 
         $r++;
-
-
     }
 
 
@@ -143,5 +141,4 @@ class modReceiptPrinter extends DolibarrModules
             );
         return $this->_init($sql,$options);
     }
-
 }

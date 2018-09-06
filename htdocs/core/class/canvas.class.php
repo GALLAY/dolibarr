@@ -28,9 +28,20 @@
  */
 class Canvas
 {
-	var $db;
-	var $error;
-	var $errors=array();
+	/**
+     * @var DoliDB Database handler.
+     */
+    public $db;
+	
+	/**
+	 * @var string Error code (or message)
+	 */
+	public $error='';
+
+	/**
+	 * @var string[] Error codes (or messages)
+	 */
+	public $errors = array();
 
 	var $actiontype;
 
@@ -130,6 +141,7 @@ class Canvas
 	 * 	@param		string		$ref		Object ref (if id not provided)
 	 * 	@return		void
 	 */
+    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function assign_values(&$action='view', $id=0, $ref='')
 	{
 		if (method_exists($this->control,'assign_values')) $this->control->assign_values($action, $id, $ref);
@@ -156,6 +168,7 @@ class Canvas
 	 *	@param	string	$action		Action code
 	 *	@return	void
 	 */
+    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function display_canvas($action)
 	{
 		global $db, $conf, $langs, $user, $canvas;
@@ -197,5 +210,4 @@ class Canvas
 			return $ret;
 		}
 	}
-
 }

@@ -37,8 +37,16 @@ require_once DOL_DOCUMENT_ROOT .'/core/class/commonobject.class.php';
  */
 class Contact extends CommonObject
 {
+	/**
+	 * @var string ID to identify managed object
+	 */
 	public $element='contact';
+	
+	/**
+	 * @var string Name of table without prefix where object is stored
+	 */
 	public $table_element='socpeople';
+	
 	public $ismultientitymanaged = 1;	// 0=No test on entity, 1=Test with field entity, 2=Test with link by societe
 	public $picto = 'contact';
 
@@ -142,6 +150,7 @@ class Contact extends CommonObject
 	 *
 	 *  @return     int         <0 if KO, >0 if OK
 	 */
+    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function load_state_board()
 	{
 		global $user;
@@ -475,6 +484,7 @@ class Contact extends CommonObject
 	 *									2=Return key only (uid=qqq)
 	 *	@return		string				DN
 	 */
+    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function _load_ldap_dn($info,$mode=0)
 	{
 		global $conf;
@@ -491,6 +501,7 @@ class Contact extends CommonObject
 	 *
 	 *	@return		array		Tableau info des attributs
 	 */
+    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function _load_ldap_info()
 	{
 		global $conf,$langs;
@@ -567,6 +578,7 @@ class Contact extends CommonObject
 	 *  @param      int		    $notrigger	0=no, 1=yes
      *  @return     int         			<0 if KO, >=0 if OK
 	 */
+    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function update_perso($id, $user=null, $notrigger=0)
 	{
 	    $error=0;
@@ -677,6 +689,7 @@ class Contact extends CommonObject
         $sql.= " c.photo,";
 		$sql.= " c.priv, c.note_private, c.note_public, c.default_lang, c.no_email, c.canvas,";
 		$sql.= " c.import_key,";
+		$sql.= " c.datec as date_creation, c.tms as date_modification,";
 		$sql.= " co.label as country, co.code as country_code,";
 		$sql.= " d.nom as state, d.code_departement as state_code,";
 		$sql.= " u.rowid as user_id, u.login as user_login,";
@@ -711,6 +724,9 @@ class Contact extends CommonObject
 				$this->zip				= $obj->zip;
 				$this->town				= $obj->town;
 
+				$this->date_creation     = $this->db->jdate($obj->date_creation);
+				$this->date_modification = $this->db->jdate($obj->date_modification);
+				
 				$this->fk_departement	= $obj->fk_departement;    // deprecated
 				$this->state_id			= $obj->fk_departement;
 				$this->departement_code	= $obj->state_code;	       // deprecated
@@ -845,6 +861,7 @@ class Contact extends CommonObject
 	 *
      *  @return     int             					<0 if KO, >=0 if OK
 	 */
+    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function load_ref_elements()
 	{
 		// Compte les elements pour lesquels il est contact
@@ -1184,6 +1201,7 @@ class Contact extends CommonObject
 	 *  @param      int			$mode       0=libelle long, 1=libelle court, 2=Picto + Libelle court, 3=Picto, 4=Picto + Libelle long, 5=Libelle court + Picto
 	 *  @return     string					Libelle
 	 */
+    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function LibStatut($statut,$mode)
 	{
 		global $langs;
@@ -1228,6 +1246,7 @@ class Contact extends CommonObject
 	 * 	@param      int			$statut		Type (0 = public, 1 = private)
 	 *  @return     string					Label translated
 	 */
+    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function LibPubPriv($statut)
 	{
 		global $langs;
@@ -1334,6 +1353,7 @@ class Contact extends CommonObject
 	 * Existing categories are left untouch.
 	 *
 	 * @param int[]|int $categories Category or categories IDs
+     * @return void
 	 */
 	public function setCategories($categories)
 	{

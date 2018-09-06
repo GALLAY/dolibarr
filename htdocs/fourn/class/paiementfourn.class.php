@@ -35,8 +35,16 @@ require_once DOL_DOCUMENT_ROOT.'/multicurrency/class/multicurrency.class.php';
  */
 class PaiementFourn extends Paiement
 {
+	/**
+	 * @var string ID to identify managed object
+	 */
 	public $element='payment_supplier';
+	
+	/**
+	 * @var string Name of table without prefix where object is stored
+	 */
 	public $table_element='paiementfourn';
+	
 	public $picto = 'payment';
 
 	var $statut;        //Status of payment. 0 = unvalidated; 1 = validated
@@ -504,6 +512,7 @@ class PaiementFourn extends Paiement
 	 *	@param      int		$mode      0=libelle long, 1=libelle court, 2=Picto + Libelle court, 3=Picto, 4=Picto + Libelle long, 5=Libelle court + Picto
 	 *	@return     string      		Libelle du statut
 	 */
+    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function LibStatut($status,$mode=0)
 	{
 		global $langs;
@@ -762,11 +771,12 @@ class PaiementFourn extends Paiement
 
 
 	/**
-	 *    	Load the third party of object, from id into this->thirdparty
+	 *  Load the third party of object, from id into this->thirdparty
 	 *
-	 *		@param		int		$force_thirdparty_id	Force thirdparty id
-	 *		@return		int								<0 if KO, >0 if OK
+	 *	@param		int		$force_thirdparty_id	Force thirdparty id
+	 *	@return		int								<0 if KO, >0 if OK
 	 */
+    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function fetch_thirdparty($force_thirdparty_id=0)
 	{
 		require_once DOL_DOCUMENT_ROOT . '/fourn/class/fournisseur.facture.class.php';
@@ -786,5 +796,4 @@ class PaiementFourn extends Paiement
 
 		return parent::fetch_thirdparty($force_thirdparty_id);
 	}
-
 }

@@ -36,8 +36,16 @@ require_once DOL_DOCUMENT_ROOT .'/multicurrency/class/multicurrency.class.php';
  */
 class Paiement extends CommonObject
 {
-    public $element='payment';
-    public $table_element='paiement';
+    /**
+	 * @var string ID to identify managed object
+	 */
+	public $element='payment';
+    
+    /**
+	 * @var string Name of table without prefix where object is stored
+	 */
+	public $table_element='paiement';
+	
     public $picto = 'payment';
 
 	var $facid;
@@ -700,6 +708,7 @@ class Paiement extends CommonObject
 	 *      @param	int		$id_bank    Id compte bancaire
 	 *      @return	int					<0 if KO, >0 if OK
 	 */
+    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function update_fk_bank($id_bank)
 	{
 		$sql = 'UPDATE '.MAIN_DB_PREFIX.$this->table_element.' set fk_bank = '.$id_bank;
@@ -725,6 +734,7 @@ class Paiement extends CommonObject
      *  @param	int	$date   New date
      *  @return int					<0 if KO, 0 if OK
      */
+    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
     function update_date($date)
     {
         if (!empty($date) && $this->statut!=1)
@@ -756,6 +766,7 @@ class Paiement extends CommonObject
      *  @param	string	$num		New num
      *  @return int					<0 if KO, 0 if OK
      */
+    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
     function update_num($num)
     {
     	if(!empty($num) && $this->statut!=1)
@@ -1119,6 +1130,7 @@ class Paiement extends CommonObject
 	 * @param   int		$mode       0=libelle long, 1=libelle court, 2=Picto + Libelle court, 3=Picto, 4=Picto + Libelle long, 5=Libelle court + Picto
 	 * @return	string  		    Libelle du statut
 	 */
+    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function LibStatut($status,$mode=0)
 	{
 		global $langs;	// TODO Renvoyer le libelle anglais et faire traduction a affichage
@@ -1163,11 +1175,12 @@ class Paiement extends CommonObject
 	}
 
 	/**
-	 *    	Load the third party of object, from id into this->thirdparty
+	 *  Load the third party of object, from id into this->thirdparty
 	 *
-	 *		@param		int		$force_thirdparty_id	Force thirdparty id
-	 *		@return		int								<0 if KO, >0 if OK
+	 *	@param		int		$force_thirdparty_id	Force thirdparty id
+	 *	@return		int								<0 if KO, >0 if OK
 	 */
+    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function fetch_thirdparty($force_thirdparty_id=0)
 	{
 		include_once DOL_DOCUMENT_ROOT . '/compta/facture/class/facture.class.php';

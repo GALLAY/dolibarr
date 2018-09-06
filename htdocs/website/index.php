@@ -68,6 +68,8 @@ if (GETPOST('setashome','alpha')) { $action='setashome'; }
 if (GETPOST('editmeta','alpha')) { $action='editmeta'; }
 if (GETPOST('editsource','alpha')) { $action='editsource'; }
 if (GETPOST('editcontent','alpha')) { $action='editcontent'; }
+if (GETPOST('exportsite','alpha')) { $action='exportsite'; }
+if (GETPOST('importsite','alpha')) { $action='importsite'; }
 if (GETPOST('createfromclone','alpha')) { $action='createfromclone'; }
 if (GETPOST('createpagefromclone','alpha')) { $action='createpagefromclone'; }
 if (empty($action) && $file_manager) $action='file_manager';
@@ -227,6 +229,7 @@ if ($action == 'addsite')
 	if (! $error && ! GETPOST('WEBSITE_REF','alpha'))
 	{
 		$error++;
+		$langs->load("errors");
 		setEventMessages($langs->transnoentities("ErrorFieldRequired", $langs->transnoentities("Ref")), null, 'errors');
 	}
 	if (! $error && ! preg_match('/^[a-z0-9_\-\.]+$/i', GETPOST('WEBSITE_REF','alpha')))
@@ -960,7 +963,7 @@ if ($action == 'updatemeta')
 {
 	$db->begin();
 
-	$object->fetch(0, $websitekey);
+	$result = $object->fetch(0, $websitekey);
 	$website = $object;
 
 	$objectpage->fk_website = $object->id;
@@ -974,11 +977,57 @@ if ($action == 'updatemeta')
 		$action='editmeta';
 	}
 
-	$res = $objectpage->fetch($pageid, $object->fk_website);
+	$res = $objectpage->fetch($pageid, $object->id);
 	if ($res <= 0)
 	{
 		$error++;
 		setEventMessages('Page not found '.$objectpage->error, $objectpage->errors, 'errors');
+	}
+
+	// Check alias not exists
+	if (! $error && GETPOST('WEBSITE_PAGENAME', 'alpha'))
+	{
+		$websitepagetemp=new WebsitePage($db);
+		$result = $websitepagetemp->fetch(-1 * $objectpage->id, $object->id, GETPOST('WEBSITE_PAGENAME', 'alpha'));
+		if ($result < 0)
+		{
+			$error++;
+			$langs->load("errors");
+			setEventMessages($websitepagetemp->error, $websitepagetemp->errors, 'errors');
+			$action = 'editmeta';
+		}
+		if ($result > 0)
+		{
+			$error++;
+			$langs->load("errors");
+			setEventMessages($langs->trans("ErrorAPageWithThisNameOrAliasAlreadyExists", $websitepagetemp->pageurl), null, 'errors');
+			$action = 'editmeta';
+		}
+	}
+	if (! $error && GETPOST('WEBSITE_ALIASALT', 'alpha'))
+	{
+		$arrayofaliastotest=explode(',', GETPOST('WEBSITE_ALIASALT', 'alpha'));
+		$websitepagetemp=new WebsitePage($db);
+		foreach($arrayofaliastotest as $aliastotest)
+		{
+			$result = $websitepagetemp->fetch(-1 * $objectpage->id, $object->id, $aliastotest);
+			if ($result < 0)
+			{
+				$error++;
+				$langs->load("errors");
+				setEventMessages($websitepagetemp->error, $websitepagetemp->errors, 'errors');
+				$action = 'editmeta';
+				break;
+			}
+			if ($result > 0)
+			{
+				$error++;
+				$langs->load("errors");
+				setEventMessages($langs->trans("ErrorAPageWithThisNameOrAliasAlreadyExists", $websitepagetemp->pageurl), null, 'errors');
+				$action = 'editmeta';
+				break;
+			}
+		}
 	}
 
 	if (! $error)
@@ -995,10 +1044,23 @@ if ($action == 'updatemeta')
 		$objectpage->htmlheader = trim(GETPOST('htmlheader', 'none'));
 
 		$res = $objectpage->update($user);
-		if (! $res > 0)
+		if (! ($res > 0))
 		{
-			$error++;
-			setEventMessages($objectpage->error, $objectpage->errors, 'errors');
+			$langs->load("errors");
+			if ($db->lasterrno == 'DB_ERROR_RECORD_ALREADY_EXISTS')
+			{
+				$error++;
+				$langs->load("errors");
+				setEventMessages($langs->trans("ErrorAPageWithThisNameOrAliasAlreadyExists"), null, 'errors');
+				$action = 'editmeta';
+			}
+			else
+			{
+				$error++;
+				$langs->load("errors");
+				setEventMessages($objectpage->error, $objectpage->errors, 'errors');
+				$action = 'editmeta';
+			}
 		}
 	}
 
@@ -1274,12 +1336,16 @@ if (($action == 'updatesource' || $action == 'updatecontent' || $action == 'conf
 	}
 	else
 	{
-		if (! $error) setEventMessages($langs->trans("NoPageYet"), null, 'warnings');
+		if (! $error)
+		{
+			setEventMessages($langs->trans("NoPageYet"), null, 'warnings');
+			setEventMessages($langs->trans("YouCanCreatePageOrImportTemplate"), null, 'warnings');
+		}
 	}
 }
 
 // Export site
-if (GETPOST('exportsite','alpha'))
+if ($action == 'exportsite')
 {
 	$fileofzip = $object->exportWebSite();
 
@@ -1295,6 +1361,70 @@ if (GETPOST('exportsite','alpha'))
 		exit;
 	}
 }
+
+// Import site
+if ($action == 'importsiteconfirm')
+{
+	if (empty($_FILES))
+	{
+		setEventMessages($langs->trans("ErrorFieldRequired", $langs->transnoentitiesnoconv("File")), null, 'errors');
+		$action = 'importsite';
+	}
+	else
+	{
+		if (! empty($_FILES))
+		{
+			if (is_array($_FILES['userfile']['tmp_name'])) $userfiles=$_FILES['userfile']['tmp_name'];
+			else $userfiles=array($_FILES['userfile']['tmp_name']);
+
+			foreach($userfiles as $key => $userfile)
+			{
+				if (empty($_FILES['userfile']['tmp_name'][$key]))
+				{
+					$error++;
+					if ($_FILES['userfile']['error'][$key] == 1 || $_FILES['userfile']['error'][$key] == 2){
+						setEventMessages($langs->trans('ErrorFileSizeTooLarge'), null, 'errors');
+						$action = 'importsite';
+					}
+					else {
+						setEventMessages($langs->trans("ErrorFieldRequired", $langs->transnoentitiesnoconv("File")), null, 'errors');
+						$action = 'importsite';
+					}
+				}
+			}
+
+			if (! $error)
+			{
+				$upload_dir = $conf->website->dir_temp;
+				$result = dol_add_file_process($upload_dir, 1, -1, 'userfile', '');
+
+				// Get name of file (take last one if several name provided)
+				$fileofzip = $upload_dir.'/unknown';
+				foreach($_FILES as $key => $ifile)
+				{
+					foreach($ifile['name'] as $key2 => $ifile2)
+					{
+						$fileofzip = $upload_dir . '/' .$ifile2;
+					}
+				}
+
+				$result = $object->importWebSite($fileofzip);
+				if ($result < 0)
+				{
+					setEventMessages($object->error, $object->errors, 'errors');
+					$action = 'importsite';
+				}
+				else
+				{
+					header("Location: ".$_SERVER["PHP_SELF"].'?website='.$object->ref);
+					exit();
+				}
+			}
+		}
+
+	}
+}
+
 
 
 
@@ -1370,6 +1500,10 @@ if ($action == 'edit')
 {
 	print '<input type="hidden" name="action" value="update">';
 }
+if ($action == 'importsite')
+{
+	print '<input type="hidden" name="action" value="importsiteconfirm">';
+}
 if ($action == 'file_manager')
 {
 	print '<input type="hidden" name="action" value="file_manager">';
@@ -1431,6 +1565,11 @@ if (count($object->records) > 0)
 		if (! empty($object->virtualhost)) $virtualurl=$object->virtualhost;
 	}
 
+
+	$array=$objectpage->fetchAll($object->id, 'ASC,ASC', 'type_container,pageurl');
+	if (! is_array($array) && $array < 0) dol_print_error('', $objectpage->error, $objectpage->errors);
+	$atleastonepage=(is_array($array) && count($array) > 0);
+
 	if ($websitekey && ($action == 'preview' || $action == 'createfromclone' || $action == 'createpagefromclone'))
 	{
 		$disabled='';
@@ -1442,6 +1581,14 @@ if (count($object->records) > 0)
 		//print '<input type="submit" class="button"'.$disabled.' value="'.dol_escape_htmltag($langs->trans("EditMenu")).'" name="editmenu">';
 		print '<input type="submit" class="button nobordertransp"'.$disabled.' value="'.dol_escape_htmltag($langs->trans("CloneSite")).'" name="createfromclone">';
 		print '<input type="submit" class="button nobordertransp"'.$disabled.' value="'.dol_escape_htmltag($langs->trans("ExportSite")).'" name="exportsite">';
+		if (! $atleastonepage)
+		{
+			print '<input type="submit" class="button nobordertransp"'.$disabled.' value="'.dol_escape_htmltag($langs->trans("ImportSite")).'" name="importsite">';
+		}
+		else
+		{
+			print '<input type="submit" class="button nobordertransp" disabled="disabled" value="'.dol_escape_htmltag($langs->trans("ImportSite")).'" name="importsite">';
+		}
 
 		print ' &nbsp; ';
 
@@ -1467,7 +1614,8 @@ if (count($object->records) > 0)
 
 	print '</div>';
 
-	// Button for website
+
+	// Toolbar for website
 	print '<div class="websitetools">';
 
 	if ($action == 'preview' || $action == 'createfromclone' || $action == 'createpagefromclone')
@@ -1527,15 +1675,11 @@ if (count($object->records) > 0)
 	print '</div>';
 
 
-	// ***** Part for pages
+	// Toolbar for pages
 
-	if ($websitekey && ! in_array($action, array('editcss','editmenu')))
+	if ($websitekey && ! in_array($action, array('editcss','editmenu','importsite')))
 	{
 		print '</div>';	// Close current websitebar to open a new one
-
-		$array=$objectpage->fetchAll($object->id, 'ASC,ASC', 'type_container,pageurl');
-		if (! is_array($array) && $array < 0) dol_print_error('', $objectpage->error, $objectpage->errors);
-		$atleastonepage=(is_array($array) && count($array) > 0);
 
 		print '<div class="centpercent websitebar"'.($style?' style="'.$style.'"':'').'">';
 
@@ -1656,11 +1800,12 @@ if (count($object->records) > 0)
 				// Confirmation to clone
 				if ($action == 'createpagefromclone') {
 					// Create an array for form
+					$preselectedlanguage = GETPOST('newlang', 'az09') ? GETPOST('newlang', 'az09') : ($objectpage->lang ? $objectpage->lang : $langs->defaultlang);
 					$formquestion = array(
-						array('type' => 'text', 'name' => 'pageurl', 'label'=> $langs->trans("WEBSITE_PAGENAME")  ,'value'=> 'copy_of_'.$objectpage->pageurl),
-						array('type' => 'checkbox', 'name' => 'is_a_translation', 'label' => $langs->trans("PageIsANewTranslation"), 'value' => 0),
-						array('type' => 'other','name' => 'newlang','label' => $langs->trans("Language"), 'value' => $formadmin->select_language(GETPOST('newlang', 'az09')?GETPOST('newlang', 'az09'):$langs->defaultlang, 'newlang', 0, null, 1, 0, 0, 'minwidth200')),
-						array('type' => 'other','name' => 'newwebsite','label' => $langs->trans("WebSite"), 'value' => $formwebsite->selectWebsite($object->id, 'newwebsite', 0)),
+						array('type' => 'text', 'tdclass'=>'maxwidth200', 'name' => 'pageurl', 'label'=> $langs->trans("WEBSITE_PAGENAME"), 'value'=> 'copy_of_'.$objectpage->pageurl),
+						array('type' => 'checkbox', 'tdclass'=>'maxwidth200', 'name' => 'is_a_translation', 'label' => $langs->trans("PageIsANewTranslation"), 'value' => 0),
+						array('type' => 'other','name' => 'newlang', 'label' => $langs->trans("Language"), 'value' => $formadmin->select_language($preselectedlanguage, 'newlang', 0, null, 1, 0, 0, 'minwidth200', 0, 1)),
+						array('type' => 'other','name' => 'newwebsite', 'label' => $langs->trans("WebSite"), 'value' => $formwebsite->selectWebsite($object->id, 'newwebsite', 0)),
 					);
 
 				   	$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"] . '?website='.$object->ref.'&pageid=' . $pageid, $langs->trans('ClonePage'), '', 'confirm_createpagefromclone', $formquestion, 0, 1, 300, 550);
@@ -2060,6 +2205,27 @@ if ($action == 'createsite')
 	print '<br>';
 }
 
+if ($action == 'importsite')
+{
+	print '<div class="fiche">';
+
+	print '<br>';
+
+	print_fiche_titre($langs->trans("ImportSite"));
+
+	dol_fiche_head(array(), '0', '', -1);
+
+	print $langs->trans("ZipOfWebsitePackageToImport").'<br><br>';
+
+	print '<input class="flat minwidth400" type="file" name="userfile[]" accept=".zip">';
+	print '<input type="submit" class="button" name="buttonsubmitimportfile" value="'.dol_escape_htmltag($langs->trans("Upload")).'">';
+
+	dol_fiche_end();
+
+	print '</div>';
+
+	print '<br>';
+}
 
 if ($action == 'editmeta' || $action == 'createcontainer')
 {

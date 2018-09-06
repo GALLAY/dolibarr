@@ -44,79 +44,79 @@ class pdf_azur extends ModelePDFPropales
      * @var DoliDb Database handler
      */
     public $db;
-    
+
 	/**
      * @var string model name
      */
     public $name;
-    
+
 	/**
      * @var string model description (short text)
      */
     public $description;
-    
+
     /**
      * @var string Save the name of generated file as the main doc when generating a doc with this template
      */
 	public $update_main_doc_field;
-	
+
 	/**
      * @var string document type
      */
     public $type;
-    
+
     /**
      * @var array() Minimum version of PHP required by module.
 	 * e.g.: PHP ≥ 5.4 = array(5, 4)
      */
 	public $phpmin = array(5, 4);
-	
+
 	/**
      * Dolibarr version of the loaded document
      * @public string
      */
 	public $version = 'dolibarr';
-	
+
 	/**
      * @var int page_largeur
      */
     public $page_largeur;
-	
+
 	/**
      * @var int page_hauteur
      */
     public $page_hauteur;
-	
+
 	/**
      * @var array format
      */
     public $format;
-	
+
 	/**
      * @var int marge_gauche
      */
 	public $marge_gauche;
-	
+
 	/**
      * @var int marge_droite
      */
 	public $marge_droite;
-	
+
 	/**
      * @var int marge_haute
      */
 	public $marge_haute;
-	
+
 	/**
      * @var int marge_basse
      */
 	public $marge_basse;
-    
+
 	/**
 	 * Issuer
 	 * @var Objet societe qui emet
 	 */
-	public $emetteur;	 
+	public $emetteur;
 
 
 	/**
@@ -127,7 +127,7 @@ class pdf_azur extends ModelePDFPropales
 	function __construct($db)
 	{
 		global $conf,$langs,$mysoc;
-		
+
 		// Translations
 		$langs->loadLangs(array("main", "bills"));
 
@@ -212,6 +212,7 @@ class pdf_azur extends ModelePDFPropales
      *  @param		int			$hideref			Do not show ref
      *  @return     int             				1=OK, 0=KO
 	 */
+    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function write_file($object,$outputlangs,$srctemplatepath='',$hidedetails=0,$hidedesc=0,$hideref=0)
 	{
 		global $user,$langs,$conf,$mysoc,$db,$hookmanager,$nblignes;
@@ -219,7 +220,7 @@ class pdf_azur extends ModelePDFPropales
 		if (! is_object($outputlangs)) $outputlangs=$langs;
 		// For backward compatibility with FPDF, force output charset to ISO, because FPDF expect text to be encoded in ISO
 		if (! empty($conf->global->MAIN_USE_FPDF)) $outputlangs->charset_output='ISO-8859-1';
-        
+
 		// Load traductions files requiredby by page
 		$outputlangs->loadLangs(array("main", "dict", "companies", "bills", "propal", "products"));
 
@@ -837,9 +838,9 @@ class pdf_azur extends ModelePDFPropales
      *  @param  Translate	$outputlangs    Object langs for output
      *  @return int             			<0 if KO, >0 if OK
 	 */
+    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function _tableau_versements(&$pdf, $object, $posy, $outputlangs)
 	{
-
 	}
 
 
@@ -852,6 +853,7 @@ class pdf_azur extends ModelePDFPropales
 	 *   @param		Translate	$outputlangs	Langs object
 	 *   @return	void
 	 */
+    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function _tableau_info(&$pdf, $object, $posy, $outputlangs)
 	{
 		global $conf;
@@ -1032,6 +1034,7 @@ class pdf_azur extends ModelePDFPropales
 	 *	@param	Translate	$outputlangs	Objet langs
 	 *	@return int							Position pour suite
 	 */
+    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function _tableau_tot(&$pdf, $object, $deja_regle, $posy, $outputlangs)
 	{
 		global $conf,$mysoc;
@@ -1057,7 +1060,7 @@ class pdf_azur extends ModelePDFPropales
 		$pdf->SetXY($col1x, $tab2_top + 0);
 		$pdf->MultiCell($col2x-$col1x, $tab2_hl, $outputlangs->transnoentities("TotalHT"), 0, 'L', 1);
 
-		$total_ht = ($conf->multicurrency->enabled && $object->mylticurrency_tx != 1 ? $object->multicurrency_total_ht : $object->total_ht);
+		$total_ht = (($conf->multicurrency->enabled && isset($object->mylticurrency_tx) && $object->mylticurrency_tx != 1) ? $object->multicurrency_total_ht : $object->total_ht);
 		$pdf->SetXY($col2x, $tab2_top + 0);
 		$pdf->MultiCell($largcol2, $tab2_hl, price($total_ht + (! empty($object->remise)?$object->remise:0), 0, $outputlangs), 0, 'R', 1);
 
@@ -1432,7 +1435,7 @@ class pdf_azur extends ModelePDFPropales
 	function _pagehead(&$pdf, $object, $showaddress, $outputlangs)
 	{
 		global $conf,$langs;
-        
+
 		// Load traductions files requiredby by page
 		$outputlangs->loadLangs(array("main", "propal", "companies", "bills"));
 
@@ -1665,6 +1668,7 @@ class pdf_azur extends ModelePDFPropales
 	 *	@param	Translate	$outputlangs	Objet langs
 	 *	@return int							Position pour suite
 	 */
+    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function _signature_area(&$pdf, $object, $posy, $outputlangs)
 	{
 		global $conf;
@@ -1691,4 +1695,3 @@ class pdf_azur extends ModelePDFPropales
 		return ($tab_hl*7);
 	}
 }
-

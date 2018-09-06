@@ -31,7 +31,10 @@ class mod_holiday_madonna extends ModelNumRefHolidays
 {
 	var $version='dolibarr';
 	var $prefix='HL';
-	var $error='';
+	/**
+	 * @var string Error code (or message)
+	 */
+	public $error='';
 	var $nom='Madonna';
 	var $code_auto=1;
 
@@ -140,9 +143,9 @@ class mod_holiday_madonna extends ModelNumRefHolidays
 	 *	@param	Object		$objforref	Holiday object
 	 *	@return string      			Value if OK, 0 if KO
 	 */
+    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function holiday_get_num($fuser,$objforref)
 	{
 		return $this->getNextValue($fuser,$objforref);
 	}
-
 }

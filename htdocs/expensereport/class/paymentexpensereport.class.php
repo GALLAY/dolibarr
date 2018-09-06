@@ -30,8 +30,16 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
  */
 class PaymentExpenseReport extends CommonObject
 {
-	public $element='payment_expensereport';			//!< Id that identify managed objects
-	public $table_element='payment_expensereport';	//!< Name of table without prefix where object is stored
+	/**
+	 * @var string ID to identify managed object
+	 */
+	public $element='payment_expensereport';
+
+	/**
+	 * @var string Name of table without prefix where object is stored
+	 */
+	public $table_element='payment_expensereport';
+
     public $picto = 'payment';
 
 	var $rowid;
@@ -47,9 +55,9 @@ class PaymentExpenseReport extends CommonObject
 	var $fk_bank;
 	var $fk_user_creat;
 	var $fk_user_modif;
-        //Unknow field
-        var $chid;
-        var $total;
+    //Unknow field
+    var $chid;
+    var $total;
 
 	/**
 	 *	Constructor
@@ -238,7 +246,6 @@ class PaymentExpenseReport extends CommonObject
 		if (isset($this->fk_bank))			$this->fk_bank=trim($this->fk_bank);
 		if (isset($this->fk_user_creat))	$this->fk_user_creat=trim($this->fk_user_creat);
 		if (isset($this->fk_user_modif))	$this->fk_user_modif=trim($this->fk_user_modif);
-
 
 
 		// Check parameters
@@ -450,6 +457,7 @@ class PaymentExpenseReport extends CommonObject
 	 *  @param  int		$mode          	0=libelle long, 1=libelle court, 2=Picto + Libelle court, 3=Picto, 4=Picto + Libelle long, 5=Libelle court + Picto
 	 *  @return string 			       	Libelle du statut
 	 */
+    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function LibStatut($statut,$mode=0)
 	{
 	    global $langs;
@@ -480,8 +488,6 @@ class PaymentExpenseReport extends CommonObject
 		$this->fk_bank='';
 		$this->fk_user_creat='';
 		$this->fk_user_modif='';
-
-
 	}
 
 
@@ -604,6 +610,7 @@ class PaymentExpenseReport extends CommonObject
 	 *  @param	int		$id_bank         Id if bank
 	 *  @return	int			             >0 if OK, <=0 if KO
 	 */
+    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function update_fk_bank($id_bank)
 	{
 		$sql = "UPDATE ".MAIN_DB_PREFIX."payment_expensereport SET fk_bank = ".$id_bank." WHERE rowid = ".$this->id;

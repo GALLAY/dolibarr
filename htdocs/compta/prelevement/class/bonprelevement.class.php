@@ -39,8 +39,16 @@ require_once DOL_DOCUMENT_ROOT.'/compta/paiement/class/paiement.class.php';
  */
 class BonPrelevement extends CommonObject
 {
+	/**
+	 * @var string ID to identify managed object
+	 */
 	public $element='widthdraw';
+	
+	/**
+	 * @var string Name of table without prefix where object is stored
+	 */
 	public $table_element='prelevement_bons';
+	
 	public $picto = 'payment';
 
 	var $date_echeance;
@@ -114,6 +122,7 @@ class BonPrelevement extends CommonObject
 	 * @param	string	$number_key 	number key of account number
 	 * @return	int						>0 if OK, <0 if KO
 	 */
+    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function AddFacture($facture_id, $client_id, $client_nom, $amount, $code_banque, $code_guichet, $number, $number_key)
 	{
 		$result = 0;
@@ -156,7 +165,6 @@ class BonPrelevement extends CommonObject
 		}
 
 		return $result;
-
 	}
 
 	/**
@@ -325,6 +333,7 @@ class BonPrelevement extends CommonObject
 	 *
 	 * @return		int		<0 if KO, >=0 if OK
 	 */
+    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function set_credite()
 	{
 		global $user,$conf;
@@ -404,6 +413,7 @@ class BonPrelevement extends CommonObject
 	 *	@param 	int		$date			date of action
 	 *	@return	int						>0 if OK, <0 if KO
 	 */
+    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function set_infocredit($user, $date)
 	{
 		global $conf,$langs;
@@ -551,6 +561,7 @@ class BonPrelevement extends CommonObject
 	 *	@param	string		$method		method of transmision to bank
 	 *	@return	int						>0 if OK, <0 if KO
 	 */
+    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function set_infotrans($user, $date, $method)
 	{
 		global $conf,$langs;
@@ -672,6 +683,7 @@ class BonPrelevement extends CommonObject
 	 *
 	 *	@return		double	 	Total amount
 	 */
+    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function SommeAPrelever()
 	{
 		global $conf;
@@ -712,6 +724,7 @@ class BonPrelevement extends CommonObject
 	 *	@param	int		$agence		dolibarr mysoc agence
 	 *	@return	int					<O if KO, number of invoices if OK
 	 */
+    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function NbFactureAPrelever($banque=0,$agence=0)
 	{
 		global $conf;
@@ -756,6 +769,7 @@ class BonPrelevement extends CommonObject
          * @param       string  $executiondate	Date to execute the transfer
 	 *	@return	int					<0 if KO, nbre of invoice withdrawed if OK
 	 */
+    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function Create($banque=0, $agence=0, $mode='real', $format='ALL',$executiondate='')
 	{
 		global $conf,$langs;
@@ -1186,6 +1200,7 @@ class BonPrelevement extends CommonObject
 	 *	@param	int		$rowid		id of notification
 	 *	@return	int					0 if OK, <0 if KO
 	 */
+    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function DeleteNotificationById($rowid)
 	{
 		$result = 0;
@@ -1210,6 +1225,7 @@ class BonPrelevement extends CommonObject
 	 *	@param	string	$action		notification action
 	 *	@return	int					>0 if OK, <0 if KO
 	 */
+    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function DeleteNotification($user, $action)
 	{
 		$result = 0;
@@ -1235,6 +1251,7 @@ class BonPrelevement extends CommonObject
 	 *	@param	string	$action		notification action
 	 *	@return	int					0 if OK, <0 if KO
 	 */
+    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function AddNotification($db, $user, $action)
 	{
 		$result = 0;
@@ -1449,7 +1466,6 @@ class BonPrelevement extends CommonObject
 		if (! empty($conf->global->MAIN_UMASK))
 		@chmod($this->file, octdec($conf->global->MAIN_UMASK));
 		return $result;
-
 	}
 
 
@@ -1467,6 +1483,7 @@ class BonPrelevement extends CommonObject
 	 *  @param	string	$rib_dom		rib domiciliation
 	 *	@return	void
 	 */
+    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function EnregDestinataire($rowid, $client_nom, $rib_banque, $rib_guichet, $rib_number, $amount, $facnumber, $facid, $rib_dom='')
 	{
 		fputs($this->file, "06");
@@ -1560,6 +1577,7 @@ class BonPrelevement extends CommonObject
 	 *	@param	string		$row_drum			rib.rowid used to generate rum
 	 *	@return	string							Return string with SEPA part DrctDbtTxInf
 	 */
+    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function EnregDestinataireSEPA($row_code_client, $row_nom, $row_address, $row_zip, $row_town, $row_country_code, $row_cb, $row_cg, $row_cc, $row_somme, $row_facnumber, $row_idfac, $row_iban, $row_bic, $row_datec, $row_drum)
 	{
 		$CrLf = "\n";
@@ -1621,6 +1639,7 @@ class BonPrelevement extends CommonObject
 	 *
 	 *	@return	void
 	 */
+    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function EnregEmetteur()
 	{
 		fputs($this->file, "03");
@@ -1679,7 +1698,6 @@ class BonPrelevement extends CommonObject
 		fputs($this->file, substr("                                        ",0,5));
 
 		fputs($this->file, "\n");
-
 	}
 
 	/**
@@ -1694,6 +1712,7 @@ class BonPrelevement extends CommonObject
 	 *  @param	string	$format			FRST or RCUR or ALL
 	 *	@return	string					String with SEPA Sender
 	 */
+    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function EnregEmetteurSEPA($configuration, $ladate, $nombre, $total, $CrLf='\n', $format='FRST')
 	{
 		// SEPA INITIALISATION
@@ -1809,6 +1828,7 @@ class BonPrelevement extends CommonObject
 	 *	@param	int		$total	total amount
 	 *	@return	void
 	 */
+    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function EnregTotal($total)
 	{
 		fputs($this->file, "08");
@@ -1882,6 +1902,7 @@ class BonPrelevement extends CommonObject
 	 *  @param  int		$mode       0=long label, 1=short label, 2=Picto + short label, 3=Picto, 4=Picto + long label, 5=Short label + Picto, 6=Long label + Picto
 	 * 	@return	string  		    Label
 	 */
+    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function LibStatut($statut,$mode=0)
 	{
 		if (empty($this->labelstatut))
@@ -1932,6 +1953,4 @@ class BonPrelevement extends CommonObject
 			if ($statut==2) return $this->labelstatut[$statut].' '.img_picto($this->labelstatut[$statut],'statut6');
 		}
 	}
-
 }
-
