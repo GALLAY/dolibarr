@@ -1,6 +1,6 @@
 <?php
 /* Copyright (C) 2010-2016 Laurent Destailleur  <eldy@users.sourceforge.net>
- * Copyright (C) 2010-2014 Regis Houssin        <regis.houssin@capnetworks.com>
+ * Copyright (C) 2010-2014 Regis Houssin        <regis.houssin@inodbox.com>
  * Copyright (C) 2010-2011 Juanjo Menent        <jmenent@2byte.es>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -33,7 +33,7 @@ class HookManager
      * @var DoliDB Database handler.
      */
     public $db;
-	
+
 	/**
 	 * @var string Error code (or message)
 	 */
@@ -168,6 +168,8 @@ class HookManager
 				'getFormMail',
 				'getIdProfUrl',
 				'getDirList',
+			    'getFormatedCustomerRef',
+			    'getFormatedSupplierRef',
 				'moveUploadedFile',
 				'moreHtmlStatus',
 				'pdf_build_address',

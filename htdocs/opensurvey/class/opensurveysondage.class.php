@@ -111,7 +111,6 @@ class Opensurveysondage extends CommonObject
     function __construct($db)
     {
         $this->db = $db;
-        return 1;
     }
 
 
@@ -139,7 +138,6 @@ class Opensurveysondage extends CommonObject
 
         // Insert request
 		$sql = "INSERT INTO ".MAIN_DB_PREFIX."opensurvey_sondage(";
-
 		$sql.= "id_sondage,";
 		$sql.= "commentaires,";
 		$sql.= "fk_user_creat,";
@@ -152,7 +150,6 @@ class Opensurveysondage extends CommonObject
 		$sql.= "allow_spy,";
 		$sql.= "sujet";
         $sql.= ") VALUES (";
-
 		$sql.= "'".$this->db->escape($this->id_sondage)."',";
 		$sql.= " ".(empty($this->commentaires)?'NULL':"'".$this->db->escape($this->commentaires)."'").",";
 		$sql.= " ".$user->id.",";
@@ -164,7 +161,6 @@ class Opensurveysondage extends CommonObject
 		$sql.= " ".$this->db->escape($this->allow_comments).",";
 		$sql.= " ".$this->db->escape($this->allow_spy).",";
 		$sql.= " '".$this->db->escape($this->sujet)."'";
-
 		$sql.= ")";
 
 		$this->db->begin();
@@ -230,7 +226,7 @@ class Opensurveysondage extends CommonObject
 		$sql.= " t.sujet,";
 		$sql.= " t.tms";
         $sql.= " FROM ".MAIN_DB_PREFIX."opensurvey_sondage as t";
-        $sql.= " WHERE t.id_sondage = '".$this->db->escape($numsurvey)."'";
+        $sql.= " WHERE t.id_sondage = '".$this->db->escape($id ? $id : $numsurvey)."'";
 
     	dol_syslog(get_class($this)."::fetch", LOG_DEBUG);
         $resql=$this->db->query($sql);
@@ -360,10 +356,15 @@ class Opensurveysondage extends CommonObject
      *  @param	string	$numsondage			Num sondage admin to delete
      *  @return	int					 		<0 if KO, >0 if OK
      */
-    function delete(User $user, $notrigger, $numsondage)
+    function delete(User $user, $notrigger=0, $numsondage='')
     {
 		global $conf, $langs;
 		$error=0;
+
+		if (empty($numsondage))
+		{
+		    $numsondage = $this->id_sondage;
+		}
 
 		$this->db->begin();
 
@@ -471,14 +472,15 @@ class Opensurveysondage extends CommonObject
 		return $result;
 	}
 
+    // phpcs:disable PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	/**
 	 * Return array of lines
 	 *
 	 * @return 	int		<0 if KO, >0 if OK
 	 */
-    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function fetch_lines()
 	{
+        // phpcs:enable
 		$ret=array();
 
 		$sql = "SELECT id_users, nom as name, reponses FROM ".MAIN_DB_PREFIX."opensurvey_user_studs";
@@ -627,6 +629,7 @@ class Opensurveysondage extends CommonObject
 	    return $this->LibStatut($this->status,$mode);
 	}
 
+    // phpcs:disable PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	/**
 	 *	Return label of status
 	 *
@@ -634,9 +637,9 @@ class Opensurveysondage extends CommonObject
 	 *	@param      int		$mode        	  0=libelle long, 1=libelle court, 2=Picto + Libelle court, 3=Picto, 4=Picto + Libelle long, 5=Libelle court + Picto
 	 *  @return     string					  Label of status
 	 */
-    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function LibStatut($status,$mode)
 	{
+        // phpcs:enable
 	    global $langs, $conf;
 
 	    //print 'x'.$status.'-'.$billed;

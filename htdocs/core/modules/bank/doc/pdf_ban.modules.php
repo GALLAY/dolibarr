@@ -35,8 +35,17 @@ require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
 
 class pdf_ban extends ModeleBankAccountDoc
 {
-	var $emetteur;	// Objet societe qui emet
-	var $version = 'development';
+	/**
+	 * Issuer
+	 * @var Societe
+	 */
+	public $emetteur;
+
+	/**
+     * Dolibarr version of the loaded document
+     * @public string
+     */
+	public $version = 'development';
 
 	/**
 	 *	Constructor
@@ -47,10 +56,8 @@ class pdf_ban extends ModeleBankAccountDoc
 	{
 		global $conf,$langs,$mysoc;
 
-		$langs->load("main");
-		$langs->load("bank");
-		$langs->load("withdrawals");
-		$langs->load("companies");
+		// Load translation files required by the page
+        $langs->loadLangs(array("main","bank","withdrawals","companies"));
 
 		$this->db = $db;
 		$this->name = "ban";
@@ -85,6 +92,7 @@ class pdf_ban extends ModeleBankAccountDoc
 	}
 
 
+    // phpcs:disable PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	/**
 	 *	Fonction generant le projet sur le disque
 	 *
@@ -92,9 +100,9 @@ class pdf_ban extends ModeleBankAccountDoc
 	 *	@param	Translate	$outputlangs	Lang output object
 	 *	@return	int         				1 if OK, <=0 if KO
 	 */
-    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function write_file($object,$outputlangs)
 	{
+        // phpcs:enable
 		global $conf, $hookmanager, $langs, $user;
 
 		if (! is_object($outputlangs)) $outputlangs=$langs;
@@ -148,6 +156,7 @@ class pdf_ban extends ModeleBankAccountDoc
                 $heightforinfotot = 50;	// Height reserved to output the info and total part
 		        $heightforfreetext= (isset($conf->global->MAIN_PDF_FREETEXT_HEIGHT)?$conf->global->MAIN_PDF_FREETEXT_HEIGHT:5);	// Height reserved to output the free text on last page
 	            $heightforfooter = $this->marge_basse + 8;	// Height reserved to output the footer (value include bottom margin)
+	            if ($conf->global->MAIN_GENERATE_DOCUMENTS_SHOW_FOOT_DETAILS >0) $heightforfooter+= 6;
                 $pdf->SetAutoPageBreak(1,0);
 
                 if (class_exists('TCPDF'))

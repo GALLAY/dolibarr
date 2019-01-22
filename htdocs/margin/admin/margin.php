@@ -29,10 +29,7 @@ require_once DOL_DOCUMENT_ROOT.'/core/lib/admin.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
 require_once DOL_DOCUMENT_ROOT."/compta/facture/class/facture.class.php";
 
-$langs->load("admin");
-$langs->load("bills");
-$langs->load("margins");
-$langs->load("stocks");
+$langs->loadLangs(array("admin", "bills", "margins", "stocks"));
 
 if (! $user->admin) accessforbidden();
 
@@ -126,7 +123,7 @@ print '<table class="noborder" width="100%">';
 print '<tr class="liste_titre">';
 print '<td width=300>'.$langs->trans("Description").'</td>';
 print '<td colspan="2" align="center">'.$langs->trans("Value").'</td>'."\n";
-print '<td align="left">'.$langs->trans("Description").'</td>'."\n";
+print '<td class="left">'.$langs->trans("Description").'</td>'."\n";
 print '</tr>';
 
 $form = new Form($db);
@@ -244,7 +241,7 @@ print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
 print "<input type=\"hidden\" name=\"action\" value=\"remises\">";
 print '<tr class="oddeven">';
 print '<td>'.$langs->trans("MARGIN_METHODE_FOR_DISCOUNT").'</td>';
-print '<td align="left">';
+print '<td class="left">';
 print Form::selectarray('MARGIN_METHODE_FOR_DISCOUNT', $methods, $conf->global->MARGIN_METHODE_FOR_DISCOUNT);
 print '</td>';
 print '<td>';
@@ -260,7 +257,7 @@ print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
 print "<input type=\"hidden\" name=\"action\" value=\"contact\">";
 print '<tr class="oddeven">';
 print '<td>'.$langs->trans("AgentContactType").'</td>';
-print '<td align="left">';
+print '<td class="left">';
 $formcompany = new FormCompany($db);
 $facture = new Facture($db);
 print $formcompany->selectTypeContact($facture, $conf->global->AGENT_CONTACT_TYPE, "AGENT_CONTACT_TYPE","internal","code",1);

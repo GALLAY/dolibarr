@@ -40,8 +40,8 @@ class FormProduct
 	public $error='';
 
 	// Cache arrays
-	var $cache_warehouses=array();
-	var $cache_lot=array();
+	public $cache_warehouses=array();
+	public $cache_lot=array();
 
 
 	/**
@@ -52,8 +52,6 @@ class FormProduct
 	function __construct($db)
 	{
 		$this->db = $db;
-
-		return 1;
 	}
 
 
@@ -167,6 +165,7 @@ class FormProduct
 		}
 	}
 
+    // phpcs:disable PEAR.NamingConventions.ValidFunctionName.ScopeNotCamelCaps
 	/**
 	 * Return full path to current warehouse in $tab (recursive function)
 	 *
@@ -174,10 +173,9 @@ class FormProduct
 	 * @param	String	$final_label	full label with all parents, separated by ' >> ' (completed on each call)
 	 * @return	String					full label with all parents, separated by ' >> '
 	 */
-    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.ScopeNotCamelCaps
     private function get_parent_path($tab, $final_label='')
     {
-
+        //phpcs:enable
 		if(empty($final_label)) $final_label = $tab['label'];
 
 		if(empty($tab['parent_id'])) return $final_label;
@@ -268,7 +266,7 @@ class FormProduct
             print '<tr><td>';
             print $this->selectWarehouses($selected, $htmlname, '', $addempty);
             print '</td>';
-            print '<td align="left"><input type="submit" class="button" value="'.$langs->trans("Modify").'"></td>';
+            print '<td class="left"><input type="submit" class="button" value="'.$langs->trans("Modify").'"></td>';
             print '</tr></table></form>';
         } else {
             if ($selected) {
@@ -282,6 +280,7 @@ class FormProduct
         }
     }
 
+    // phpcs:disable PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	/**
 	 *  Output a combo box with list of units
 	 *  pour l'instant on ne definit pas les unites dans la base
@@ -292,12 +291,13 @@ class FormProduct
 	 * 	@param	int			$adddefault			Add empty unit called "Default"
 	 * 	@return	void
 	 */
-    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function select_measuring_units($name='measuring_units', $measuring_style='', $default='0', $adddefault=0)
 	{
+        //phpcs:enable
 		print $this->load_measuring_units($name, $measuring_style, $default, $adddefault);
 	}
 
+    // phpcs:disable PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	/**
 	 *  Return a combo box with list of units
 	 *  For the moment, units labels are defined in measuring_units_string
@@ -308,9 +308,9 @@ class FormProduct
 	 * 	@param	int			$adddefault			Add empty unit called "Default"
 	 * 	@return	string
 	 */
-    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	function load_measuring_units($name='measuring_units', $measuring_style='', $default='0', $adddefault=0)
 	{
+        //phpcs:enable
 		global $langs,$conf,$mysoc;
 		$langs->load("other");
 

@@ -35,13 +35,13 @@ class MailingTargets // This can't be abstract as it is used for some method
      * @var DoliDB Database handler.
      */
     public $db;
-    
+
     /**
 	 * @var string Error code (or message)
 	 */
 	public $error='';
-	
-    var $tooltip='';
+
+    public $tooltip='';
 
 
     /**
@@ -117,15 +117,16 @@ class MailingTargets // This can't be abstract as it is used for some method
         return '';
     }
 
+    // phpcs:disable PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
     /**
      * Met a jour nombre de destinataires
      *
      * @param	int		$mailing_id          Id of emailing
      * @return  int			                 < 0 si erreur, nb destinataires si ok
      */
-    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
     function update_nb($mailing_id)
     {
+        // phpcs:enable
         // Mise a jour nombre de destinataire dans table des mailings
         $sql = "SELECT COUNT(*) nb FROM ".MAIN_DB_PREFIX."mailing_cibles";
         $sql .= " WHERE fk_mailing = ".$mailing_id;
@@ -150,6 +151,7 @@ class MailingTargets // This can't be abstract as it is used for some method
         return $nb;
     }
 
+    // phpcs:disable PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
     /**
      * Ajoute destinataires dans table des cibles
      *
@@ -157,14 +159,14 @@ class MailingTargets // This can't be abstract as it is used for some method
      * @param   array	$cibles        Array with targets
      * @return  int      			   < 0 si erreur, nb ajout si ok
      */
-    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
     function add_to_target($mailing_id, $cibles)
     {
+        // phpcs:enable
     	global $conf;
 
     	$this->db->begin();
 
-        // Insert emailing targest from array into database
+        // Insert emailing targets from array into database
         $j = 0;
         $num = count($cibles);
         foreach ($cibles as $targetarray)
@@ -209,6 +211,7 @@ class MailingTargets // This can't be abstract as it is used for some method
 
         dol_syslog(get_class($this)."::".__METHOD__.": mailing ".$j." targets added");
 
+        /*
         //Update the status to show thirdparty mail that don't want to be contacted anymore'
         $sql = "UPDATE ".MAIN_DB_PREFIX."mailing_cibles";
         $sql .= " SET statut=3";
@@ -217,8 +220,6 @@ class MailingTargets // This can't be abstract as it is used for some method
         dol_syslog(get_class($this)."::".__METHOD__.": mailing update status to display thirdparty mail that do not want to be contacted");
         $result=$this->db->query($sql);
 
-
-
         //Update the status to show contact mail that don't want to be contacted anymore'
         $sql = "UPDATE ".MAIN_DB_PREFIX."mailing_cibles";
         $sql .= " SET statut=3";
@@ -226,23 +227,36 @@ class MailingTargets // This can't be abstract as it is used for some method
         $sql .= " INNER JOIN ".MAIN_DB_PREFIX."societe s ON s.rowid=sc.fk_soc WHERE s.fk_stcomm=-1 OR no_email=1))";
         dol_syslog(get_class($this)."::".__METHOD__.": mailing update status to display contact mail that do not want to be contacted",LOG_DEBUG);
         $result=$this->db->query($sql);
+		*/
 
+        $sql = "UPDATE ".MAIN_DB_PREFIX."mailing_cibles";
+        $sql .= " SET statut=3";
+        $sql .= " WHERE fk_mailing=".$mailing_id." AND email IN (SELECT mu.email FROM ".MAIN_DB_PREFIX."mailing_unsubscribe AS mu WHERE mu.entity IN ('".getEntity('mailing')."'))";
+
+        dol_syslog(get_class($this)."::".__METHOD__.":mailing update status to display emails that do not want to be contacted anymore", LOG_DEBUG);
+        $result=$this->db->query($sql);
+        if (! $result)
+        {
+        	dol_print_error($this->db);
+        }
 
         $this->update_nb($mailing_id);
 
         $this->db->commit();
+
         return $j;
     }
 
+    // phpcs:disable PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
     /**
      *  Supprime tous les destinataires de la table des cibles
      *
-     *	@param	int		$mailing_id        Id of emailing
+     *	@param  int		$mailing_id        Id of emailing
      *	@return	void
      */
-    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
     function clear_target($mailing_id)
     {
+        // phpcs:enable
         $sql = "DELETE FROM ".MAIN_DB_PREFIX."mailing_cibles";
         $sql .= " WHERE fk_mailing = ".$mailing_id;
 

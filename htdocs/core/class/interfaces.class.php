@@ -1,7 +1,7 @@
 <?php
 /* Copyright (C) 2005-2009 Laurent Destailleur  <eldy@users.sourceforge.net>
  * Copyright (C) 2006      Rodolphe Quiedeville <rodolphe@quiedeville.org>
- * Copyright (C) 2010      Regis Houssin        <regis.houssin@capnetworks.com>
+ * Copyright (C) 2010      Regis Houssin        <regis.houssin@inodbox.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,9 +35,9 @@ class Interfaces
      * @var DoliDB Database handler.
      */
     public $db;
-    
+
 	var $dir;				// Directory with all core and external triggers files
-	
+
     /**
 	 * @var string[] Error codes (or messages)
 	 */
@@ -53,6 +53,7 @@ class Interfaces
         $this->db = $db;
     }
 
+    // phpcs:disable PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
     /**
      *   Function called when a Dolibarr business event occurs
      *   This function call all qualified triggers.
@@ -60,13 +61,13 @@ class Interfaces
      *   @param		string		$action     Trigger event code
      *   @param     object		$object     Objet concerned. Some context information may also be provided into array property object->context.
      *   @param     User		$user       Objet user
-     *   @param     Lang		$langs      Objet lang
+     *   @param     Translate	$langs      Objet lang
      *   @param     Conf		$conf       Objet conf
      *   @return    int         			Nb of triggers ran if no error, -Nb of triggers with errors otherwise.
      */
-    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
     function run_triggers($action,$object,$user,$langs,$conf)
     {
+        // phpcs:enable
         // Check parameters
         if (! is_object($object) || ! is_object($conf))	// Error
         {
@@ -85,6 +86,7 @@ class Interfaces
             global $db;
             $user = new User($db);
         }
+        //dol_syslog(get_class($this)."::run_triggers action=".$action." Launch run_triggers", LOG_DEBUG);
 
         $nbfile = $nbtotal = $nbok = $nbko = 0;
 
@@ -92,6 +94,7 @@ class Interfaces
         $modules = array();
         $orders = array();
 		$i=0;
+
 
 		$dirtriggers=array_merge(array('/core/triggers'),$conf->modules_parts['triggers']);
         foreach($dirtriggers as $reldir)

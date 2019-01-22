@@ -1,7 +1,7 @@
 <?php
 /* Copyright (C) 2003-2004 Rodolphe Quiedeville <rodolphe@quiedeville.org>
  * Copyright (C) 2004-2011 Laurent Destailleur  <eldy@users.sourceforge.net>
- * Copyright (C) 2005-2012 Regis Houssin        <regis.houssin@capnetworks.com>
+ * Copyright (C) 2005-2012 Regis Houssin        <regis.houssin@inodbox.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -346,7 +346,7 @@ if (! empty($conf->supplier_proposal->enabled) && $user->rights->supplier_propos
 				$companystatic->name=$obj->socname;
 				$companystatic->client=$obj->client;
 				$companystatic->canvas=$obj->canvas;
-				print '<td align="left">'.$companystatic->getNomUrl(1,'customer',44).'</td>'."\n";
+				print '<td class="left">'.$companystatic->getNomUrl(1,'customer',44).'</td>'."\n";
 
 				print '<td align="right">';
 				print dol_print_date($db->jdate($obj->dp),'day').'</td>'."\n";

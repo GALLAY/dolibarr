@@ -1,6 +1,6 @@
 <?php
 /* Copyright (C) 2007-2010 Laurent Destailleur  <eldy@users.sourceforge.net>
- * Copyright (C) 2007-2015 Regis Houssin        <regis.houssin@capnetworks.com>
+ * Copyright (C) 2007-2015 Regis Houssin        <regis.houssin@inodbox.com>
  * Copyright (C) 2012      Christophe Battarel  <christophe.battarel@altairis.fr>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -58,7 +58,7 @@ function ajax_autocompleter($selected, $htmlname, $url, $urloption='', $minLengt
 	$script = '<input type="hidden" name="'.$htmlname.'" id="'.$htmlname.'" value="'.$selected.'" />';
 
 	$script.= '<!-- Javascript code for autocomplete of field '.$htmlname.' -->'."\n";
-	$script.= '<script type="text/javascript">'."\n";
+	$script.= '<script>'."\n";
 	$script.= '$(document).ready(function() {
 					var autoselect = '.$autoselect.';
 					var options = '.json_encode($ajaxoptions).';
@@ -224,7 +224,7 @@ function ajax_autocompleter($selected, $htmlname, $url, $urloption='', $minLengt
 function ajax_multiautocompleter($htmlname, $fields, $url, $option='', $minLength=2, $autoselect=0)
 {
 	$script = '<!-- Autocomplete -->'."\n";
-	$script.= '<script type="text/javascript">';
+	$script.= '<script>';
 	$script.= 'jQuery(document).ready(function() {
 					var fields = '.json_encode($fields).';
 					var nboffields = fields.length;
@@ -336,7 +336,7 @@ function ajax_dialog($title,$message,$w=350,$h=150)
 	$msg= '<div id="dialog-info" title="'.dol_escape_htmltag($newtitle).'">';
 	$msg.= $message;
 	$msg.= '</div>'."\n";
-    $msg.= '<script type="text/javascript">
+    $msg.= '<script>
     jQuery(function() {
         jQuery("#dialog-info").dialog({
 	        resizable: false,
@@ -377,17 +377,18 @@ function ajax_combobox($htmlname, $events=array(), $minLengthToAutocomplete=0, $
 
 	// select2 disabled for smartphones with standard browser.
 	// TODO With select2 v4, it seems ok, except that responsive style on table become crazy when scrolling at end of array)
-	if ($conf->browser->layout == 'phone') return '';
+	if (! empty($conf->browser->layout) && $conf->browser->layout == 'phone') return '';
 
 	if (! empty($conf->global->MAIN_DISABLE_AJAX_COMBOX)) return '';
 	if (empty($conf->use_javascript_ajax)) return '';
 	if (empty($conf->global->MAIN_USE_JQUERY_MULTISELECT) && ! defined('REQUIRE_JQUERY_MULTISELECT')) return '';
+	if (! empty($conf->global->MAIN_OPTIMIZEFORTEXTBROWSER)) return '';
 
 	if (empty($minLengthToAutocomplete)) $minLengthToAutocomplete=0;
 
     $tmpplugin='select2';
     $msg="\n".'<!-- JS CODE TO ENABLE '.$tmpplugin.' for id = '.$htmlname.' -->
-          <script type="text/javascript">
+          <script>
         	$(document).ready(function () {
         		$(\''.(preg_match('/^\./',$htmlname)?$htmlname:'#'.$htmlname).'\').'.$tmpplugin.'({
         		    dir: \'ltr\',
@@ -494,7 +495,7 @@ function ajax_constantonoff($code, $input=array(), $entity=null, $revertonoff=0,
 	else
 	{
 		$out= "\n<!-- Ajax code to switch constant ".$code." -->".'
-		<script type="text/javascript">
+		<script>
 			$(document).ready(function() {
 				var input = '.json_encode($input).';
 				var url = \''.DOL_URL_ROOT.'/core/ajax/constantonoff.php\';
@@ -546,13 +547,13 @@ function ajax_constantonoff($code, $input=array(), $entity=null, $revertonoff=0,
  *  @param  string  $text_on    Text if on
  *  @param  string  $text_off   Text if off
  *  @param  array   $input      Array of type->list of CSS element to switch. Example: array('disabled'=>array(0=>'cssid'))
- *  @return void
+ *  @return string              html for button on/off
  */
 function ajax_object_onoff($object, $code, $field, $text_on, $text_off, $input=array())
 {
     global $langs;
 
-    $out= '<script type="text/javascript">
+    $out= '<script>
         $(function() {
             var input = '.json_encode($input).';
 

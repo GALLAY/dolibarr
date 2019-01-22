@@ -25,6 +25,7 @@
 
 // Put here all includes required by your class file
 require_once DOL_DOCUMENT_ROOT."/core/class/commonobject.class.php";
+require_once DOL_DOCUMENT_ROOT."/reception/class/reception.class.php";
 //require_once DOL_DOCUMENT_ROOT."/societe/class/societe.class.php";
 //require_once DOL_DOCUMENT_ROOT."/product/class/product.class.php";
 
@@ -65,10 +66,26 @@ class CommandeFournisseurDispatch extends CommonObject
 	 */
 	public $id;
 
+	/**
+     * @var int ID
+     */
 	public $fk_commande;
+
+	/**
+     * @var int ID
+     */
 	public $fk_product;
+
+	/**
+     * @var int ID
+     */
 	public $fk_commandefourndet;
+
 	public $qty;
+
+	/**
+     * @var int ID
+     */
 	public $fk_entrepot;
 
 	/**
@@ -78,7 +95,12 @@ class CommandeFournisseurDispatch extends CommonObject
 
 	public $datec='';
 	public $comment;
+
+	/**
+	 * @var int Status
+	 */
 	public $status;
+
 	public $tms='';
 	public $batch;
 	public $eatby='';
@@ -103,8 +125,6 @@ class CommandeFournisseurDispatch extends CommonObject
         $this->statutshort[0] = 'Received';
         $this->statutshort[1] = 'Verified';
         $this->statutshort[2] = 'Denied';
-
-        return 1;
     }
 
 
@@ -117,7 +137,7 @@ class CommandeFournisseurDispatch extends CommonObject
      */
     function create($user, $notrigger=0)
     {
-    	global $conf, $langs;
+    	global $conf, $langs, $hookmanager;
 		$error=0;
 
 		// Clean parameters
@@ -131,6 +151,8 @@ class CommandeFournisseurDispatch extends CommonObject
 		if (isset($this->comment)) $this->comment=trim($this->comment);
 		if (isset($this->status)) $this->status=trim($this->status);
 		if (isset($this->batch)) $this->batch=trim($this->batch);
+		if(empty($this->datec)) $this->datec = dol_now();
+
 
 		// Check parameters
 		// Put here code to add control on parameters values
@@ -148,7 +170,10 @@ class CommandeFournisseurDispatch extends CommonObject
 		$sql.= "status,";
 		$sql.= "batch,";
 		$sql.= "eatby,";
-		$sql.= "sellby";
+		$sql.= "sellby,";
+		$sql.= "fk_reception";
+
+
         $sql.= ") VALUES (";
 		$sql.= " ".(! isset($this->fk_commande)?'NULL':"'".$this->db->escape($this->fk_commande)."'").",";
 		$sql.= " ".(! isset($this->fk_product)?'NULL':"'".$this->db->escape($this->fk_product)."'").",";
@@ -161,7 +186,8 @@ class CommandeFournisseurDispatch extends CommonObject
 		$sql.= " ".(! isset($this->status)?'NULL':"'".$this->db->escape($this->status)."'").",";
 		$sql.= " ".(! isset($this->batch)?'NULL':"'".$this->db->escape($this->batch)."'").",";
 		$sql.= " ".(! isset($this->eatby) || dol_strlen($this->eatby)==0?'NULL':"'".$this->db->idate($this->eatby)."'").",";
-		$sql.= " ".(! isset($this->sellby) || dol_strlen($this->sellby)==0?'NULL':"'".$this->db->idate($this->sellby)."'")."";
+		$sql.= " ".(! isset($this->sellby) || dol_strlen($this->sellby)==0?'NULL':"'".$this->db->idate($this->sellby)."'").",";
+		$sql.= " ".(! isset($this->fk_reception)?'NULL':"'".$this->db->escape($this->fk_reception)."'")."";
 		$sql.= ")";
 
 		$this->db->begin();
@@ -183,6 +209,24 @@ class CommandeFournisseurDispatch extends CommonObject
 	            //$result=$this->call_trigger('MYOBJECT_CREATE',$user);
 	            //if ($result < 0) { $error++; //Do also what you must do to rollback action if trigger fail}
 	            //// End call triggers
+			}
+        }
+
+		// Actions on extra fields (by external module or standard code)
+		// TODO le hook fait double emploi avec le trigger !!
+		$hookmanager->initHooks(array('commandefournisseurdispatchdao'));
+		$parameters=array('id'=>$this->id);
+		$reshook=$hookmanager->executeHooks('insertExtraFields',$parameters,$this,$action);    // Note that $action and $object may have been modified by some hooks
+		if (empty($reshook))
+		{
+			if (empty($conf->global->MAIN_EXTRAFIELDS_DISABLED)) // For avoid conflicts if trigger used
+			{
+				$result=$this->insertExtraFields();
+
+				if ($result < 0)
+				{
+					$error++;
+				}
 			}
         }
 
@@ -230,7 +274,8 @@ class CommandeFournisseurDispatch extends CommonObject
 		$sql.= " t.tms,";
 		$sql.= " t.batch,";
 		$sql.= " t.eatby,";
-		$sql.= " t.sellby";
+		$sql.= " t.sellby,";
+		$sql.= " t.fk_reception";
 
 
         $sql.= " FROM ".MAIN_DB_PREFIX.$this->table_element." as t";
@@ -260,8 +305,6 @@ class CommandeFournisseurDispatch extends CommonObject
 				$this->batch = $obj->batch;
 				$this->eatby = $this->db->jdate($obj->eatby);
 				$this->sellby = $this->db->jdate($obj->sellby);
-
-
             }
             $this->db->free($resql);
 
@@ -332,14 +375,21 @@ class CommandeFournisseurDispatch extends CommonObject
 
 		if (! $error)
 		{
+			if (empty($conf->global->MAIN_EXTRAFIELDS_DISABLED)) // For avoid conflicts if trigger used
+			{
+				if(empty($this->id) && !empty($this->rowid))$this->id=$this->rowid;
+				$result=$this->insertExtraFields();
+				if ($result < 0)
+				{
+					$error++;
+				}
+			}
+
 			if (! $notrigger)
 			{
 	            // Uncomment this and change MYOBJECT to your own tag if you
-	            // want this action calls a trigger.
-
-	            //// Call triggers
-	            //$result=$this->call_trigger('MYOBJECT_MODIFY',$user);
-	            //if ($result < 0) { $error++; //Do also what you must do to rollback action if trigger fail}
+	            $result=$this->call_trigger('LINERECEPTION_UPDATE',$user);
+	            if ($result < 0) $error++;
 	            //// End call triggers
 			 }
 		}
@@ -446,6 +496,7 @@ class CommandeFournisseurDispatch extends CommonObject
 		// ...
 
 		// Create clone
+		$object->context['createfromclone'] = 'createfromclone';
 		$result=$object->create($user);
 
 		// Other options
@@ -458,8 +509,9 @@ class CommandeFournisseurDispatch extends CommonObject
 		if (! $error)
 		{
 
-
 		}
+
+		unset($object->context['createfromclone']);
 
 		// End
 		if (! $error)
@@ -487,6 +539,7 @@ class CommandeFournisseurDispatch extends CommonObject
         return $this->LibStatut($this->status,$mode);
     }
 
+    // phpcs:disable PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
     /**
      *  Return label of a status
      *
@@ -494,9 +547,9 @@ class CommandeFournisseurDispatch extends CommonObject
      *  @param  int		$mode       0=Long label, 1=Short label, 2=Picto + Short label, 3=Picto, 4=Picto + Long label, 5=Short label + Picto
      *  @return string				Label of status
      */
-    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
     function LibStatut($statut,$mode=0)
     {
+        // phpcs:enable
         global $langs;
         $langs->load('orders');
 
@@ -504,27 +557,27 @@ class CommandeFournisseurDispatch extends CommonObject
         {
             return $langs->trans($this->statuts[$statut]);
         }
-        if ($mode == 1)
+        elseif ($mode == 1)
         {
             return $langs->trans($this->statutshort[$statut]);
         }
-        if ($mode == 2)
+        elseif ($mode == 2)
         {
             return $langs->trans($this->statuts[$statut]);
         }
-        if ($mode == 3)
+        elseif ($mode == 3)
         {
             if ($statut==0) return img_picto($langs->trans($this->statuts[$statut]),'statut0');
             if ($statut==1) return img_picto($langs->trans($this->statuts[$statut]),'statut4');
             if ($statut==2) return img_picto($langs->trans($this->statuts[$statut]),'statut8');
         }
-        if ($mode == 4)
+        elseif ($mode == 4)
         {
             if ($statut==0) return img_picto($langs->trans($this->statuts[$statut]),'statut0').' '.$langs->trans($this->statuts[$statut]);
             if ($statut==1) return img_picto($langs->trans($this->statuts[$statut]),'statut4').' '.$langs->trans($this->statuts[$statut]);
             if ($statut==2) return img_picto($langs->trans($this->statuts[$statut]),'statut8').' '.$langs->trans($this->statuts[$statut]);
         }
-        if ($mode == 5)
+        elseif ($mode == 5)
         {
             if ($statut==0) return '<span class="hideonsmartphone">'.$langs->trans($this->statutshort[$statut]).' </span>'.img_picto($langs->trans($this->statuts[$statut]),'statut0');
             if ($statut==1) return '<span class="hideonsmartphone">'.$langs->trans($this->statutshort[$statut]).' </span>'.img_picto($langs->trans($this->statuts[$statut]),'statut4');

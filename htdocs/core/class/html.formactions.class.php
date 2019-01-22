@@ -1,6 +1,6 @@
 <?php
 /* Copyright (c) 2008-2012 Laurent Destailleur  <eldy@users.sourceforge.net>
- * Copyright (C) 2010-2012 Regis Houssin        <regis.houssin@capnetworks.com>
+ * Copyright (C) 2010-2012 Regis Houssin        <regis.houssin@inodbox.com>
  * Copyright (C) 2010-2018 Juanjo Menent        <jmenent@2byte.es>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -33,7 +33,7 @@ class FormActions
      * @var DoliDB Database handler.
      */
     public $db;
-    
+
     /**
 	 * @var string Error code (or message)
 	 */
@@ -48,10 +48,10 @@ class FormActions
     function __construct($db)
     {
         $this->db = $db;
-        return 1;
     }
 
 
+    // phpcs:disable PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
     /**
      *  Show list of action status
      *
@@ -64,9 +64,9 @@ class FormActions
      *  @param  string  $morecss        More css on select field
      * 	@return	void
      */
-    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
     function form_select_status_action($formname, $selected, $canedit=1, $htmlname='complete', $showempty=0, $onlyselect=0, $morecss='maxwidth100')
     {
+        // phpcs:enable
         global $langs,$conf;
 
         $listofstatus = array(
@@ -218,14 +218,14 @@ class FormActions
         	$total = 0;
 
         	print '<div class="div-table-responsive-no-min">';
-        	print '<table class="noborder'.($morecss?' '.$morecss:'').'" width="100%">';
+        	print '<table class="centpercent noborder'.($morecss?' '.$morecss:'').'">';
         	print '<tr class="liste_titre">';
         	print getTitleFieldOfList('Ref',   0, $_SERVER["PHP_SELF"], '', $page, $param, '', $sortfield, $sortorder, '', 1);
         	print getTitleFieldOfList('By',    0, $_SERVER["PHP_SELF"], '', $page, $param, '', $sortfield, $sortorder, '', 1);
         	print getTitleFieldOfList('Type',  0, $_SERVER["PHP_SELF"], '', $page, $param, '', $sortfield, $sortorder, '', 1);
         	print getTitleFieldOfList('Title', 0, $_SERVER["PHP_SELF"], '', $page, $param, '', $sortfield, $sortorder, '', 1);
-        	print getTitleFieldOfList('Date',  0, $_SERVER["PHP_SELF"], 'a.datep', $page, $param, 'align="center"', $sortfield, $sortorder, '', 1);
-        	print getTitleFieldOfList('',      0, $_SERVER["PHP_SELF"], '', $page, $param, 'align="right"', $sortfield, $sortorder, '', 1);
+        	print getTitleFieldOfList('Date',  0, $_SERVER["PHP_SELF"], 'a.datep', $page, $param, '', $sortfield, $sortorder, 'center ', 1);
+        	print getTitleFieldOfList('',      0, $_SERVER["PHP_SELF"], '', $page, $param, '', $sortfield, $sortorder, 'right ', 1);
         	print '</tr>';
         	print "\n";
 
@@ -243,13 +243,13 @@ class FormActions
 
 	        		print '<tr class="oddeven">';
 	        		// Ref
-					print '<td>'.$ref.'</td>';
+					print '<td class="nowraponall">'.$ref.'</td>';
 					// Onwer
 	        		print '<td>';
 	        		if (! empty($action->userownerid))
 	        		{
 	        			$userstatic->fetch($action->userownerid);	// TODO Introduce a cache on users fetched
-	        			print $userstatic->getNomUrl(-1, '', 0, 0, 16, 0, '', '');
+	        			print $userstatic->getNomUrl(-1, '', 0, 0, 16, 0, 'firstelselast', '');
 	        		}
 	        		print '</td>';
 					// Type
@@ -273,7 +273,7 @@ class FormActions
 	        		// Label
 	        		print '<td>'.$label.'</td>';
 	        		// Date
-	        		print '<td align="center">'.dol_print_date($action->datep, 'dayhour', 'tzuserrel');
+	        		print '<td class="center">'.dol_print_date($action->datep, 'dayhour', 'tzuserrel');
 	        		if ($action->datef)
 	        		{
 		        		$tmpa=dol_getdate($action->datep);
@@ -285,7 +285,7 @@ class FormActions
 		        		else print '-'.dol_print_date($action->datef, 'dayhour', 'tzuserrel');
 	        		}
 	        		print '</td>';
-	        		print '<td align="right">';
+	        		print '<td class="right">';
 	        		if (! empty($action->author->id))
 	        		{
 	        			print $action->getLibStatut(3);
@@ -314,6 +314,7 @@ class FormActions
     }
 
 
+    // phpcs:disable PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
     /**
      *  Output html select list of type of event
      *
@@ -326,12 +327,12 @@ class FormActions
      *  @param  int             $nooutput       1=No output
      * 	@return	string
      */
-    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
     function select_type_actions($selected='', $htmlname='actioncode', $excludetype='', $onlyautoornot=0, $hideinfohelp=0, $multiselect=0, $nooutput=0)
     {
+        // phpcs:enable
         global $langs,$user,$form,$conf;
 
-        if (! is_object($form)) $form=new Form($db);
+        if (! is_object($form)) $form=new Form($this->db);
 
         require_once DOL_DOCUMENT_ROOT.'/comm/action/class/cactioncomm.class.php';
         require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
@@ -356,7 +357,7 @@ class FormActions
 		}
 		else
 		{
-			$out.=$form->selectarray($htmlname, $arraylist, $selected, 0, 0, 0, '', 0, 0, 0, '', '', 1);
+			$out.=$form->selectarray($htmlname, $arraylist, $selected, 0, 0, 0, '', 0, 0, 0, '', 'minwidth200', 1);
 		}
 
         if ($user->admin && empty($onlyautoornot) && $hideinfohelp <= 0)

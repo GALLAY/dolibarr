@@ -37,7 +37,7 @@ class mailing_example extends MailingTargets
 
     var $require_module=array();
     var $picto='';
-    
+
     /**
      * @var DoliDB Database handler.
      */
@@ -56,16 +56,16 @@ class mailing_example extends MailingTargets
     }
 
 
+    // phpcs:disable PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
     /**
      *  This is the main function that returns the array of emails
      *
      *  @param	int		$mailing_id    	Id of mailing. No need to use it.
-     *  @param  array	$filtersarray   If you used the formFilter function. Empty otherwise.
      *  @return int           			<0 if error, number of emails added if ok
      */
-    // phpcs:ignore PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
-    function add_to_target($mailing_id,$filtersarray=array())
+    function add_to_target($mailing_id)
     {
+        // phpcs:enable
         $target = array();
 
 	    // CHANGE THIS
@@ -112,7 +112,7 @@ class mailing_example extends MailingTargets
      */
     function getNbOfRecipients($sql='')
     {
-	    // CHANGE THIS: Optionnal
+        // CHANGE THIS: Optionnal
 
         // Example: return parent::getNbOfRecipients("SELECT count(*) as nb from dolibarr_table");
         // Example: return 500;
@@ -127,7 +127,7 @@ class mailing_example extends MailingTargets
      */
     function formFilter()
     {
-	    // CHANGE THIS: Optionnal
+        // CHANGE THIS: Optionnal
 
         $s='';
         return $s;
@@ -143,7 +143,7 @@ class mailing_example extends MailingTargets
      */
     function url($id)
     {
-	    // CHANGE THIS: Optionnal
+        // CHANGE THIS: Optionnal
 
         return '';
     }
