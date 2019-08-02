@@ -48,22 +48,22 @@ if (isset($_POST['caching'])) {
     } else {
         eaccelerator_caching(true);
     }
-} else if (isset($_POST['optimizer']) && function_exists('eaccelerator_optimizer')) {
+} elseif (isset($_POST['optimizer']) && function_exists('eaccelerator_optimizer')) {
     if ($info['optimizer']) {
         eaccelerator_optimizer(false);
     } else {
         eaccelerator_optimizer(true);
     }
-} else if (isset($_POST['clear'])) {
+} elseif (isset($_POST['clear'])) {
     eaccelerator_clear();
-} else if (isset($_POST['clean'])) {
+} elseif (isset($_POST['clean'])) {
     eaccelerator_clean();
-} else if (isset($_POST['purge'])) {
+} elseif (isset($_POST['purge'])) {
     eaccelerator_purge();
 }
 $info = eaccelerator_info();
 if (!is_array($info)) {
-    dol_print_error('','An error occured getting eAccelerator information, this is caused if eAccelerator isn\'t initalised properly');
+    dol_print_error('', 'An error occured getting eAccelerator information, this is caused if eAccelerator isn\'t initalised properly');
     exit;
 }
 
@@ -81,7 +81,7 @@ function compare($x, $y)
 
     if ( $x[$sortby] == $y[$sortby] ) {
         return 0;
-    } else if ($x[$sortby] < $y[$sortby]) {
+    } elseif ($x[$sortby] < $y[$sortby]) {
         return -1;
     } else {
         return 1;
@@ -101,7 +101,7 @@ function revcompare($x, $y)
 
     if ($x[$sortby] == $y[$sortby]) {
         return 0;
-    } else if ($x[$sortby] < $y[$sortby]) {
+    } elseif ($x[$sortby] < $y[$sortby]) {
         return 1;
     } else {
         return -1;
@@ -172,11 +172,11 @@ function create_script_table($list)
 
     foreach($list as $script) {
         print '<tr class="oddeven">';
-        print '<td>'.dol_trunc($script['file'],80,'left').'</td>';
-        print '<td align="center" class="nowrap">'.dol_print_date($script['mtime'],'dayhour').'</td>';
-        print '<td class="right" class="nowrap">'.number_format($script['size'] / 1024, 2).'KB</td>';
-        print '<td class="right" class="nowrap">'.$script['reloads'].' ('.$script['usecount'].')</td>';
-        print '<td class="right" class="nowrap">'.$script['hits'].'</td>';
+        print '<td>'.dol_trunc($script['file'], 80, 'left').'</td>';
+        print '<td class="nowrap center">'.dol_print_date($script['mtime'], 'dayhour').'</td>';
+        print '<td class="nowrap right">'.number_format($script['size'] / 1024, 2).'KB</td>';
+        print '<td class="nowrap right">'.$script['reloads'].' ('.$script['usecount'].')</td>';
+        print '<td class="nowrap right">'.$script['hits'].'</td>';
         print '</tr>';
     }
     print '</table>';
@@ -202,16 +202,16 @@ function create_key_table($list)
 
     foreach($list as $key) {
         print '<tr class="oddeven">';
-        print '<td>'.dol_trunc($key['name'],80,'left').'</td>';
-        print '<td align="center" class="nowrap">'.dol_print_date($key['created'],'dayhour').'</td>';
-        print '<td class="right" class="nowrap">'.number_format($key['size']/1024, 3).'KB</td>';
-        print '<td class="right" class="nowrap">';
+        print '<td>'.dol_trunc($key['name'], 80, 'left').'</td>';
+        print '<td class="nowrap center">'.dol_print_date($key['created'], 'dayhour').'</td>';
+        print '<td class="nowrap right">'.number_format($key['size']/1024, 3).'KB</td>';
+        print '<td class="nowrap right">';
         if ($key['ttl'] == -1) {
             print 'expired';
         } elseif ($key['ttl'] == 0) {
             print 'none';
         } else {
-            print dol_print_date($key['ttl'],'dayhour');
+            print dol_print_date($key['ttl'], 'dayhour');
         }
         print '</td>';
         print '</tr>';
@@ -221,7 +221,7 @@ function create_key_table($list)
 
 
 $form=new Form($db);
-print load_fiche_titre('Dolibarr eAccelerator '.$info['version'].' control panel','','title_setup');
+print load_fiche_titre('Dolibarr eAccelerator '.$info['version'].' control panel', '', 'title_setup');
 
 print '<br>';
 
