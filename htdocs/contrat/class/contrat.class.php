@@ -23,7 +23,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
 /**
@@ -95,6 +95,12 @@ class Contrat extends CommonObject
 	 * @var string
 	 */
 	public $ref_supplier;
+
+    /**
+     * Entity of the contract
+     * @var int
+     */
+    public $entity;
 
 	/**
 	 * Client id linked to the contract
@@ -215,7 +221,6 @@ class Contrat extends CommonObject
 			$dirmodels = array_merge(array('/'), (array) $conf->modules_parts['models']);
 
 			foreach ($dirmodels as $reldir) {
-
 				$dir = dol_buildpath($reldir."core/modules/contract/");
 
 				// Load file with numbering class (if found)
@@ -617,13 +622,14 @@ class Contrat extends CommonObject
 	 *    @param	string	$ref			Ref
 	 *    @param	string	$ref_customer	Customer ref
 	 *    @param	string	$ref_supplier	Supplier ref
-	 *    @return   int     				<0 if KO, 0 if not found, Id of contract if OK
+	 *    @return   int     				<0 if KO, 0 if not found or if two records found for same ref, Id of contract if OK
 	 */
 	public function fetch($id, $ref = '', $ref_customer = '', $ref_supplier = '')
 	{
 		$sql = "SELECT rowid, statut, ref, fk_soc, mise_en_service as datemise,";
 		$sql.= " ref_supplier, ref_customer,";
 		$sql.= " ref_ext,";
+        $sql.= " entity,";
 		$sql.= " fk_user_mise_en_service, date_contrat as datecontrat,";
 		$sql.= " fk_user_author, fin_validite, date_cloture,";
 		$sql.= " fk_projet as fk_project,";
@@ -649,57 +655,67 @@ class Contrat extends CommonObject
 		$resql = $this->db->query($sql);
 		if ($resql)
 		{
-			$obj = $this->db->fetch_object($resql);
-
-			if ($obj)
+			$num=$this->db->num_rows($resql);
+			if ($num > 1)
 			{
-				$this->id						= $obj->rowid;
-				$this->ref						= (!isset($obj->ref) || !$obj->ref) ? $obj->rowid : $obj->ref;
-				$this->ref_customer				= $obj->ref_customer;
-				$this->ref_supplier				= $obj->ref_supplier;
-				$this->ref_ext					= $obj->ref_ext;
-				$this->statut					= $obj->statut;
-				$this->mise_en_service			= $this->db->jdate($obj->datemise);
-
-				$this->date_contrat				= $this->db->jdate($obj->datecontrat);
-				$this->date_creation			= $this->db->jdate($obj->datecontrat);
-
-				$this->fin_validite				= $this->db->jdate($obj->fin_validite);
-				$this->date_cloture				= $this->db->jdate($obj->date_cloture);
-
-
-				$this->user_author_id			= $obj->fk_user_author;
-
-				$this->commercial_signature_id = $obj->fk_commercial_signature;
-				$this->commercial_suivi_id		= $obj->fk_commercial_suivi;
-
-				$this->note_private				= $obj->note_private;
-				$this->note_public				= $obj->note_public;
-				$this->modelpdf					= $obj->model_pdf;
-
-				$this->fk_projet				= $obj->fk_project; // deprecated
-				$this->fk_project				= $obj->fk_project;
-
-				$this->socid					= $obj->fk_soc;
-				$this->fk_soc					= $obj->fk_soc;
-
-				$this->extraparams = (array) json_decode($obj->extraparams, true);
-
-				$this->db->free($resql);
-
-				// Retreive all extrafields
-				// fetch optionals attributes and labels
-				$this->fetch_optionals();
-
-				// Lines
-				$result=$this->fetch_lines();
-				if ($result < 0)
+				$this->error='Fetch found several records.';
+				dol_syslog($this->error, LOG_ERR);
+				$result = -2;
+			}
+			elseif ($num)   // $num = 1
+			{
+				$obj = $this->db->fetch_object($resql);
+				if ($obj)
 				{
-					$this->error=$this->db->lasterror();
-					return -3;
-				}
+					$this->id						= $obj->rowid;
+					$this->ref						= (!isset($obj->ref) || !$obj->ref) ? $obj->rowid : $obj->ref;
+					$this->ref_customer				= $obj->ref_customer;
+					$this->ref_supplier				= $obj->ref_supplier;
+					$this->ref_ext					= $obj->ref_ext;
+	                $this->entity                   = $obj->entity;
+					$this->statut					= $obj->statut;
+					$this->mise_en_service			= $this->db->jdate($obj->datemise);
 
-				return $this->id;
+					$this->date_contrat				= $this->db->jdate($obj->datecontrat);
+					$this->date_creation			= $this->db->jdate($obj->datecontrat);
+
+					$this->fin_validite				= $this->db->jdate($obj->fin_validite);
+					$this->date_cloture				= $this->db->jdate($obj->date_cloture);
+
+
+					$this->user_author_id			= $obj->fk_user_author;
+
+					$this->commercial_signature_id = $obj->fk_commercial_signature;
+					$this->commercial_suivi_id		= $obj->fk_commercial_suivi;
+
+					$this->note_private				= $obj->note_private;
+					$this->note_public				= $obj->note_public;
+					$this->modelpdf					= $obj->model_pdf;
+
+					$this->fk_projet				= $obj->fk_project; // deprecated
+					$this->fk_project				= $obj->fk_project;
+
+					$this->socid					= $obj->fk_soc;
+					$this->fk_soc					= $obj->fk_soc;
+
+					$this->extraparams = (array) json_decode($obj->extraparams, true);
+
+					$this->db->free($resql);
+
+					// Retreive all extrafields
+					// fetch optionals attributes and labels
+					$this->fetch_optionals();
+
+					// Lines
+					$result=$this->fetch_lines();
+					if ($result < 0)
+					{
+						$this->error=$this->db->lasterror();
+						return -3;
+					}
+
+					return $this->id;
+				}
 			}
 			else
 			{
@@ -728,8 +744,9 @@ class Contrat extends CommonObject
 	 */
 	public function fetch_lines($only_product = 0, $loadalsotranslation = 0)
 	{
-		global $langs, $conf;
-        // phpcs:enable
+		// phpcs:enable
+		global $langs, $conf, $extrafields;
+
 		$this->nbofserviceswait=0;
 		$this->nbofservicesopened=0;
 		$this->nbofservicesexpired=0;
@@ -741,10 +758,14 @@ class Contrat extends CommonObject
 
 		$now=dol_now();
 
-		require_once DOL_DOCUMENT_ROOT.'/core/class/extrafields.class.php';
-		$extrafieldsline=new ExtraFields($this->db);
+		if (! is_object($extrafields))
+		{
+			require_once DOL_DOCUMENT_ROOT.'/core/class/extrafields.class.php';
+			$extrafields=new ExtraFields($this->db);
+		}
+
 		$line = new ContratLigne($this->db);
-		$extralabelsline=$extrafieldsline->fetch_name_optionals_label($line->table_element, true);
+		$extrafields->fetch_name_optionals_label($line->table_element, true);
 
 		$this->lines=array();
         $pos = 0;
@@ -1390,7 +1411,6 @@ class Contrat extends CommonObject
 
 		if ($this->statut >= 0)
 		{
-
 			// Clean parameters
 			$pu_ht=price2num($pu_ht);
 			$pu_ttc=price2num($pu_ttc);
@@ -1709,7 +1729,6 @@ class Contrat extends CommonObject
 			$result=$this->update_statut($user);
 			if ($result >= 0)
 			{
-
 				if (empty($conf->global->MAIN_EXTRAFIELDS_DISABLED) && is_array($array_options) && count($array_options)>0) // For avoid conflicts if trigger used
 				{
 					$contractline = new ContratLigne($this->db);
@@ -2055,7 +2074,7 @@ class Contrat extends CommonObject
 	 *  Return list of line rowid
 	 *
 	 *  @param	int		$statut     Status of lines to get
-	 *  @return array       		Array of line's rowid
+	 *  @return array|int       	Array of line's rowid or <0 if error
 	 */
 	public function array_detail($statut = -1)
 	{
@@ -2092,7 +2111,7 @@ class Contrat extends CommonObject
 	 *  Return list of other contracts for same company than current contract
 	 *
 	 *	@param	string		$option		'all' or 'others'
-	 *  @return array   				Array of contracts id
+	 *  @return array|int   			Array of contracts id or <0 if error
 	 */
 	public function getListOfContracts($option = 'all')
 	{
@@ -2186,23 +2205,27 @@ class Contrat extends CommonObject
 			if ($mode == 'inactive') {
 				$warning_delay = $conf->contrat->services->inactifs->warning_delay;
 				$label = $langs->trans("BoardNotActivatedServices");
+				$labelShort = $langs->trans("BoardNotActivatedServicesShort");
 				$url = DOL_URL_ROOT.'/contrat/services_list.php?mainmenu=commercial&leftmenu=contracts&mode=0&sortfield=cd.date_fin_validite&sortorder=asc';
 			}
 			elseif ($mode == 'expired') {
 			    $warning_delay = $conf->contrat->services->expires->warning_delay;
 			    $url = DOL_URL_ROOT.'/contrat/services_list.php?mainmenu=commercial&leftmenu=contracts&mode=4&filter=expired&sortfield=cd.date_fin_validite&sortorder=asc';
 			    $label = $langs->trans("BoardExpiredServices");
+			    $labelShort = $langs->trans("BoardExpiredServicesShort");
 			} else {
 				$warning_delay = $conf->contrat->services->expires->warning_delay;
 				$url = DOL_URL_ROOT.'/contrat/services_list.php?mainmenu=commercial&leftmenu=contracts&mode=4&sortfield=cd.date_fin_validite&sortorder=asc';
 				//$url.= '&op2day='.$arraydatetouse['mday'].'&op2month='.$arraydatetouse['mon'].'&op2year='.$arraydatetouse['year'];
 				//if ($warning_delay >= 0) $url.='&amp;filter=expired';
 				$label = $langs->trans("BoardRunningServices");
+				$labelShort = $langs->trans("BoardRunningServicesShort");
 			}
 
 			$response = new WorkboardResponse();
 			$response->warning_delay = $warning_delay/60/60/24;
 			$response->label = $label;
+			$response->labelShort = $labelShort;
 			$response->url = $url;
 			$response->img = img_object('', "contract");
 
@@ -2396,7 +2419,6 @@ class Contrat extends CommonObject
 		$langs->load("contracts");
 
 		if (! dol_strlen($modele)) {
-
 			$modele = 'strato';
 
 			if ($this->modelpdf) {
@@ -2461,7 +2483,7 @@ class Contrat extends CommonObject
 		// Clean extrafields
 		if (is_array($clonedObj->array_options) && count($clonedObj->array_options) > 0)
 		{
-			$extrafields->fetch_name_optionals_label($this->element);
+			$extrafields->fetch_name_optionals_label($this->table_element);
 			foreach($clonedObj->array_options as $key => $option)
 			{
 				$shortkey = preg_replace('/options_/', '', $key);

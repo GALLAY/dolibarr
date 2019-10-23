@@ -16,8 +16,8 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- * or see http://www.gnu.org/
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ * or see https://www.gnu.org/
  */
 
 /**
@@ -39,7 +39,7 @@
 // Protection
 if (empty($objectclass) || empty($uploaddir))
 {
-	dol_print_error(null, 'include of actions_massactions.inc.php is done but var $massaction or $objectclass or $uploaddir was not defined');
+	dol_print_error(null, 'include of actions_massactions.inc.php is done but var $objectclass or $uploaddir was not defined');
 	exit;
 }
 
@@ -71,7 +71,9 @@ if (! $error && $massaction == 'confirm_presend')
 
 	$listofobjectid=array();
 	$listofobjectthirdparties=array();
+	$listofobjectcontacts = array();
 	$listofobjectref=array();
+	$contactidtosend=array();
 	$attachedfilesThirdpartyObj=array();
 	$oneemailperrecipient=(GETPOST('oneemailperrecipient')=='on'?1:0);
 
@@ -97,11 +99,21 @@ if (! $error && $massaction == 'confirm_presend')
 				if ($objecttmp->element == 'holiday')       $thirdpartyid=$objecttmp->fk_user;
 				if (empty($thirdpartyid)) $thirdpartyid=0;
 
-				$listofobjectthirdparties[$thirdpartyid]=$thirdpartyid;
-				$listofobjectref[$thirdpartyid][$toselectid]=$objecttmp;
-			}
-		}
-	}
+				if ($objectclass == 'Facture') {
+					$tmparraycontact = array();
+					$tmparraycontact = $objecttmp->liste_contact(-1, 'external', 0, 'BILLING');
+					if (is_array($tmparraycontact) && count($tmparraycontact) > 0) {
+						foreach ($tmparraycontact as $data_email) {
+							$listofobjectcontacts[$toselectid][$data_email['id']] = $data_email['email'];
+						}
+					}
+				}
+
+                $listofobjectthirdparties[$thirdpartyid]=$thirdpartyid;
+                $listofobjectref[$thirdpartyid][$toselectid]=$objecttmp;
+            }
+        }
+    }
 
 	// Check mandatory parameters
 	if (GETPOST('fromtype', 'alpha') === 'user' && empty($user->email))
@@ -248,6 +260,21 @@ if (! $error && $massaction == 'confirm_presend')
 					    $fuser->fetch($objectobj->fk_user);
 					    $sendto = $fuser->email;
 					}
+					elseif ($objectobj->element == 'facture' && !empty($listofobjectcontacts[$objectid]))
+					{
+						$emails_to_sends = array();
+						$objectobj->fetch_thirdparty();
+						$contactidtosend=array();
+						foreach ($listofobjectcontacts[$objectid] as $contactemailid => $contactemailemail) {
+							$emails_to_sends[] = $objectobj->thirdparty->contact_get_property($contactemailid, 'email');
+							if (!in_array($contactemailid, $contactidtosend)) {
+								$contactidtosend[] = $contactemailid;
+							}
+						}
+						if (count($emails_to_sends) > 0) {
+							$sendto = implode(',', $emails_to_sends);
+						}
+					}
 					else
 					{
 						$objectobj->fetch_thirdparty();
@@ -384,6 +411,10 @@ if (! $error && $massaction == 'confirm_presend')
                 foreach ($looparray as $objectid => $objecttmp)		// $objecttmp is a real object or an empty object if we choose to send one email per thirdparty instead of one per object
 				{
 					// Make substitution in email content
+					if (! empty($conf->projet->enabled) && method_exists($objecttmp, 'fetch_projet') && is_null($objecttmp->project))
+					{
+						$objecttmp->fetch_projet();
+					}
 					$substitutionarray=getCommonSubstitutionArray($langs, 0, null, $objecttmp);
 					$substitutionarray['__ID__']    = ($oneemailperrecipient ? join(', ', array_keys($listofqualifiedobj)) : $objecttmp->id);
 					$substitutionarray['__REF__']   = ($oneemailperrecipient ? join(', ', $listofqualifiedref) : $objecttmp->ref);
@@ -494,8 +525,8 @@ if (! $error && $massaction == 'confirm_presend')
 								}
 								$actionmsg2='';
 
-								// Initialisation donnees
-                                $objectobj2->sendtoid		= 0;
+                                // Initialisation donnees
+                                $objectobj2->sendtoid		= (empty($contactidtosend)?0:$contactidtosend);
                                 $objectobj2->actionmsg		= $actionmsg;  // Long text
                                 $objectobj2->actionmsg2		= $actionmsg2; // Short text
                                 $objectobj2->fk_element		= $objid2;
@@ -847,7 +878,6 @@ if ($massaction == 'confirm_createbills')   // Create bills from orders
 
 if (!$error && $massaction == 'cancelorders')
 {
-
 	$db->begin();
 
 	$nbok = 0;
@@ -856,7 +886,6 @@ if (!$error && $massaction == 'cancelorders')
 	$orders = GETPOST('toselect', 'array');
 	foreach ($orders as $id_order)
 	{
-
 		$cmd = new Commande($db);
 		if ($cmd->fetch($id_order) <= 0)
 			continue;

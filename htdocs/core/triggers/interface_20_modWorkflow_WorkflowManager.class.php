@@ -14,7 +14,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
 /**
@@ -130,6 +130,7 @@ class InterfaceWorkflowManager extends DolibarrTriggers
         if ($action == 'BILL_VALIDATE')
         {
         	dol_syslog("Trigger '".$this->name."' for action '$action' launched by ".__FILE__.". id=".$object->id);
+        	$ret = 0;
 
 			// First classify billed the order to allow the proposal classify process
 			if (! empty($conf->commande->enabled) && ! empty($conf->workflow->enabled) && ! empty($conf->global->WORKFLOW_INVOICE_AMOUNT_CLASSIFY_BILLED_ORDER))
@@ -151,7 +152,6 @@ class InterfaceWorkflowManager extends DolibarrTriggers
         		        }
         		    }
         		}
-        		return $ret;
         	}
 
 			// Second classify billed the proposal.
@@ -174,8 +174,9 @@ class InterfaceWorkflowManager extends DolibarrTriggers
         		        }
         		    }
         		}
-        		return $ret;
         	}
+
+        	return $ret;
         }
 
         // classify billed order & billed propososal

@@ -14,7 +14,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
 /**
@@ -125,8 +125,9 @@ if ($resql)
 {
 	$num = $db->num_rows($resql);
 	print '<table class="noborder centpercent">';
-	print '<tr class="liste_titre"><td colspan="4">'.$langs->trans("LastUsersCreated", min($num, $max)).'</td>';
+	print '<tr class="liste_titre"><td colspan="3">'.$langs->trans("LastUsersCreated", min($num, $max)).'</td>';
 	print '<td class="right"><a class="commonlink" href="'.DOL_URL_ROOT.'/user/list.php?sortfield=u.datec&sortorder=DESC">'.$langs->trans("FullList").'</td>';
+	print '<td></td>';
 	print '</tr>';
 	$i = 0;
 
@@ -195,7 +196,7 @@ if ($resql)
         print ($entitystring?' ('.$entitystring.')':'');
 
 		print '</td>';
-		print '<td class="right">'.dol_print_date($db->jdate($obj->datec), 'dayhour').'</td>';
+		print '<td class="center nowrap">'.dol_print_date($db->jdate($obj->datec), 'dayhour').'</td>';
         print '<td class="right">';
         print $fuserstatic->getLibStatut(3);
         print '</td>';

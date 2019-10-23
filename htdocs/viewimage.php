@@ -14,8 +14,8 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- * or see http://www.gnu.org/
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ * or see https://www.gnu.org/
  */
 
 /**
@@ -94,7 +94,7 @@ $entity=GETPOST('entity', 'int')?GETPOST('entity', 'int'):$conf->entity;
 
 // Security check
 if (empty($modulepart) && empty($hashp)) accessforbidden('Bad link. Bad value for parameter modulepart', 0, 0, 1);
-if (empty($original_file) && empty($hashp) && $modulepart != 'barcode') accessforbidden('Bad link. Missing identification to find file (original_file or hashp)', 0, 0, 1);
+if (empty($original_file) && empty($hashp) && $modulepart != 'barcode') accessforbidden('Bad link. Missing identification to find file (param file or hashp)', 0, 0, 1);
 if ($modulepart == 'fckeditor') $modulepart='medias';   // For backward compatibility
 
 

@@ -20,7 +20,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
 /**
@@ -115,12 +115,14 @@ class FormFile
 			if (empty($title)) $title=$langs->trans("AttachANewFile");
 			if ($title != 'none') $out.=load_fiche_titre($title, null, null);
 
-			if (empty($usewithoutform))
+			if (empty($usewithoutform))		// Try to avoid this and set instead the form by the caller.
 			{
     			$out .= '<form name="'.$htmlname.'" id="'.$htmlname.'" action="'.$url.'" enctype="multipart/form-data" method="POST">';
+    			$out .= '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
     			$out .= '<input type="hidden" id="'.$htmlname.'_section_dir" name="section_dir" value="'.$sectiondir.'">';
     			$out .= '<input type="hidden" id="'.$htmlname.'_section_id"  name="section_id" value="'.$sectionid.'">';
-    			$out .= '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
+    			$out .= '<input type="hidden" name="sortfield" value="'.GETPOST('sortfield', 'alpha').'">';
+    			$out .= '<input type="hidden" name="sortorder" value="'.GETPOST('sortorder', 'aZ09').'">';
 			}
 
 			$out .= '<table width="100%" class="nobordernopadding">';
@@ -229,10 +231,10 @@ class FormFile
 
 				if (empty($usewithoutform))
 				{
-    				$out .= '<form name="'.$htmlname.'_link" id="'.$htmlname.'_link" action="'.$url.'" method="POST">';
-    				$out .= '<input type="hidden" id="'.$htmlname.'_link_section_dir" name="link_section_dir" value="">';
-    				$out .= '<input type="hidden" id="'.$htmlname.'_link_section_id"  name="link_section_id" value="'.$sectionid.'">';
-    				$out .= '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
+    				$out .= '<form name="'.$htmlname.'_link" id="'.$htmlname.'_link" action="'.$url.'" method="POST">'."\n";
+    				$out .= '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">'."\n";
+    				$out .= '<input type="hidden" id="'.$htmlname.'_link_section_dir" name="link_section_dir" value="">'."\n";
+    				$out .= '<input type="hidden" id="'.$htmlname.'_link_section_id"  name="link_section_id" value="'.$sectionid.'">'."\n";
 				}
 
 				$out .= '<div class="valignmiddle">';
@@ -1166,6 +1168,7 @@ class FormFile
 			if (GETPOST('action', 'aZ09') == 'editfile' && $permtoeditline)
 			{
 				print '<form action="'.$_SERVER["PHP_SELF"].'?'.$param.'" method="POST">';
+				print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
 				print '<input type="hidden" name="action" value="renamefile">';
 				print '<input type="hidden" name="id" value="'.$object->id.'">';
 				print '<input type="hidden" name="modulepart" value="'.$modulepart.'">';
@@ -1258,7 +1261,7 @@ class FormFile
 						print '</a>';
 					}
 					// Preview link
-					if (! $editline) print $this->showPreview($file, $modulepart, $filepath);
+					if (! $editline) print $this->showPreview($file, $modulepart, $filepath, 0, '&entity='.(! empty($object->entity)?$object->entity:$conf->entity));
 
 					print "</td>\n";
 
@@ -1285,14 +1288,14 @@ class FormFile
 						{
 						    if ($useinecm == 5 || $useinecm == 6)
 						    {
-						        $minifile=getImageFileNameForSize($file['name'], '');     // There is no thumb for ECM module and Media filemanager, so we use true image
+						        $smallfile=getImageFileNameForSize($file['name'], '');     // There is no thumb for ECM module and Media filemanager, so we use true image
 						    }
 						    else
 						    {
-						        $minifile=getImageFileNameForSize($file['name'], '_mini'); // For new thumbs using same ext (in lower case howerver) than original
+						        $smallfile=getImageFileNameForSize($file['name'], '_small'); // For new thumbs using same ext (in lower case however) than original
 						    }
-						    if (! dol_is_file($file['path'].'/'.$minifile)) $minifile=getImageFileNameForSize($file['name'], '_mini', '.png'); // For backward compatibility of old thumbs that were created with filename in lower case and with .png extension
-							//print $file['path'].'/'.$minifile.'<br>';
+						    if (! dol_is_file($file['path'].'/'.$smallfile)) $smallfile=getImageFileNameForSize($file['name'], '_small', '.png'); // For backward compatibility of old thumbs that were created with filename in lower case and with .png extension
+							//print $file['path'].'/'.$smallfile.'<br>';
 
 							$urlforhref=getAdvancedPreviewUrl($modulepart, $relativepath.$fileinfo['filename'].'.'.strtolower($fileinfo['extension']), 1, '&entity='.(!empty($object->entity)?$object->entity:$conf->entity));
 							if (empty($urlforhref)) {
@@ -1301,7 +1304,7 @@ class FormFile
 							} else {
 								print '<a href="'.$urlforhref['url'].'" class="'.$urlforhref['css'].'" target="'.$urlforhref['target'].'" mime="'.$urlforhref['mime'].'">';
 							}
-							print '<img class="photo" height="'.(($useinecm == 4 || $useinecm == 5 || $useinecm == 6)? '12' : $maxheightmini).'" src="'.DOL_URL_ROOT.'/viewimage.php?modulepart='.$modulepart.'&entity='.(!empty($object->entity)?$object->entity:$conf->entity).'&file='.urlencode($relativepath.$minifile).'" title="">';
+							print '<img class="photo" height="'.(($useinecm == 4 || $useinecm == 5 || $useinecm == 6)? '12' : $maxheightmini).'" src="'.DOL_URL_ROOT.'/viewimage.php?modulepart='.$modulepart.'&entity='.(!empty($object->entity)?$object->entity:$conf->entity).'&file='.urlencode($relativepath.$smallfile).'" title="">';
 							print '</a>';
 						}
 						else print '&nbsp;';
@@ -1334,7 +1337,7 @@ class FormFile
 
 								$fulllink=$urlwithroot.'/document.php'.($paramlink?'?'.$paramlink:'');
 
-								print img_picto($langs->trans("FileSharedViaALink"), 'object_globe.png').' ';
+								print img_picto($langs->trans("FileSharedViaALink"), 'globe').' ';
 								print '<input type="text" class="quatrevingtpercent minwidth200imp" id="downloadlink" name="downloadexternallink" value="'.dol_escape_htmltag($fulllink).'">';
 							}
 							else
@@ -1381,7 +1384,7 @@ class FormFile
 							if (! empty($conf->dol_use_jmobile)) $useajax=0;
 							if (empty($conf->use_javascript_ajax)) $useajax=0;
 							if (! empty($conf->global->MAIN_ECM_DISABLE_JS)) $useajax=0;
-							print '<a href="'.((($useinecm && $useinecm != 6) && $useajax)?'#':($url.'?action=delete&urlfile='.urlencode($filepath).$param)).'" class="deletefilelink" rel="'.$filepath.'">'.img_delete().'</a>';
+							print '<a href="'.((($useinecm && $useinecm != 6) && $useajax)?'#':($url.'?action=delete&urlfile='.urlencode($filepath).$param)).'" class="reposition deletefilelink" rel="'.$filepath.'">'.img_delete().'</a>';
 						}
 						print "</td>";
 
@@ -1483,6 +1486,7 @@ class FormFile
 		if (! empty($addfilterfields))
 		{
 			print '<form action="'.$_SERVER['PHP_SELF'].'">';
+			print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
 			print '<input type="hidden" name="module" value="'.$modulepart.'">';
 		}
 
@@ -1770,10 +1774,13 @@ class FormFile
 		$res = $link->fetchAll($links, $object->element, $object->id, $sortfield, $sortorder);
 		$param .= (isset($object->id)?'&id=' . $object->id : '');
 
+		print '<!-- listOfLinks -->'."\n";
+
 		// Show list of associated links
 		print load_fiche_titre($langs->trans("LinkedFiles"));
 
 		print '<form action="' . $_SERVER['PHP_SELF'] . ($param?'?'.$param:'') . '" method="POST">';
+		print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
 
 		print '<table width="100%" class="liste noborder nobottom">';
 		print '<tr class="liste_titre">';
@@ -1839,7 +1846,7 @@ class FormFile
 				print $langs->trans('Link') . ': <input type="text" name="link" value="' . $link->url . '">';
 				print '</td>';
 				print '<td>';
-				print $langs->trans('Label') . ': <input type="text" name="label" value="' . $link->label . '">';
+				print $langs->trans('Label') . ': <input type="text" name="label" value="' . dol_escape_htmltag($link->label) . '">';
 				print '</td>';
 				print '<td class="center">' . dol_print_date(dol_now(), "dayhour", "tzuser") . '</td>';
 				print '<td class="right"></td>';
@@ -1851,9 +1858,9 @@ class FormFile
 			else
 			{
 				print '<td>';
-				print img_picto('', 'object_globe').' ';
+				print img_picto('', 'globe').' ';
 				print '<a data-ajax="false" href="' . $link->url . '" target="_blank">';
-				print $link->label;
+				print dol_escape_htmltag($link->label);
 				print '</a>';
 				print '</td>'."\n";
 				print '<td class="right"></td>';

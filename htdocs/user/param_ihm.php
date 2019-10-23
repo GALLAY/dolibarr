@@ -15,7 +15,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
 /**
@@ -150,6 +150,12 @@ if (empty($reshook)) {
 			    $tabparam["MAIN_OPTIMIZEFORTEXTBROWSER"] = 1;
 			} else {
 			    $tabparam["MAIN_OPTIMIZEFORTEXTBROWSER"] = 0;
+			}
+
+			if (GETPOST('MAIN_OPTIMIZEFORCOLORBLIND')) {
+				$tabparam["MAIN_OPTIMIZEFORCOLORBLIND"] = GETPOST('MAIN_OPTIMIZEFORCOLORBLIND');
+			} else {
+				$tabparam["MAIN_OPTIMIZEFORCOLORBLIND"] = 0;
 			}
 
 			$result = dol_set_user_param($db, $conf, $object, $tabparam);
@@ -308,7 +314,7 @@ if ($action == 'edit')
     print '</table><br>';
 
     // Theme
-    show_theme($object, (($user->admin || empty($dolibarr_main_demo))?1:0), true);
+    showSkins($object, (($user->admin || empty($dolibarr_main_demo))?1:0), true);
 
     dol_fiche_end();
 
@@ -381,7 +387,7 @@ else
 
 
     // Skin
-    show_theme($object, 0, true);
+    showSkins($object, 0, true);
 
     dol_fiche_end();
 

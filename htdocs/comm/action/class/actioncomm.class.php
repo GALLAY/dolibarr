@@ -18,7 +18,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
 /**
@@ -251,9 +251,6 @@ class ActionComm extends CommonObject
     public function __construct(DoliDB $db)
     {
         $this->db = $db;
-
-        $this->societe = new stdClass();	// deprecated
-        $this->contact = new stdClass();	// deprecated
     }
 
     /**
@@ -306,8 +303,6 @@ class ActionComm extends CommonObject
         	$this->userassigned=array();
         	$this->userassigned[$tmpid]=array('id'=>$tmpid, 'transparency'=>$this->transparency);
         }
-
-        //if (is_object($this->contact) && isset($this->contact->id) && $this->contact->id > 0 && ! ($this->contactid > 0)) $this->contactid = $this->contact->id;		// For backward compatibility. Using this->contact->xx is deprecated
 
 
         $userownerid=$this->userownerid;
@@ -502,20 +497,6 @@ class ActionComm extends CommonObject
         }
     }
 
-	/**
-	 *    Add an action/event into database.
-	 *    $this->type_id OR $this->type_code must be set.
-	 *
-	 *    @param	User	$user      		Object user making action
-	 *    @param    int		$notrigger		1 = disable triggers, 0 = enable triggers
-	 *    @return   int 		        	Id of created event, < 0 if KO
-	 * @deprecated Use create instead
-	 */
-	public function add(User $user, $notrigger = 0)
-	{
-		return $this->create($user, $notrigger);
-	}
-
     /**
      *  Load an object from its id and create a new one in database
      *
@@ -676,9 +657,9 @@ class ActionComm extends CommonObject
 
                 $this->socid				= $obj->fk_soc;			// To have fetch_thirdparty method working
                 $this->contactid			= $obj->fk_contact;		// To have fetch_contact method working
-                $this->fk_project			= $obj->fk_project;		// To have fetch_project method working
+                $this->fk_project			= $obj->fk_project;		// To have fetch_projet method working
 
-                $this->societe->id			= $obj->fk_soc;			// deprecated
+                //$this->societe->id			= $obj->fk_soc;			// deprecated
                 //$this->contact->id			= $obj->fk_contact;		// deprecated
 
                 $this->fk_element			= $obj->elementid;
@@ -889,8 +870,8 @@ class ActionComm extends CommonObject
             return -1;
         }
 
-        $socid=($this->socid?$this->socid:((isset($this->societe->id) && $this->societe->id > 0) ? $this->societe->id : 0));
-        $contactid=($this->contactid?$this->contactid:0);
+        $socid=(($this->socid > 0)?$this->socid:0);
+        $contactid=(($this->contactid > 0)?$this->contactid:0);
 		$userownerid=($this->userownerid?$this->userownerid:0);
 		$userdoneid=($this->userdoneid?$this->userdoneid:0);
 
@@ -1103,6 +1084,7 @@ class ActionComm extends CommonObject
 	    		$response = new WorkboardResponse();
 	    		$response->warning_delay = $conf->agenda->warning_delay/60/60/24;
 	    		$response->label = $langs->trans("ActionsToDo");
+	    		$response->labelShort = $langs->trans("ActionsToDoShort");
 	    		$response->url = DOL_URL_ROOT.'/comm/action/list.php?actioncode=0&amp;status=todo&amp;mainmenu=agenda';
 	    		if ($user->rights->agenda->allactions->read) $response->url.='&amp;filtert=-1';
 	    		$response->img = img_object('', "action", 'class="inline-block valigntextmiddle"');
@@ -1286,8 +1268,10 @@ class ActionComm extends CommonObject
 
         if (! empty($conf->dol_no_mouse_hover)) $notooltip=1;   // Force disable tooltips
 
-        if ((!$user->rights->agenda->allactions->read && $this->authorid != $user->id) || (!$user->rights->agenda->myactions->read && $this->authorid == $user->id))
+		if ((!$user->rights->agenda->allactions->read && $this->authorid != $user->id) || (!$user->rights->agenda->myactions->read && $this->authorid == $user->id))
+		{
             $option = 'nolink';
+		}
 
         $label = $this->label;
 		if (empty($label)) $label=$this->libelle;   // For backward compatibility
@@ -1477,7 +1461,7 @@ class ActionComm extends CommonObject
             $sql.= " a.fk_contact, a.percent as percentage,";
             $sql.= " a.fk_element, a.elementtype,";
             $sql.= " a.priority, a.fulldayevent, a.location, a.punctual, a.transparency,";
-            $sql.= " u.firstname, u.lastname,";
+            $sql.= " u.firstname, u.lastname, u.email,";
             $sql.= " s.nom as socname,";
             $sql.= " c.id as type_id, c.code as type_code, c.libelle";
             $sql.= " FROM (".MAIN_DB_PREFIX."c_actioncomm as c, ".MAIN_DB_PREFIX."actioncomm as a)";
@@ -1559,7 +1543,19 @@ class ActionComm extends CommonObject
                     $event['uid']='dolibarragenda-'.$this->db->database_name.'-'.$obj->id."@".$_SERVER["SERVER_NAME"];
                     $event['type']=$type;
                     $datestart=$this->db->jdate($obj->datep)-(empty($conf->global->AGENDA_EXPORT_FIX_TZ)?0:($conf->global->AGENDA_EXPORT_FIX_TZ*3600));
-                    $dateend=$this->db->jdate($obj->datep2)-(empty($conf->global->AGENDA_EXPORT_FIX_TZ)?0:($conf->global->AGENDA_EXPORT_FIX_TZ*3600));
+
+                    // fix for -> Warning: A non-numeric value encountered
+                    if(is_numeric($this->db->jdate($obj->datep2)))
+                    {
+                        $dateend = $this->db->jdate($obj->datep2)
+                                 - (empty($conf->global->AGENDA_EXPORT_FIX_TZ) ? 0 : ($conf->global->AGENDA_EXPORT_FIX_TZ * 3600));
+                    }
+                    else
+                    {
+                        // use start date as fall-back to avoid import erros on empty end date
+                        $dateend = $datestart;
+                    }
+
                     $duration=($datestart && $dateend)?($dateend - $datestart):0;
                     $event['summary']=$obj->label.($obj->socname?" (".$obj->socname.")":"");
                     $event['desc']=$obj->note;
@@ -1573,6 +1569,7 @@ class ActionComm extends CommonObject
                     $event['transparency']=(($obj->transparency > 0)?'OPAQUE':'TRANSPARENT');		// OPAQUE (busy) or TRANSPARENT (not busy)
                     $event['punctual']=$obj->punctual;
                     $event['category']=$obj->libelle;	// libelle type action
+                    $event['email']=$obj->email;
 					// Define $urlwithroot
 					$urlwithouturlroot=preg_replace('/'.preg_quote(DOL_URL_ROOT, '/').'$/i', '', trim($dolibarr_main_url_root));
 					$urlwithroot=$urlwithouturlroot.DOL_URL_ROOT;			// This is to use external domain name found into config file
@@ -1653,7 +1650,7 @@ class ActionComm extends CommonObject
      *  Used to build previews or test instances.
      *  id must be 0 if object instance is a specimen.
      *
-     *  @return	void
+     *  @return	int >0 if ok
      */
     public function initAsSpecimen()
     {
@@ -1685,6 +1682,7 @@ class ActionComm extends CommonObject
 
         $this->userownerid=$user->id;
         $this->userassigned[$user->id]=array('id'=>$user->id, 'transparency'=> 1);
+        return 1;
     }
 
 	/**

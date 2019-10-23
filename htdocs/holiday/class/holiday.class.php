@@ -17,7 +17,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
 /**
@@ -376,7 +376,6 @@ class Holiday extends CommonObject
 				$obj = $this->db->fetch_object($resql);
 
 				$this->id    = $obj->rowid;
-				$this->rowid = $obj->rowid;	// deprecated
 				$this->ref   = ($obj->ref?$obj->ref:$obj->rowid);
 				$this->fk_user = $obj->fk_user;
 				$this->date_create = $this->db->jdate($obj->date_create);
@@ -402,6 +401,8 @@ class Holiday extends CommonObject
 				$this->entity = $obj->entity;
 			}
 			$this->db->free($resql);
+
+			$this->fetch_optionals();
 
 			return 1;
 		}
@@ -477,7 +478,6 @@ class Holiday extends CommonObject
 
 		// If no SQL error
 		if ($resql) {
-
 			$i = 0;
 			$tab_result = $this->holiday;
 			$num = $this->db->num_rows($resql);
@@ -489,7 +489,6 @@ class Holiday extends CommonObject
 
 			// List the records and add them to the table
 			while($i < $num) {
-
 				$obj = $this->db->fetch_object($resql);
 
 				$tab_result[$i]['rowid'] = $obj->rowid;
@@ -559,6 +558,7 @@ class Holiday extends CommonObject
 		$sql.= " cp.fk_user,";
 		$sql.= " cp.fk_type,";
 		$sql.= " cp.date_create,";
+		$sql.= " cp.tms as date_update,";
 		$sql.= " cp.description,";
 		$sql.= " cp.date_debut,";
 		$sql.= " cp.date_fin,";
@@ -604,7 +604,6 @@ class Holiday extends CommonObject
 
 		// If no SQL error
 		if ($resql) {
-
 			$i = 0;
 			$tab_result = $this->holiday;
 			$num = $this->db->num_rows($resql);
@@ -616,7 +615,6 @@ class Holiday extends CommonObject
 
 			// List the records and add them to the table
 			while($i < $num) {
-
 				$obj = $this->db->fetch_object($resql);
 
 				$tab_result[$i]['rowid'] = $obj->rowid;
@@ -624,6 +622,7 @@ class Holiday extends CommonObject
 				$tab_result[$i]['fk_user'] = $obj->fk_user;
 				$tab_result[$i]['fk_type'] = $obj->fk_type;
 				$tab_result[$i]['date_create'] = $this->db->jdate($obj->date_create);
+				$tab_result[$i]['date_update'] = $this->db->jdate($obj->date_update);
 				$tab_result[$i]['description'] = $obj->description;
 				$tab_result[$i]['date_debut'] = $this->db->jdate($obj->date_debut);
 				$tab_result[$i]['date_fin'] = $this->db->jdate($obj->date_fin);
@@ -1358,7 +1357,6 @@ class Holiday extends CommonObject
 		$result = $this->db->query($sql);
 
 		if($result) {
-
 			$obj = $this->db->fetch_object($result);
 			// Return value
 			if (empty($obj))
@@ -1388,7 +1386,6 @@ class Holiday extends CommonObject
 				return $obj->value;
 			}
 		} else {
-
 			// Erreur SQL
 			$this->error=$this->db->lasterror();
 			return -1;
@@ -1679,7 +1676,6 @@ class Holiday extends CommonObject
 
 				// Si pas d'erreur SQL
 				if ($resql) {
-
 					$i = 0;
 					$num = $this->db->num_rows($resql);
 					$stringlist = '';
@@ -1719,7 +1715,6 @@ class Holiday extends CommonObject
 
 				// Si pas d'erreur SQL
 				if ($resql) {
-
 					$i = 0;
 					$num = $this->db->num_rows($resql);
 					$stringlist = '';
@@ -1750,7 +1745,6 @@ class Holiday extends CommonObject
 		}
 		else
 		{ // Si faux donc return array
-
 			// List for Dolibarr users
 			if ($type)
 			{
@@ -1781,7 +1775,6 @@ class Holiday extends CommonObject
 
 						// Boucles du listage des utilisateurs
 						while($i < $num) {
-
 							$obj = $this->db->fetch_object($resql);
 
 							$tab_result[$i]['rowid'] = $obj->rowid;		// rowid of user
@@ -2061,7 +2054,6 @@ class Holiday extends CommonObject
 
 		// Si pas d'erreur SQL
 		if ($resql) {
-
 			$i = 0;
 			$tab_result = $this->logs;
 			$num = $this->db->num_rows($resql);
@@ -2073,7 +2065,6 @@ class Holiday extends CommonObject
 
 			// On liste les résultats et on les ajoutent dans le tableau
 			while($i < $num) {
-
 				$obj = $this->db->fetch_object($resql);
 
 				$tab_result[$i]['rowid'] = $obj->rowid;
@@ -2228,6 +2219,7 @@ class Holiday extends CommonObject
             $response = new WorkboardResponse();
             $response->warning_delay=$conf->holiday->approve->warning_delay/60/60/24;
             $response->label=$langs->trans("HolidaysToApprove");
+            $response->labelShort=$langs->trans("ToApprove");
             $response->url=DOL_URL_ROOT.'/holiday/list.php?search_statut=2&mainmenu=hrm&leftmenu=holiday';
             $response->img=img_object('', "holiday");
 

@@ -12,7 +12,7 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #
 # Generic
@@ -67,7 +67,7 @@ Closed=Zatvoreno
 Deleted=Deleted
 
 # Dict
-Type=Tip
+Type=Vrsta
 Category=Analytic code
 Severity=Severity
 
@@ -173,7 +173,7 @@ LatestNewTickets=Latest %s newest tickets (not read)
 TicketSeverity=Severity
 ShowTicket=See ticket
 RelatedTickets=Related tickets
-TicketAddIntervention=Kreiraj intervenciju
+TicketAddIntervention=Izradi intervenciju
 CloseTicket=Close ticket
 CloseATicket=Close a ticket
 ConfirmCloseAticket=Confirm ticket closing

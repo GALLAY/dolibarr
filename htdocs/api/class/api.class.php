@@ -13,7 +13,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
 use Luracast\Restler\Restler;
@@ -32,7 +32,7 @@ class DolibarrApi
     /**
      * @var DoliDb        $db Database object
      */
-    static protected $db;
+    protected static $db;
 
     /**
      * @var Restler     $r	Restler object
@@ -178,6 +178,7 @@ class DolibarrApi
                 unset($object->lines[$i]->cond_reglement);
                 unset($object->lines[$i]->fk_delivery_address);
                 unset($object->lines[$i]->fk_projet);
+                unset($object->lines[$i]->fk_project);
                 unset($object->lines[$i]->thirdparty);
                 unset($object->lines[$i]->user);
                 unset($object->lines[$i]->model_pdf);
@@ -262,9 +263,9 @@ class DolibarrApi
 	        if ($tmp[$i]==')') $counter--;
             if ($counter < 0)
             {
-	           $error="Bad sqlfilters=".$sqlfilters;
-	           dol_syslog($error, LOG_WARNING);
-	           return false;
+	            $error="Bad sqlfilters=".$sqlfilters;
+	            dol_syslog($error, LOG_WARNING);
+	            return false;
             }
             $i++;
 	    }
@@ -290,6 +291,7 @@ class DolibarrApi
         if (count($tmp) < 3) return '';
 
 	    $tmpescaped=$tmp[2];
+	    $regbis = array();
 	    if (preg_match('/^\'(.*)\'$/', $tmpescaped, $regbis))
 	    {
 	        $tmpescaped = "'".$db->escape($regbis[1])."'";
