@@ -280,7 +280,7 @@ input#onlinepaymenturl, input#directdownloadlink {
 	opacity: 0.7;
 }
 
-div#moretabsListaction {
+div#moretabsList, div#moretabsListaction {
     z-index: 5;
 }
 
@@ -510,10 +510,10 @@ body[class*="colorblind-"] .text-success{
     color : <?php print $textDanger ; ?>
 }
 
-.editfielda span.fa-pencil-alt {
+.editfielda span.fa-pencil-alt, .editfielda span.fa-trash {
     color: #ccc !important;
 }
-.editfielda span.fa-pencil-alt:hover {
+.editfielda span.fa-pencil-alt:hover, .editfielda span.fa-trash:hover {
     color: rgb(<?php echo $colortexttitle; ?>) !important;
 }
 

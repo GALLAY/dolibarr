@@ -655,43 +655,22 @@ class MyObject extends CommonObject
 	public function LibStatut($status, $mode = 0)
 	{
 		// phpcs:enable
-		if (empty($this->labelstatus))
+		if (empty($this->labelstatus) || empty($this->labelstatusshort))
 		{
 			global $langs;
 			//$langs->load("mymodule");
 			$this->labelstatus[self::STATUS_DRAFT] = $langs->trans('Draft');
 			$this->labelstatus[self::STATUS_VALIDATED] = $langs->trans('Enabled');
 			$this->labelstatus[self::STATUS_CANCELED] = $langs->trans('Disabled');
+			$this->labelstatusshort[self::STATUS_DRAFT] = $langs->trans('Draft');
+			$this->labelstatusshort[self::STATUS_VALIDATED] = $langs->trans('Enabled');
+			$this->labelstatusshort[self::STATUS_CANCELED] = $langs->trans('Disabled');
 		}
 
-		if ($mode == 0)
-		{
-			return $this->labelstatus[$status];
-		}
-		elseif ($mode == 1)
-		{
-			return $this->labelstatus[$status];
-		}
-		elseif ($mode == 2)
-		{
-			return img_picto($this->labelstatus[$status], 'statut'.$status, '', false, 0, 0, '', 'valignmiddle').' '.$this->labelstatus[$status];
-		}
-		elseif ($mode == 3)
-		{
-			return img_picto($this->labelstatus[$status], 'statut'.$status, '', false, 0, 0, '', 'valignmiddle');
-		}
-		elseif ($mode == 4)
-		{
-			return img_picto($this->labelstatus[$status], 'statut'.$status, '', false, 0, 0, '', 'valignmiddle').' '.$this->labelstatus[$status];
-		}
-		elseif ($mode == 5)
-		{
-			return $this->labelstatus[$status].' '.img_picto($this->labelstatus[$status], 'statut'.$status, '', false, 0, 0, '', 'valignmiddle');
-		}
-		elseif ($mode == 6)
-		{
-			return $this->labelstatus[$status].' '.img_picto($this->labelstatus[$status], 'statut'.$status, '', false, 0, 0, '', 'valignmiddle');
-		}
+		$statusType = 'status'.$status;
+		if ($status == self::STATUS_VALIDATED) $statusType = 'status4';
+
+		return dolGetStatus($this->labelstatus[$status], $this->labelstatusshort[$status], '', $statusType, $mode);
 	}
 
 	/**

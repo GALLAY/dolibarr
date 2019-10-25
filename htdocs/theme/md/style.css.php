@@ -507,7 +507,7 @@ input#onlinepaymenturl, input#directdownloadlink {
 	opacity: 0.7;
 }
 
-div#moretabsListaction {
+div#moretabsList, div#moretabsListaction {
     z-index: 5;
 }
 
@@ -1506,7 +1506,8 @@ table.noborder tr.liste_titre td {
     padding-<?php echo $left; ?>: 3px;
 }
 .pictowarning {
-    vertical-align: text-bottom;
+    /* vertical-align: text-bottom; */
+    color: #9f4705;
 }
 .pictomodule {
 	width: 14px;
