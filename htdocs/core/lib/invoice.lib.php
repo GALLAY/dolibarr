@@ -137,11 +137,11 @@ function invoice_admin_prepare_head()
 	$head[$h][2] = 'payment';
 	$h++;
 
-	if($conf->global->INVOICE_USE_SITUATION){
-	   $head[$h][0] = DOL_URL_ROOT.'/admin/facture_situation.php';
-	   $head[$h][1] = $langs->trans("InvoiceSituation");
-	   $head[$h][2] = 'situation';
-	   $h++;
+	if ($conf->global->INVOICE_USE_SITUATION) {
+	    $head[$h][0] = DOL_URL_ROOT.'/admin/facture_situation.php';
+	    $head[$h][1] = $langs->trans("InvoiceSituation");
+	    $head[$h][2] = 'situation';
+	    $h++;
 	}
 
 	// Show more tabs from modules
@@ -189,7 +189,7 @@ function invoice_rec_prepare_head($object)
 	$h = 0;
 	$head = array();
 
-	$head[$h][0] = DOL_URL_ROOT.'/compta/facture/fiche-rec.php?id='.$object->id;
+	$head[$h][0] = DOL_URL_ROOT.'/compta/facture/card-rec.php?id='.$object->id;
 	$head[$h][1] = $langs->trans("CardBill");
 	$head[$h][2] = 'card';
 	$h++;

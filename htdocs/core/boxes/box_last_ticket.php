@@ -96,9 +96,9 @@ class box_last_ticket extends ModeleBoxes
 
             $sql .= " WHERE t.entity = " . $conf->entity;
             //          $sql.= " AND e.rowid = er.fk_event";
-            //if (!$user->rights->societe->client->voir && !$user->societe_id) $sql.= " WHERE s.rowid = sc.fk_soc AND sc.fk_user = " .$user->id;
-            if ($user->societe_id) {
-                $sql .= " AND t.fk_soc= " . $user->societe_id;
+            //if (!$user->rights->societe->client->voir && !$user->socid) $sql.= " WHERE s.rowid = sc.fk_soc AND sc.fk_user = " .$user->id;
+            if ($user->socid) {
+                $sql .= " AND t.fk_soc= " . $user->socid;
             }
 
             //$sql.= " AND t.fk_statut > 9";
@@ -141,7 +141,7 @@ class box_last_ticket extends ModeleBoxes
 
                     // Ticket
                     $this->info_box_contents[$i][$r] = array(
-                        'td' => 'class="left"',
+                        'td' => 'class="nowraponall"',
                         'text' => $ticket->getNomUrl(1),
                         'asis' => 1
                     );
@@ -149,7 +149,7 @@ class box_last_ticket extends ModeleBoxes
 
                     // Subject
                     $this->info_box_contents[$i][$r] = array(
-                        'td' => 'class="left"',
+                        'td' => '',
                         'text' => $objp->subject, // Some event have no ref
                         'url' => DOL_URL_ROOT."/ticket/card.php?track_id=" . $objp->track_id,
                     );
@@ -157,7 +157,7 @@ class box_last_ticket extends ModeleBoxes
 
                     // Customer
                     $this->info_box_contents[$i][$r] = array(
-                        'td' => 'class="left"',
+                        'td' => '',
                         'text' => $link,
                         'asis' => 1,
                     );
@@ -172,7 +172,7 @@ class box_last_ticket extends ModeleBoxes
 
                     // Statut
                     $this->info_box_contents[$i][$r] = array(
-                        'td' => 'class="right"',
+                        'td' => 'class="right nowraponall"',
                         'text' => $ticket->getLibStatut(3),
                     );
                     $r++;

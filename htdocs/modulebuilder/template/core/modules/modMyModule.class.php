@@ -336,11 +336,16 @@ class modMyModule extends DolibarrModules
         $this->export_icon[$r]='myobject@mymodule';
         $keyforclass = 'MyObject'; $keyforclassfile='/mymobule/class/myobject.class.php'; $keyforelement='myobject';
         include DOL_DOCUMENT_ROOT.'/core/commonfieldsinexport.inc.php';
+   		//$keyforclass = 'MyObjectLine'; $keyforclassfile='/mymodule/class/myobject.class.php'; $keyforelement='myobjectline'; $keyforalias='tl';
+		//include DOL_DOCUMENT_ROOT.'/core/commonfieldsinexport.inc.php';
         $keyforselect='myobject'; $keyforaliasextra='extra'; $keyforelement='myobject';
         include DOL_DOCUMENT_ROOT.'/core/extrafieldsinexport.inc.php';
-        //$this->export_dependencies_array[$r]=array('mysubobject'=>'ts.rowid', 't.myfield'=>array('t.myfield2','t.myfield3')); // To force to activate one or several fields if we select some fields that need same (like to select a unique key if we ask a field of a child to avoid the DISTINCT to discard them, or for computed field than need several other fields)
+        //$keyforselect='myobjectline'; $keyforaliasextra='extraline'; $keyforelement='myobjectline';
+        //include DOL_DOCUMENT_ROOT.'/core/extrafieldsinexport.inc.php';
+        //$this->export_dependencies_array[$r]=array('myobjectline'=>array('tl.rowid','tl.ref')); // To force to activate one or several fields if we select some fields that need same (like to select a unique key if we ask a field of a child to avoid the DISTINCT to discard them, or for computed field than need several other fields)
         $this->export_sql_start[$r]='SELECT DISTINCT ';
         $this->export_sql_end[$r]  =' FROM '.MAIN_DB_PREFIX.'myobject as t';
+        //$this->export_sql_end[$r]  =' LEFT JOIN '.MAIN_DB_PREFIX.'myobject_line as tl ON tl.fk_myobject = t.rowid';
         $this->export_sql_end[$r] .=' WHERE 1 = 1';
         $this->export_sql_end[$r] .=' AND t.entity IN ('.getEntity('myobject').')';
         $r++; */
@@ -377,6 +382,8 @@ class modMyModule extends DolibarrModules
      */
     public function init($options = '')
     {
+        global $conf, $langs;
+
         $result=$this->_load_tables('/mymodule/sql/');
         if ($result < 0) return -1; // Do not activate module if error 'not allowed' returned when loading module SQL queries (the _load_table run sql with run_sql with the error allowed parameter set to 'default')
 
@@ -389,7 +396,36 @@ class modMyModule extends DolibarrModules
         //$result4=$extrafields->addExtraField('myattr4', "New Attr 4 label", 'select',  1,  3, 'thirdparty',   0, 1, '', array('options'=>array('code1'=>'Val1','code2'=>'Val2','code3'=>'Val3')), 1,'', 0, 0, '', '', 'mymodule@mymodule', '$conf->mymodule->enabled');
         //$result5=$extrafields->addExtraField('myattr5', "New Attr 5 label", 'text',    1, 10, 'user',         0, 0, '', '', 1, '', 0, 0, '', '', 'mymodule@mymodule', '$conf->mymodule->enabled');
 
+        // Permissions
+        $this->remove($options);
+
         $sql = array();
+
+        // ODT template
+        /*
+        $src=DOL_DOCUMENT_ROOT.'/install/doctemplates/mymodule/template_myobjects.odt';
+        $dirodt=DOL_DATA_ROOT.'/doctemplates/mymodule';
+        $dest=$dirodt.'/template_myobjects.odt';
+
+        if (file_exists($src) && ! file_exists($dest))
+        {
+            require_once DOL_DOCUMENT_ROOT.'/core/lib/files.lib.php';
+            dol_mkdir($dirodt);
+            $result=dol_copy($src, $dest, 0, 0);
+            if ($result < 0)
+            {
+                $langs->load("errors");
+                $this->error=$langs->trans('ErrorFailToCopyFile', $src, $dest);
+                return 0;
+            }
+        }
+
+        $sql = array(
+            "DELETE FROM ".MAIN_DB_PREFIX."document_model WHERE nom = '".$this->db->escape($this->const[0][2])."' AND type = 'mymodule' AND entity = ".$conf->entity,
+            "INSERT INTO ".MAIN_DB_PREFIX."document_model (nom, type, entity) VALUES('".$this->db->escape($this->const[0][2])."','mymodule',".$conf->entity.")"
+        );
+        */
+
         return $this->_init($sql, $options);
     }
 

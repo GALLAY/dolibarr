@@ -42,7 +42,7 @@ $toselect = GETPOST('toselect', 'array');
 
 // Security check
 $receptionid = GETPOST('id', 'int');
-if ($user->societe_id) $socid=$user->societe_id;
+if ($user->socid) $socid=$user->socid;
 $result = restrictedArea($user, 'reception', $receptionid, '');
 
 $diroutputmassaction=$conf->reception->dir_output . '/temp/massgeneration/'.$user->id;
@@ -305,29 +305,28 @@ if (empty($reshook))
 	    					{
 	    						$fk_parent_line = 0;
 	    					}
-        $result = $object->addline(
-	    							$desc,
-	    							$lines[$i]->subprice,
-	    							$lines[$i]->tva_tx,
-	    							$lines[$i]->localtax1_tx,
-	    							$lines[$i]->localtax2_tx,
-									$lines[$i]->qty,
-	    							$lines[$i]->fk_product,
-	    							$lines[$i]->remise_percent,
-	    							$date_start,
-	    							$date_end,
-	    							0,
-	    							$lines[$i]->info_bits,
-	    							'HT',
-	    							$product_type,
-	    							$i,
-	    							false,
-									0,
-									null,
-	    							$lines[$i]->rowid,
-									0,
-									$lines[$i]->ref_supplier
-
+                            $result = $object->addline(
+	    						$desc,
+	    						$lines[$i]->subprice,
+	    						$lines[$i]->tva_tx,
+	    						$lines[$i]->localtax1_tx,
+	    						$lines[$i]->localtax2_tx,
+								$lines[$i]->qty,
+	    						$lines[$i]->fk_product,
+	    						$lines[$i]->remise_percent,
+	    						$date_start,
+	    						$date_end,
+	    						0,
+	    						$lines[$i]->info_bits,
+	    						'HT',
+	    						$product_type,
+	    						$i,
+	    						false,
+								0,
+								null,
+	    						$lines[$i]->rowid,
+								0,
+								$lines[$i]->ref_supplier
 	    					);
 
 							$rcp->add_object_linked('facture_fourn_det', $result);
@@ -474,7 +473,7 @@ foreach ($search_array_options as $key => $val)
 {
     $crit=$val;
     $tmpkey=preg_replace('/search_options_/', '', $key);
-    $typ=$extrafields->attribute_type[$tmpkey];
+    $typ=$extrafields->attributes[$object->table_element]['type'][$tmpkey];
     $mode=0;
     if (in_array($typ, array('int','double','real'))) $mode=1;    							// Search on a numeric
     if (in_array($typ, array('sellist')) && $crit != '0' && $crit != '-1') $mode=2;    		// Search on a foreign key int
@@ -533,9 +532,9 @@ if ($resql)
 	}
 
 
-	$arrayofmassactions =  array(
-//    'presend'=>$langs->trans("SendByMail"),
-);
+    $arrayofmassactions =  array(
+    // 'presend'=>$langs->trans("SendByMail"),
+    );
 
 	if($user->rights->fournisseur->facture->creer)$arrayofmassactions['createbills']=$langs->trans("CreateInvoiceForThisSupplier");
 	if($massaction == 'createbills') $arrayofmassactions=array();

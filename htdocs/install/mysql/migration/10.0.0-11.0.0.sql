@@ -46,8 +46,12 @@ UPDATE llx_c_units SET scale = -3, active = 0 WHERE code IN ('L');
 UPDATE llx_c_units SET label = 'VolumeUnitm3' WHERE code IN ('M3');
 UPDATE llx_c_units SET label = 'SurfaceUnitm2' WHERE code IN ('M2');
 
+ALTER TABLE llx_adherent_type ADD UNIQUE INDEX uk_adherent_type_libelle (libelle, entity);
+
 
 -- For v11
+
+ALTER TABLE llx_don ADD COLUMN fk_user_modif integer;
 
 ALTER TABLE llx_expeditiondet ADD INDEX idx_expeditiondet_fk_origin_line (fk_origin_line);
 
@@ -58,6 +62,9 @@ UPDATE llx_rights_def SET subperms = 'write' WHERE perms = 'fiscalyear' AND modu
 
 ALTER TABLE llx_bom_bom ADD COLUMN duration double(8,4) DEFAULT NULL;
 ALTER TABLE llx_bom_bomline ADD COLUMN position integer NOT NULL DEFAULT 0;
+ALTER TABLE llx_bom_bomline ADD COLUMN qty_frozen smallint DEFAULT 0;
+ALTER TABLE llx_bom_bomline ADD COLUMN disable_stock_change smallint DEFAULT 0;
+
 ALTER TABLE llx_bom_bomline DROP COLUMN rank;
 
 create table llx_categorie_warehouse
@@ -138,6 +145,10 @@ UPDATE llx_bank_url set url = REPLACE( url, 'compta/salaries/', 'salaries/');
 ALTER TABLE llx_stock_mouvement ADD COLUMN fk_projet INTEGER NOT NULL DEFAULT 0 AFTER model_pdf;
 
 ALTER TABLE llx_oauth_token ADD COLUMN fk_soc integer DEFAULT NULL after token;
+
+
+ALTER TABLE llx_adherent_type ADD COLUMN duration varchar(6) DEFAULT NULL after morphy;
+
 
 ALTER TABLE llx_mailing ADD COLUMN tms timestamp;
 ALTER TABLE llx_mailing_cibles ADD COLUMN tms timestamp;
@@ -239,6 +250,7 @@ INSERT INTO llx_c_hrm_public_holiday (code, entity, fk_country, dayrule, year, m
 -- India (117)
 INSERT INTO llx_c_hrm_public_holiday (code, entity, fk_country, dayrule, year, month, day, active) VALUES('IN-REPUBLICDAY',  0, 117, '', 0,  1, 26, 1);
 INSERT INTO llx_c_hrm_public_holiday (code, entity, fk_country, dayrule, year, month, day, active) VALUES('IN-GANDI',        0, 117, '', 0, 10,  2, 1);
+
 
 ALTER TABLE llx_product ADD COLUMN net_measure         float;
 ALTER TABLE llx_product ADD COLUMN net_measure_units     tinyint;
@@ -354,7 +366,68 @@ create table llx_c_shipment_package_type
     rowid        integer  AUTO_INCREMENT PRIMARY KEY,
     label        varchar(50) NOT NULL,  -- Short name
     description	 varchar(255), -- Description
-    active       integer DEFAULT 1 NOT NULL, -- Active or not	
-    entity       integer DEFAULT 1 NOT NULL -- Multi company id 
+    active       integer DEFAULT 1 NOT NULL, -- Active or not
+    entity       integer DEFAULT 1 NOT NULL -- Multi company id
 )ENGINE=innodb;
 
+
+CREATE TABLE llx_mrp_mo(
+    -- BEGIN MODULEBUILDER FIELDS
+    rowid integer AUTO_INCREMENT PRIMARY KEY NOT NULL,
+    ref varchar(128) DEFAULT '(PROV)' NOT NULL,
+    entity integer DEFAULT 1 NOT NULL,
+    label varchar(255),
+    qty real NOT NULL,
+    fk_warehouse integer,
+    fk_soc integer,
+    note_public text,
+    note_private text,
+    date_creation datetime NOT NULL,
+    tms timestamp,
+    fk_user_creat integer NOT NULL,
+    fk_user_modif integer,
+    import_key varchar(14),
+    status integer NOT NULL,
+    fk_product integer NOT NULL,
+    date_start_planned datetime,
+    date_end_planned datetime,
+    fk_bom integer,
+    fk_project integer
+    -- END MODULEBUILDER FIELDS
+) ENGINE=innodb;
+
+
+ALTER TABLE llx_mrp_mo ADD INDEX idx_mrp_mo_ref (ref);
+ALTER TABLE llx_mrp_mo ADD INDEX idx_mrp_mo_entity (entity);
+ALTER TABLE llx_mrp_mo ADD INDEX idx_mrp_mo_fk_soc (fk_soc);
+ALTER TABLE llx_mrp_mo ADD CONSTRAINT fk_mrp_mo_fk_user_creat FOREIGN KEY (fk_user_creat) REFERENCES llx_user(rowid);
+ALTER TABLE llx_mrp_mo ADD INDEX idx_mrp_mo_status (status);
+ALTER TABLE llx_mrp_mo ADD INDEX idx_mrp_mo_fk_product (fk_product);
+ALTER TABLE llx_mrp_mo ADD INDEX idx_mrp_mo_date_start_planned (date_start_planned);
+ALTER TABLE llx_mrp_mo ADD INDEX idx_mrp_mo_date_end_planned (date_end_planned);
+ALTER TABLE llx_mrp_mo ADD INDEX idx_mrp_mo_fk_bom (fk_bom);
+ALTER TABLE llx_mrp_mo ADD INDEX idx_mrp_mo_fk_project (fk_project);
+
+
+create table llx_mrp_mo_extrafields
+(
+  rowid                     integer AUTO_INCREMENT PRIMARY KEY,
+  tms                       timestamp,
+  fk_object                 integer NOT NULL,
+  import_key                varchar(14)                                 -- import key
+) ENGINE=innodb;
+
+ALTER TABLE llx_mrp_mo_extrafields ADD INDEX idx_fk_object(fk_object);
+
+
+insert into llx_c_action_trigger (code,label,description,elementtype,rang) values ('BOM_VALIDATE','BOM validated','Executed when a BOM is validated','bom',400);
+insert into llx_c_action_trigger (code,label,description,elementtype,rang) values ('BOM_UNVALIDATE','BOM unvalidated','Executed when a BOM is unvalidated','bom',401);
+insert into llx_c_action_trigger (code,label,description,elementtype,rang) values ('BOM_CLOSE','BOM disabled','Executed when a BOM is disabled','bom',402);
+insert into llx_c_action_trigger (code,label,description,elementtype,rang) values ('BOM_REOPEN','BOM reopen','Executed when a BOM is re-open','bom',403);
+insert into llx_c_action_trigger (code,label,description,elementtype,rang) values ('BOM_DELETE','BOM deleted','Executed when a BOM deleted','bom',404);
+
+insert into llx_c_action_trigger (code,label,description,elementtype,rang) values ('MO_VALIDATE','MO validated','Executed when a MO is validated','bom',410);
+insert into llx_c_action_trigger (code,label,description,elementtype,rang) values ('MO_PRODUCED','MO disabled','Executed when a MO is produced','bom',411);
+insert into llx_c_action_trigger (code,label,description,elementtype,rang) values ('MO_DELETE','MO deleted','Executed when a MO is deleted','bom',412);
+
+ALTER TABLE llx_comment ADD COLUMN fk_user_modif  integer DEFAULT NULL;

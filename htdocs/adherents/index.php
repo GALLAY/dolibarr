@@ -61,7 +61,7 @@ $AdherentsResilies=array();
 
 $AdherentType=array();
 
-// Members list
+// Type of membership
 $sql = "SELECT t.rowid, t.libelle as label, t.subscription,";
 $sql.= " d.statut, count(d.rowid) as somme";
 $sql.= " FROM ".MAIN_DB_PREFIX."adherent_type as t";
@@ -71,7 +71,7 @@ $sql.= " AND d.entity IN (".getEntity('adherent').")";
 $sql.= " WHERE t.entity IN (".getEntity('member_type').")";
 $sql.= " GROUP BY t.rowid, t.libelle, t.subscription, d.statut";
 
-dol_syslog("index.php::select nb of members by type", LOG_DEBUG);
+dol_syslog("index.php::select nb of members per type", LOG_DEBUG);
 $result = $db->query($sql);
 if ($result)
 {
@@ -140,6 +140,7 @@ if (! empty($conf->global->MAIN_SEARCH_FORM_ON_HOME_AREAS))     // This is usele
     {
     	print '<form method="post" action="'.DOL_URL_ROOT.'/core/search.php">';
     	print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
+        print '<div class="div-table-responsive-no-min">';
     	print '<table class="noborder nohover centpercent">';
     	$i=0;
     	foreach($listofsearchfields as $key => $value)
@@ -152,6 +153,7 @@ if (! empty($conf->global->MAIN_SEARCH_FORM_ON_HOME_AREAS))     // This is usele
     		$i++;
     	}
     	print '</table>';
+        print '</div>';
     	print '</form>';
     	print '<br>';
     }
@@ -292,7 +294,7 @@ print "<br>\n";
 print '</div><div class="fichetwothirdright"><div class="ficheaddleft">';
 
 /*
- * Last modified members
+ * Latest modified members
  */
 $max=5;
 
@@ -340,7 +342,7 @@ if ($resql)
 			print '<td>'.$staticmember->getNomUrl(1, 32).'</td>';
 			print '<td>'.$statictype->getNomUrl(1, 32).'</td>';
 			print '<td>'.dol_print_date($db->jdate($obj->datem), 'dayhour').'</td>';
-			print '<td class="right">'.$staticmember->LibStatut($obj->statut, ($obj->subscription=='yes'?1:0), $db->jdate($obj->date_end_subscription), 5).'</td>';
+			print '<td class="right">'.$staticmember->LibStatut($obj->statut, ($obj->subscription=='yes'?1:0), $db->jdate($obj->date_end_subscription), 3).'</td>';
 			print '</tr>';
 			$i++;
 		}

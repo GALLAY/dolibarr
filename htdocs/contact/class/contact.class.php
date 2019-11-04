@@ -155,7 +155,7 @@ class Contact extends CommonObject
 
 		$sql = "SELECT count(sp.rowid) as nb";
 		$sql.= " FROM ".MAIN_DB_PREFIX."socpeople as sp";
-		if (!$user->rights->societe->client->voir && !$user->societe_id)
+		if (!$user->rights->societe->client->voir && !$user->socid)
 		{
 		    $sql.= ", ".MAIN_DB_PREFIX."societe as s";
 		    $sql.= ", ".MAIN_DB_PREFIX."societe_commerciaux as sc";
@@ -164,7 +164,7 @@ class Contact extends CommonObject
 		}
 		$sql.= ' '.$clause.' sp.entity IN ('.getEntity($this->element).')';
 		$sql.= " AND (sp.priv='0' OR (sp.priv='1' AND sp.fk_user_creat=".$user->id."))";
-        if ($user->societe_id > 0) $sql.=" AND sp.fk_soc = ".$user->societe_id;
+        if ($user->socid > 0) $sql.=" AND sp.fk_soc = ".$user->socid;
 
 		$resql=$this->db->query($sql);
 		if ($resql)
@@ -328,13 +328,13 @@ class Contact extends CommonObject
 		$this->town=(empty($this->town)?'':$this->town);
 		$this->country_id=($this->country_id > 0?$this->country_id:$this->country_id);
 		if (empty($this->statut)) $this->statut = 0;
-
+		if (empty($this->civility_code) && ! is_numeric($this->civility_id)) $this->civility_code = $this->civility_id;   // For backward compatibility
 		$this->db->begin();
 
 		$sql = "UPDATE ".MAIN_DB_PREFIX."socpeople SET ";
 		if ($this->socid > 0) $sql .= " fk_soc='".$this->db->escape($this->socid)."',";
 		elseif ($this->socid == -1) $sql .= " fk_soc=null,";
-		$sql .= "  civility='".$this->db->escape($this->civility_id)."'";
+		$sql .= "  civility='".$this->db->escape($this->civility_code)."'";
 		$sql .= ", lastname='".$this->db->escape($this->lastname)."'";
 		$sql .= ", firstname='".$this->db->escape($this->firstname)."'";
 		$sql .= ", address='".$this->db->escape($this->address)."'";
@@ -1162,11 +1162,11 @@ class Contact extends CommonObject
         //if ($this->civility_id) $label.= '<br><b>' . $langs->trans("Civility") . ':</b> '.$this->civility_id;		// TODO Translate cibilty_id code
         if (! empty($this->poste)) $label.= '<br><b>' . $langs->trans("Poste") . ':</b> '.$this->poste;
         $label.= '<br><b>' . $langs->trans("EMail") . ':</b> '.$this->email;
-        $phonelist=array();
-        if ($this->phone_pro) $phonelist[]=$this->phone_pro;
-        if ($this->phone_mobile) $phonelist[]=$this->phone_mobile;
-        if ($this->phone_perso) $phonelist[]=$this->phone_perso;
-        $label.= '<br><b>' . $langs->trans("Phone") . ':</b> '.join(', ', $phonelist);
+        $phonelist = array();
+        if ($this->phone_pro) $phonelist[] = dol_print_phone($this->phone_pro, $this->country_code, $this->id, 0, '', '&nbsp;', 'phone');
+        if ($this->phone_mobile) $phonelist[] = dol_print_phone($this->phone_mobile, $this->country_code, $this->id, 0, '', '&nbsp;', 'mobile');
+        if ($this->phone_perso) $phonelist[] = dol_print_phone($this->phone_perso, $this->country_code, $this->id, 0, '', '&nbsp;', 'phone');
+        $label.= '<br><b>' . $langs->trans("Phone") . ':</b> '.implode('&nbsp;', $phonelist);
         $label.= '<br><b>' . $langs->trans("Address") . ':</b> '.dol_format_address($this, 1, ' ', $langs);
 
         $url = DOL_URL_ROOT.'/contact/card.php?id='.$this->id;
@@ -1264,23 +1264,24 @@ class Contact extends CommonObject
         // phpcs:enable
 		global $langs;
 
-		if (empty($this->status) || empty($this->statusshort))
-		{
-			$this->labelstatus[0] = 'ActivityCeased';
-			$this->labelstatusshort[0] = 'ActivityCeased';
-			$this->labelstatus[5] = 'ActivityCeased';
-			$this->labelstatusshort[5] = 'ActivityCeased';
-			$this->labelstatus[1] = 'InActivity';
-			$this->labelstatusshort[1] = 'InActivity';
-			$this->labelstatus[4] = 'InActivity';
-			$this->labelstatusshort[4] = 'InActivity';
-		}
+		$labelStatus = array(
+			0 => 'ActivityCeased',
+			1 => 'InActivity',
+			4 => 'InActivity',
+			5 => 'ActivityCeased',
+		);
+		$labelStatusShort = array(
+			0 => 'ActivityCeased',
+			1 => 'InActivity',
+			4 => 'InActivity',
+			5 => 'ActivityCeased',
+		);
 
 		$statusType = 'status4';
 		if ($status==0 || $status==5) $statusType = 'status5';
 
-		$label = $langs->trans($this->labelstatus[$status]);
-		$labelshort = $langs->trans($this->labelstatusshort[$status]);
+		$label = $langs->trans($labelStatus[$status]);
+		$labelshort = $langs->trans($labelStatusShort[$status]);
 
 		return dolGetStatus($label, $labelshort, '', $statusType, $mode);
 	}

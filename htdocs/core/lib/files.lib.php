@@ -1848,10 +1848,15 @@ function dol_convert_file($fileinput, $ext = 'png', $fileoutput = '', $page = ''
 				if (empty($fileoutput)) $fileoutput=$fileinput.".".$ext;
 
 				$count = $image->getNumberImages();
-
 				if (! dol_is_file($fileoutput) || is_writeable($fileoutput))
 				{
-					$ret = $image->writeImages($fileoutput, true);
+				    try {
+						$ret = $image->writeImages($fileoutput, true);
+				    }
+				    catch(Exception $e)
+				    {
+				        dol_syslog($e->getMessage(), LOG_WARNING);
+				    }
 				}
 				else
 				{
@@ -3067,13 +3072,14 @@ function getFilesUpdated(&$file_list, SimpleXMLElement $dir, $path = '', $pathre
 	{
 		$filename = $path.$file['name'];
 		$file_list['insignature'][] = $filename;
+		$expectedsize = (empty($file['size']) ? '' : $file['size']);
 		$expectedmd5 = (string) $file;
 
 		//if (preg_match('#'.$exclude.'#', $filename)) continue;
 
 		if (!file_exists($pathref.'/'.$filename))
 		{
-			$file_list['missing'][] = array('filename'=>$filename, 'expectedmd5'=>$expectedmd5);
+			$file_list['missing'][] = array('filename'=>$filename, 'expectedmd5'=>$expectedmd5, 'expectedsize'=>$expectedsize);
 		}
 		else
 		{
@@ -3085,7 +3091,7 @@ function getFilesUpdated(&$file_list, SimpleXMLElement $dir, $path = '', $pathre
 			}
 			else
 			{
-				if ($md5_local != $expectedmd5) $file_list['updated'][] = array('filename'=>$filename, 'expectedmd5'=>$expectedmd5, 'md5'=>(string) $md5_local);
+				if ($md5_local != $expectedmd5) $file_list['updated'][] = array('filename'=>$filename, 'expectedmd5'=>$expectedmd5, 'expectedsize'=>$expectedsize, 'md5'=>(string) $md5_local);
 				$checksumconcat[] = $md5_local;
 			}
 		}

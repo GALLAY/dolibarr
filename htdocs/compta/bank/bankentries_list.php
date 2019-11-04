@@ -66,12 +66,12 @@ $fieldvalue = (! empty($id) ? $id : (! empty($ref) ? $ref :''));
 $fieldtype = (! empty($ref) ? 'ref' :'rowid');
 if ($fielvalue)
 {
-	if ($user->societe_id) $socid=$user->societe_id;
+	if ($user->socid) $socid=$user->socid;
 	$result=restrictedArea($user, 'banque', $fieldvalue, 'bank_account&bank_account', '', '', $fieldtype);
 }
 else
 {
-	if ($user->societe_id) $socid=$user->societe_id;
+	if ($user->socid) $socid=$user->socid;
 	$result=restrictedArea($user, 'banque');
 }
 
@@ -1065,9 +1065,10 @@ if ($resql)
            			}
             	}
             	// Extra fields
-            	if (is_array($extrafields->attribute_label) && count($extrafields->attribute_label))
+            	$element = 'banktransaction';
+            	if (is_array($extrafields->attributes[$element]['label']) && count($extrafields->attributes[$element]['label']))
             	{
-            		foreach($extrafields->attribute_label as $key => $val)
+            		foreach($extrafields->attributes[$element]['label'] as $key => $val)
             		{
             			if (! empty($arrayfields["ef.".$key]['checked']))
             			{
@@ -1315,33 +1316,33 @@ if ($resql)
         // Date ope
     	if (! empty($arrayfields['b.dateo']['checked']))
     	{
-    	   print '<td align="center" class="nowrap">';
-    	   print '<span id="dateoperation_'.$objp->rowid.'">'.dol_print_date($db->jdate($objp->do), "day")."</span>";
-    	   print '&nbsp;';
-    	   print '<span class="inline-block">';
-    	   print '<a class="ajax" href="'.$_SERVER['PHP_SELF'].'?action=doprev&amp;account='.$objp->bankid.'&amp;rowid='.$objp->rowid.'">';
-    	   print img_edit_remove() . "</a> ";
-    	   print '<a class="ajax" href="'.$_SERVER['PHP_SELF'].'?action=donext&amp;account='.$objp->bankid.'&amp;rowid='.$objp->rowid.'">';
-    	   print img_edit_add() ."</a>";
-    	   print '</span>';
-    	   print "</td>\n";
+    	    print '<td align="center" class="nowrap">';
+    	    print '<span id="dateoperation_'.$objp->rowid.'">'.dol_print_date($db->jdate($objp->do), "day")."</span>";
+    	    print '&nbsp;';
+    	    print '<span class="inline-block">';
+    	    print '<a class="ajax" href="'.$_SERVER['PHP_SELF'].'?action=doprev&amp;account='.$objp->bankid.'&amp;rowid='.$objp->rowid.'">';
+    	    print img_edit_remove() . "</a> ";
+    	    print '<a class="ajax" href="'.$_SERVER['PHP_SELF'].'?action=donext&amp;account='.$objp->bankid.'&amp;rowid='.$objp->rowid.'">';
+    	    print img_edit_add() ."</a>";
+    	    print '</span>';
+    	    print "</td>\n";
                 if (! $i) $totalarray['nbfield']++;
     	}
 
         // Date value
     	if (! empty($arrayfields['b.datev']['checked']))
     	{
-    	   print '<td align="center" class="nowrap">';
-    	   print '<span id="datevalue_'.$objp->rowid.'">'.dol_print_date($db->jdate($objp->dv), "day")."</span>";
-    	   print '&nbsp;';
-    	   print '<span class="inline-block">';
-    	   print '<a class="ajax" href="'.$_SERVER['PHP_SELF'].'?action=dvprev&amp;account='.$objp->bankid.'&amp;rowid='.$objp->rowid.'">';
-    	   print img_edit_remove() . "</a> ";
-    	   print '<a class="ajax" href="'.$_SERVER['PHP_SELF'].'?action=dvnext&amp;account='.$objp->bankid.'&amp;rowid='.$objp->rowid.'">';
-    	   print img_edit_add() ."</a>";
-    	   print '</span>';
-    	   print "</td>\n";
-           if (! $i) $totalarray['nbfield']++;
+    	    print '<td align="center" class="nowrap">';
+    	    print '<span id="datevalue_'.$objp->rowid.'">'.dol_print_date($db->jdate($objp->dv), "day")."</span>";
+    	    print '&nbsp;';
+    	    print '<span class="inline-block">';
+    	    print '<a class="ajax" href="'.$_SERVER['PHP_SELF'].'?action=dvprev&amp;account='.$objp->bankid.'&amp;rowid='.$objp->rowid.'">';
+    	    print img_edit_remove() . "</a> ";
+    	    print '<a class="ajax" href="'.$_SERVER['PHP_SELF'].'?action=dvnext&amp;account='.$objp->bankid.'&amp;rowid='.$objp->rowid.'">';
+    	    print img_edit_add() ."</a>";
+    	    print '</span>';
+    	    print "</td>\n";
+            if (! $i) $totalarray['nbfield']++;
     	}
 
         // Payment type
@@ -1352,7 +1353,7 @@ if ($resql)
 	        if ($labeltype == 'SOLD') print '&nbsp;'; //$langs->trans("InitialBankBalance");
 	        else print $labeltype;
 	        print "</td>\n";
-                if (! $i) $totalarray['nbfield']++;
+            if (! $i) $totalarray['nbfield']++;
     	}
 
         // Num cheque

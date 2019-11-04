@@ -110,7 +110,7 @@ if (! $sortfield)
 
 // Security check
 $socid = GETPOST("search_socid", 'int')?GETPOST("search_socid", 'int'):GETPOST("socid", 'int');
-if ($user->societe_id) $socid=$user->societe_id;
+if ($user->socid) $socid=$user->socid;
 $result = restrictedArea($user, 'agenda', 0, '', 'myactions');
 if ($socid < 0) $socid='';
 
@@ -488,7 +488,7 @@ if ($resql)
 	if (! empty($arrayfields['a.tms']['checked']))		print '<td class="liste_titre"></td>';
 	if (! empty($arrayfields['a.percent']['checked']))	{
 		print '<td class="liste_titre center">';
-    	print $formactions->form_select_status_action('formaction', $status, 1, 'status', 1, 2);
+        $formactions->form_select_status_action('formaction', $status, 1, 'status', 1, 2, 'minwidth100imp maxwidth125');
     	print ajax_combobox('selectstatus');
     	print '</td>';
     }
@@ -702,15 +702,15 @@ if ($resql)
 
 		// Linked object
 		if (! empty($arrayfields['a.fk_element']['checked'])) {
-		        print '<td>';
-		        //var_dump($obj->fkelement.' '.$obj->elementtype);
-		        if ($obj->fk_element > 0 && ! empty($obj->elementtype)) {
-              		include_once DOL_DOCUMENT_ROOT.'/core/lib/functions2.lib.php';
-		            print dolGetElementUrl($obj->fk_element, $obj->elementtype, 1);
-		        } else {
-              		print "&nbsp;";
-		        }
-		        print '</td>';
+            print '<td>';
+            //var_dump($obj->fkelement.' '.$obj->elementtype);
+            if ($obj->fk_element > 0 && ! empty($obj->elementtype)) {
+                include_once DOL_DOCUMENT_ROOT.'/core/lib/functions2.lib.php';
+                print dolGetElementUrl($obj->fk_element, $obj->elementtype, 1);
+            } else {
+                print "&nbsp;";
+            }
+            print '</td>';
 		}
 
 		// Extra fields
