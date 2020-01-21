@@ -116,7 +116,7 @@ class pdf_einstein extends ModelePDFCommandes
 
 	/**
 	 * Issuer
-	 * @var Societe    object that emits
+	 * @var Societe    Object that emits
 	 */
     public $emetteur;
 
@@ -1258,9 +1258,17 @@ class pdf_einstein extends ModelePDFCommandes
 		// Logo
 		if (empty($conf->global->PDF_DISABLE_MYCOMPANY_LOGO))
 		{
-			$logo=$conf->mycompany->multidir_output[$object->entity].'/logos/'.$this->emetteur->logo;
 			if ($this->emetteur->logo)
 			{
+				$logodir = $conf->mycompany->dir_output;
+				if (! empty($conf->mycompany->multidir_output[$object->entity])) $logodir = $conf->mycompany->multidir_output[$object->entity];
+				if (empty($conf->global->MAIN_PDF_USE_LARGE_LOGO))
+				{
+					$logo = $logodir.'/logos/thumbs/'.$this->emetteur->logo_small;
+				}
+				else {
+					$logo = $logodir.'/logos/'.$this->emetteur->logo;
+				}
 				if (is_readable($logo))
 				{
 				    $height=pdf_getHeightForLogo($logo);

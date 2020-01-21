@@ -538,7 +538,6 @@ class Facture extends CommonInvoice
 		$sql .= ", ".(empty($this->retained_warranty) ? "0" : $this->db->escape($this->retained_warranty));
 		$sql .= ", ".(!empty($this->retained_warranty_date_limit) ? "'".$this->db->idate($this->retained_warranty_date_limit)."'" : 'NULL');
 		$sql .= ", ".(int) $this->retained_warranty_fk_cond_reglement;
-
 		$sql .= ")";
 
 		$resql = $this->db->query($sql);
@@ -980,7 +979,7 @@ class Facture extends CommonInvoice
 		}
 		elseif ($this->type == self::TYPE_SITUATION && !empty($conf->global->INVOICE_USE_SITUATION))
 		{
-			$this->fetchObjectLinked('', '', $facture->id, 'facture');
+			$this->fetchObjectLinked('', '', $this->id, 'facture');
 
 			foreach ($this->linkedObjectsIds as $typeObject => $Tfk_object)
 			{
@@ -1006,7 +1005,7 @@ class Facture extends CommonInvoice
 	 */
 	public function createFromClone(User $user, $fromid = 0)
 	{
-		global $hookmanager;
+		global $conf, $hookmanager;
 
 		$error = 0;
 
@@ -1048,11 +1047,10 @@ class Facture extends CommonInvoice
 		$object->close_code         = '';
 		$object->close_note         = '';
 		$object->products = $object->lines; // For backward compatibility
-		if ($conf->global->MAIN_DONT_KEEP_NOTE_ON_CLONING == 1)
-                {
-                                 $object->note_private = '';
-                                 $object->note_public = '';
-        }
+		if ($conf->global->MAIN_DONT_KEEP_NOTE_ON_CLONING == 1) {
+			$object->note_private = '';
+			$object->note_public = '';
+		}
 
 		// Loop on each line of new invoice
 		foreach ($object->lines as $i => $line)
@@ -1175,7 +1173,7 @@ class Facture extends CommonInvoice
 		$this->availability_id      = $object->availability_id;
 		$this->demand_reason_id     = $object->demand_reason_id;
 		$this->date_livraison       = $object->date_livraison;
-		$this->fk_delivery_address  = $object->fk_delivery_address;
+		$this->fk_delivery_address  = $object->fk_delivery_address;		// deprecated
 		$this->contact_id           = $object->contactid;
 		$this->ref_client           = $object->ref_client;
 
@@ -1379,12 +1377,13 @@ class Facture extends CommonInvoice
 		$sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'c_paiement as p ON f.fk_mode_reglement = p.id';
 		$sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'c_incoterms as i ON f.fk_incoterms = i.rowid';
 
-		if ($rowid)   $sql .= " WHERE f.rowid=".$rowid;
-		else $sql .= ' WHERE f.entity IN ('.getEntity('invoice').')'; // Dont't use entity if you use rowid
-
-		if ($ref)     $sql .= " AND f.ref='".$this->db->escape($ref)."'";
-		if ($ref_ext) $sql .= " AND f.ref_ext='".$this->db->escape($ref_ext)."'";
-		if ($ref_int) $sql .= " AND f.ref_int='".$this->db->escape($ref_int)."'";
+		if ($rowid) $sql .= " WHERE f.rowid=".$rowid;
+		else {
+			$sql .= ' WHERE f.entity IN ('.getEntity('invoice').')'; // Dont't use entity if you use rowid
+			if ($ref)     $sql .= " AND f.ref='".$this->db->escape($ref)."'";
+			if ($ref_ext) $sql .= " AND f.ref_ext='".$this->db->escape($ref_ext)."'";
+			if ($ref_int) $sql .= " AND f.ref_int='".$this->db->escape($ref_int)."'";
+		}
 
 		dol_syslog(get_class($this)."::fetch", LOG_DEBUG);
 		$result = $this->db->query($sql);
@@ -1833,7 +1832,6 @@ class Facture extends CommonInvoice
 			{
     			$srcinvoice = new Facture($this->db);
     			$srcinvoice->fetch($remise->fk_facture_source);
-    			$totalcostpriceofinvoice = 0;
     			include_once DOL_DOCUMENT_ROOT.'/core/class/html.formmargin.class.php'; // TODO Move this into commonobject
     			$formmargin = new FormMargin($this->db);
     			$arraytmp = $formmargin->getMarginInfosArray($srcinvoice, false);
@@ -2016,7 +2014,7 @@ class Facture extends CommonInvoice
 			$list_rowid_det = array();
 			foreach ($this->lines as $key => $invoiceline)
 			{
-				$list_rowid_det[] = $invoiceline->rowid;
+				$list_rowid_det[] = $invoiceline->id;
 			}
 
 			// Consumned discounts are freed
@@ -3133,6 +3131,7 @@ class Facture extends CommonInvoice
 				$this->line->rang = $rangmax + 1;
 			}
 
+			$this->line->id					= $rowid;
 			$this->line->rowid				= $rowid;
 			$this->line->label				= $label;
 			$this->line->desc = $desc;
@@ -4047,7 +4046,7 @@ class Facture extends CommonInvoice
 	 */
     public function initAsSpecimen($option = '')
 	{
-		global $langs;
+		global $conf, $langs;
 
 		$now = dol_now();
 		$arraynow = dol_getdate($now);
@@ -4089,9 +4088,14 @@ class Facture extends CommonInvoice
 		$this->date_lim_reglement = $this->calculate_date_lim_reglement();
 		$this->mode_reglement_id   = 0; // Not forced to show payment mode CHQ + VIR
 		$this->mode_reglement_code = ''; // Not forced to show payment mode CHQ + VIR
+
 		$this->note_public = 'This is a comment (public)';
 		$this->note_private = 'This is a comment (private)';
 		$this->note = 'This is a comment (private)';
+
+		$this->multicurrency_tx = 1;
+		$this->multicurrency_code = $conf->currency;
+
 		$this->fk_incoterms = 0;
 		$this->location_incoterms = '';
 
