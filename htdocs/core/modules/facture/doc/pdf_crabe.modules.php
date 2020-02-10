@@ -492,7 +492,12 @@ class pdf_crabe extends ModelePDFFactures
 						$pdf->setPage($pageposbefore + 1);
 
 						$curY = $tab_top_newpage;
-						$showpricebeforepagebreak = 0;
+
+						// Allows data in the first page if description is long enough to break in multiples pages
+						if(!empty($conf->global->MAIN_PDF_DATA_ON_FIRST_PAGE))
+							$showpricebeforepagebreak = 1;
+						else
+							$showpricebeforepagebreak = 0;
 					}
 
 					if (isset($imglinesize['width']) && isset($imglinesize['height']))
@@ -532,7 +537,12 @@ class pdf_crabe extends ModelePDFFactures
 						else
 						{
 							// We found a page break
-							$showpricebeforepagebreak = 0;
+
+							// Allows data in the first page if description is long enough to break in multiples pages
+							if(!empty($conf->global->MAIN_PDF_DATA_ON_FIRST_PAGE))
+								$showpricebeforepagebreak = 1;
+							else
+								$showpricebeforepagebreak = 0;
 						}
 					}
 					else	// No pagebreak
@@ -901,6 +911,8 @@ class pdf_crabe extends ModelePDFFactures
 
 				$i++;
 			}
+
+			return $tab3_top + $y + 3;
 		}
 		else
 		{
@@ -1040,7 +1052,7 @@ class pdf_crabe extends ModelePDFFactures
 
 				// Show online payment link
 				$useonlinepayment = ((! empty($conf->paypal->enabled) || ! empty($conf->stripe->enabled) || ! empty($conf->paybox->enabled)) && !empty($conf->global->PDF_SHOW_LINK_TO_ONLINE_PAYMENT));
-				if ($object->mode_reglement_code == 'CB' || $object->mode_reglement_code == 'VAD' && $object->statut != Facture::STATUS_DRAFT && $useonlinepayment) {
+				if (($object->mode_reglement_code == 'CB' || $object->mode_reglement_code == 'VAD') && $object->statut != Facture::STATUS_DRAFT && $useonlinepayment) {
 					require_once DOL_DOCUMENT_ROOT.'/core/lib/payments.lib.php';
 					global $langs;
 
@@ -1632,7 +1644,7 @@ class pdf_crabe extends ModelePDFFactures
 			if ($this->emetteur->logo)
 			{
 				$logodir = $conf->mycompany->dir_output;
-				if (! empty($conf->mycompany->multidir_output[$object->entity])) $logodir = $conf->mycompany->multidir_output[$object->entity];
+				if (!empty($conf->mycompany->multidir_output[$object->entity])) $logodir = $conf->mycompany->multidir_output[$object->entity];
 				if (empty($conf->global->MAIN_PDF_USE_LARGE_LOGO))
 				{
 					$logo = $logodir.'/logos/thumbs/'.$this->emetteur->logo_small;

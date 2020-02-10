@@ -767,7 +767,7 @@ class Form
 				{
 					//if (empty($showempty) && empty($row['rowid'])) continue;
 					if (empty($row['rowid'])) continue;
-					if (is_array($exclude_country_code) && count($exclude_country_code) && in_array($row['code_iso'], $exclude_country_code)) continue;	// exclude some countries
+					if (is_array($exclude_country_code) && count($exclude_country_code) && in_array($row['code_iso'], $exclude_country_code)) continue; // exclude some countries
 
 					if (empty($disablefavorites) && $row['favorite'] && $row['code_iso']) $atleastonefavorite++;
 					if (empty($row['favorite']) && $atleastonefavorite)
@@ -2643,7 +2643,7 @@ class Form
     			    $langs->load("stocks");
 
     			    $tmpproduct = new Product($this->db);
-    			    $tmpproduct->fetch($objp->rowid, '', '', '', 1, 1, 1);	// Load product without lang and prices arrays (we just need to make ->virtual_stock() after)
+    			    $tmpproduct->fetch($objp->rowid, '', '', '', 1, 1, 1); // Load product without lang and prices arrays (we just need to make ->virtual_stock() after)
     			    $tmpproduct->load_virtual_stock();
     			    $virtualstock = $tmpproduct->stock_theorique;
 
@@ -6037,16 +6037,23 @@ class Form
 
 		// Search data
 		$sql = "SELECT t.rowid, ".$fieldstoshow." FROM ".MAIN_DB_PREFIX.$objecttmp->table_element." as t";
-		if ($objecttmp->ismultientitymanaged == 2)
+		if (isset($objecttmp->ismultientitymanaged) && ! is_numeric($objecttmp->ismultientitymanaged)) {
+			$tmparray = explode('@', $objecttmp->ismultientitymanaged);
+			$sql .= ' INNER JOIN '.MAIN_DB_PREFIX.$tmparray[1].' as parenttable ON parenttable.rowid = t.'.$tmparray[0];
+		}
+		if ($objecttmp->ismultientitymanaged == 'fk_soc@societe')
 			if (!$user->rights->societe->client->voir && !$user->socid) $sql .= ", ".MAIN_DB_PREFIX."societe_commerciaux as sc";
 		$sql .= " WHERE 1=1";
-		if (!empty($objecttmp->ismultientitymanaged)) $sql .= " AND t.entity IN (".getEntity($objecttmp->table_element).")";
+		if (isset($objecttmp->ismultientitymanaged) && $objecttmp->ismultientitymanaged == 1) $sql .= " AND t.entity IN (".getEntity($objecttmp->table_element).")";
+		if (isset($objecttmp->ismultientitymanaged) && ! is_numeric($objecttmp->ismultientitymanaged)) {
+			$sql .= ' AND parenttable.entity = t.'.$tmparray[0];
+		}
 		if ($objecttmp->ismultientitymanaged == 1 && !empty($user->socid)) {
 			if ($objecttmp->element == 'societe') $sql .= " AND t.rowid = ".$user->socid;
 			else $sql .= " AND t.fk_soc = ".$user->socid;
 		}
 		if ($searchkey != '') $sql .= natural_search(explode(',', $fieldstoshow), $searchkey);
-		if ($objecttmp->ismultientitymanaged == 2) {
+		if ($objecttmp->ismultientitymanaged == 'fk_soc@societe') {
 			if (!$user->rights->societe->client->voir && !$user->socid) $sql .= " AND t.rowid = sc.fk_soc AND sc.fk_user = ".$user->id;
 		}
 		if ($objecttmp->filter) {	 // Syntax example "(t.ref:like:'SO-%') and (t.date_creation:<:'20160101')"
@@ -6242,7 +6249,7 @@ class Form
 				if (is_array($id)) {
 					if (in_array($key, $id) && !$disabled) $out .= ' selected'; // To preselect a value
 				} else {
-					$id = (string) $id;	// if $id = 0, then $id = '0'
+					$id = (string) $id; // if $id = 0, then $id = '0'
 					if ($id != '' && $id == $key && !$disabled) $out .= ' selected'; // To preselect a value
 				}
 				if ($nohtmlescape) $out .= ' data-html="'.dol_escape_htmltag($selectOptionValue).'"';
@@ -6497,7 +6504,7 @@ class Form
 	 *	@param  int		$translate		Translate and encode value
 	 *  @param	int		$width			Force width of select box. May be used only when using jquery couch. Example: 250, 95%
 	 *  @param	string	$moreattrib		Add more options on select component. Example: 'disabled'
-	 *  @param	string	$elemtype		Type of element we show ('category', ...)
+	 *  @param	string	$elemtype		Type of element we show ('category', ...). Will execute a formating function on it. To use in readonly mode if js component support HTML formatting.
 	 *  @param	string	$placeholder	String to use as placeholder
 	 *  @param	int		$addjscombo		Add js combo
 	 *	@return	string					HTML multiselect string
@@ -6552,7 +6559,7 @@ class Form
 							 	templateResult: formatResult,		/* For 4.0 */
 								// Specify format function for selected item
 								formatSelection: formatSelection,
-							 	templateResult: formatSelection		/* For 4.0 */
+							 	templateSelection: formatSelection		/* For 4.0 */
 							});
 						});'."\n";
 			}
@@ -7297,14 +7304,23 @@ class Form
 		{
 			$ret .= '';
 		}
-		elseif ($fieldref != 'none') $ret .= dol_htmlentities($object->$fieldref);
-
+		elseif ($fieldref != 'none')
+		{
+			$ret.=dol_htmlentities($object->$fieldref);
+		}
 
 		if ($morehtmlref)
 		{
-			$ret .= ' '.$morehtmlref;
+			// don't add a additional space, when "$morehtmlref" starts with a HTML div tag
+			if(substr($morehtmlref, 0, 4) != '<div')
+			{
+				$ret.=' ';
+			}
+
+			$ret.=$morehtmlref;
 		}
-		$ret .= '</div>';
+
+		$ret.='</div>';
 
 		$ret .= '</div><!-- End banner content -->';
 
@@ -8025,17 +8041,47 @@ class Form
 	/**
 	 * Output the component to make advanced search criteries
 	 *
-	 * @param	array		$arrayofcriterias			Array of available search criterias. Example: array($object->element => $object->fields, 'otherfamily' => otherarrayoffields, ...)
-	 * @param	array		$search_component_params	Array of selected search criterias
-	 * @return	string									HTML component for advanced search
+	 * @param	array		$arrayofcriterias			          Array of available search criterias. Example: array($object->element => $object->fields, 'otherfamily' => otherarrayoffields, ...)
+	 * @param	array		$search_component_params	          Array of selected search criterias
+	 * @param   array       $arrayofinputfieldsalreadyoutput      Array of input fields already inform. The component will not generate a hidden input field if it is in this list.
+	 * @return	string									          HTML component for advanced search
 	 */
-	public function searchComponent($arrayofcriterias, $search_component_params)
+	public function searchComponent($arrayofcriterias, $search_component_params, $arrayofinputfieldsalreadyoutput = array())
 	{
+	    global $conf, $langs;
+
 		$ret = '';
 
-
-
-
+		$ret .= '<div class="nowrap centpercent">';
+		//$ret .= '<button type="submit" class="liste_titre button_removefilter" name="button_removefilter_x" value="x"><span class="fa fa-remove"></span></button>';
+		$ret .= '<a href="#" class="dropdownsearch-toggle unsetcolor paddingright">';
+		$ret .= '<span class="fas fa-filter linkobject boxfilter" title="Filter" id="idsubimgproductdistribution"></span>';
+		$ret .= $langs->trans("Filters");
+		$ret .= '</a>';
+		//$ret .= '<button type="submit" class="liste_titre button_search paddingleftonly" name="button_search_x" value="x"><span class="fa fa-search"></span></button>';
+		$ret .= '<div name="search_component_params" class="search_component_params inline-block minwidth500 maxwidth300onsmartphone">';
+		$ret .= '<input type="text" name="search_component_params_input" class="search_component_params_input" placeholder="'.$langs->trans("Search").'" value="'.GETPOST("search_component_params_input").'">';
+		$ret .= '</div>';
+		foreach($arrayofcriterias as $criterias) {
+		    foreach($criterias as $criteriafamilykey => $criteriafamilyval) {
+		    	if (in_array('search_'.$criteriafamilykey, $arrayofinputfieldsalreadyoutput)) continue;
+		        if (in_array($criteriafamilykey, array('rowid', 'ref_ext', 'entity', 'extraparams'))) continue;
+		        if (in_array($criteriafamilyval['type'], array('date', 'datetime', 'timestamp'))) {
+		            $ret .= '<input type="hidden" name="search_'.$criteriafamilykey.'_start">';
+		            $ret .= '<input type="hidden" name="search_'.$criteriafamilykey.'_startyear">';
+		            $ret .= '<input type="hidden" name="search_'.$criteriafamilykey.'_startmonth">';
+		            $ret .= '<input type="hidden" name="search_'.$criteriafamilykey.'_startday">';
+		            $ret .= '<input type="hidden" name="search_'.$criteriafamilykey.'_end">';
+		            $ret .= '<input type="hidden" name="search_'.$criteriafamilykey.'_endyear">';
+		            $ret .= '<input type="hidden" name="search_'.$criteriafamilykey.'_endmonth">';
+		            $ret .= '<input type="hidden" name="search_'.$criteriafamilykey.'_endday">';
+		        }
+		        else {
+					$ret .= '<input type="hidden" name="search_'.$criteriafamilykey.'">';
+		        }
+		    }
+		}
+        $ret .= '</div>';
 
 
 		return $ret;
