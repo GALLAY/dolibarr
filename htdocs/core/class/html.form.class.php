@@ -2431,6 +2431,7 @@ class Form
 		$outlabel = $objp->label;
 		$outdesc = $objp->description;
 		$outbarcode = $objp->barcode;
+		$outpbq = empty($objp->price_by_qty_rowid) ? '' : $objp->price_by_qty_rowid;
 
 		$outtype = $objp->fk_product_type;
 		$outdurationvalue = $outtype == Product::TYPE_SERVICE ?substr($objp->duration, 0, dol_strlen($objp->duration) - 1) : '';
@@ -2478,7 +2479,7 @@ class Form
 		$opt .= ($objp->rowid == $selected) ? ' selected' : '';
 		if (!empty($objp->price_by_qty_rowid) && $objp->price_by_qty_rowid > 0)
 		{
-			$opt .= ' pbq="'.$objp->price_by_qty_rowid.'" data-pbq="'.$objp->price_by_qty_rowid.'" data-pbqqty="'.$objp->price_by_qty_quantity.'" data-pbqpercent="'.$objp->price_by_qty_remise_percent.'"';
+			$opt .= ' pbq="'.$objp->price_by_qty_rowid.'" data-pbq="'.$objp->price_by_qty_rowid.'" data-pbqup="'.$objp->price_by_qty_unitprice.'" data-pbqbase="'.$objp->price_by_qty_price_base_type.'" data-pbqqty="'.$objp->price_by_qty_quantity.'" data-pbqpercent="'.$objp->price_by_qty_remise_percent.'"';
 		}
 		if (!empty($conf->stock->enabled) && isset($objp->stock) && ($objp->fk_product_type == Product::TYPE_PRODUCT || !empty($conf->global->STOCK_SUPPORTS_SERVICES)))
 		{
@@ -2664,7 +2665,7 @@ class Form
 		}
 
 		$opt .= "</option>\n";
-		$optJson = array('key'=>$outkey, 'value'=>$outref, 'label'=>$outval, 'label2'=>$outlabel, 'desc'=>$outdesc, 'type'=>$outtype, 'price_ht'=>price2num($outprice_ht), 'price_ttc'=>price2num($outprice_ttc), 'pricebasetype'=>$outpricebasetype, 'tva_tx'=>$outtva_tx, 'qty'=>$outqty, 'discount'=>$outdiscount, 'duration_value'=>$outdurationvalue, 'duration_unit'=>$outdurationunit);
+		$optJson = array('key'=>$outkey, 'value'=>$outref, 'label'=>$outval, 'label2'=>$outlabel, 'desc'=>$outdesc, 'type'=>$outtype, 'price_ht'=>price2num($outprice_ht), 'price_ttc'=>price2num($outprice_ttc), 'pricebasetype'=>$outpricebasetype, 'tva_tx'=>$outtva_tx, 'qty'=>$outqty, 'discount'=>$outdiscount, 'duration_value'=>$outdurationvalue, 'duration_unit'=>$outdurationunit, 'pbq'=>$outpbq);
 	}
 
     // phpcs:disable PEAR.NamingConventions.ValidFunctionName.ScopeNotCamelCaps
@@ -6692,8 +6693,10 @@ class Form
         <script type="text/javascript">
           jQuery(document).ready(function () {
               $(\'.multiselectcheckbox'.$htmlname.' input[type="checkbox"]\').on(\'click\', function () {
-                  console.log("A new field was added/removed")
-                  $("input:hidden[name=formfilteraction]").val(\'listafterchangingselectedfields\')
+                  console.log("A new field was added/removed, we edit field input[name=formfilteraction]");
+
+                  $("input:hidden[name=formfilteraction]").val(\'listafterchangingselectedfields\');	// Update field so we know we changed something on selected fields after POST
+
                   var title = $(this).val() + ",";
                   if ($(this).is(\':checked\')) {
                       $(\'.'.$htmlname.'\').val(title + $(\'.'.$htmlname.'\').val());
@@ -6702,8 +6705,10 @@ class Form
                       $(\'.'.$htmlname.'\').val( $(\'.'.$htmlname.'\').val().replace(title, \'\') )
                   }
                   // Now, we submit page
-                  $(this).parents(\'form:first\').submit();
+                  //$(this).parents(\'form:first\').submit();
               });
+
+
            });
         </script>
 
@@ -7069,7 +7074,6 @@ class Form
 					jQuery(".linkto").click(function() {
 						console.log("We choose to show/hide link for rel="+jQuery(this).attr(\'rel\'));
 					    jQuery("#"+jQuery(this).attr(\'rel\')+"list").toggle();
-						jQuery(this).toggle();
 					});
 				});
 				</script>

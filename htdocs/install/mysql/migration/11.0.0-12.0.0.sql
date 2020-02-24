@@ -40,9 +40,27 @@ create table llx_commande_fournisseur_dispatch_extrafields
 
 ALTER TABLE llx_commande_fournisseur_dispatch_extrafields ADD INDEX idx_commande_fournisseur_dispatch_extrafields (fk_object);
 
+UPDATE llx_accounting_system SET fk_country = NULL, active = 0 WHERE pcg_version = 'SYSCOHADA';
+
 
 
 -- For v12
+
+UPDATE llx_website SET lang = 'en' WHERE lang like 'en_%';
+UPDATE llx_website SET lang = 'fr' WHERE lang like 'fr_%';
+UPDATE llx_website SET lang = 'es' WHERE lang like 'es_%';
+UPDATE llx_website SET lang = 'de' WHERE lang like 'de_%';
+UPDATE llx_website SET lang = 'it' WHERE lang like 'it_%';
+UPDATE llx_website SET lang = 'pt' WHERE lang like 'pt_%';
+UPDATE llx_website_page SET lang = 'en' WHERE lang like 'en_%';
+UPDATE llx_website_page SET lang = 'fr' WHERE lang like 'fr_%';
+UPDATE llx_website_page SET lang = 'es' WHERE lang like 'es_%';
+UPDATE llx_website_page SET lang = 'de' WHERE lang like 'de_%';
+UPDATE llx_website_page SET lang = 'it' WHERE lang like 'it_%';
+UPDATE llx_website_page SET lang = 'pt' WHERE lang like 'pt_%';
+
+ALTER TABLE llx_website ADD COLUMN lang varchar(8);
+ALTER TABLE llx_website ADD COLUMN otherlang varchar(255); 
 
 ALTER TABLE llx_holiday_users DROP INDEX uk_holiday_users;
 ALTER TABLE llx_holiday_users ADD UNIQUE INDEX uk_holiday_users(fk_user, fk_type);
@@ -162,4 +180,10 @@ ALTER TABLE llx_c_ticket_resolution ADD UNIQUE INDEX uk_code (code, entity);
 INSERT INTO llx_c_ticket_resolution (code, pos, label, active, use_default, description) VALUES('SOLVED',   '10', 'Solved',    1, 0, NULL);
 INSERT INTO llx_c_ticket_resolution (code, pos, label, active, use_default, description) VALUES('CANCELED', '50', 'Canceled',  1, 0, NULL);
 INSERT INTO llx_c_ticket_resolution (code, pos, label, active, use_default, description) VALUES('OTHER',    '90', 'Other',     1, 0, NULL);
+
+DELETE FROM llx_const WHERE name = __ENCRYPT('DONATION_ART885')__;
+
+ALTER TABLE llx_extrafields MODIFY COLUMN printable integer DEFAULT 0;
+ALTER TABLE llx_extrafields ADD COLUMN printable integer DEFAULT 0;
+
 

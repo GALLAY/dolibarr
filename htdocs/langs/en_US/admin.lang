@@ -1686,6 +1686,8 @@ CashDeskIdWareHouse=Force and restrict warehouse to use for stock decrease
 StockDecreaseForPointOfSaleDisabled=Stock decrease from Point of Sale disabled
 StockDecreaseForPointOfSaleDisabledbyBatch=Stock decrease in POS is not compatible with module Serial/Lot management (currently active) so stock decrease is disabled.
 CashDeskYouDidNotDisableStockDecease=You did not disable stock decrease when making a sale from Point of Sale. Hence a warehouse is required.
+CashDeskForceDecreaseStockLabel=Stock decrease for batch products was forced.
+CashDeskForceDecreaseStockDesc=Decrease first by the oldest eatby and sellby dates.
 ##### Bookmark #####
 BookmarkSetup=Bookmark module setup
 BookmarkDesc=This module allows you to manage bookmarks. You can also add shortcuts to any Dolibarr pages or external web sites on your left menu.
@@ -1977,3 +1979,4 @@ FeatureNotAvailableWithReceptionModule=Feature not available when module Recepti
 EmailTemplate=Template for email
 EMailsWillHaveMessageID=Emails will have a tag 'References' matching this syntax
 PDF_USE_ALSO_LANGUAGE_CODE=If you want to have some text title in your PDF duplicated in 2 different languages in the same generate PDF, you must set here this second language so generated PDF will contains 2 different languages in same page, the one chosen when generating PDF and this one (only few PDF templates support this). Keep empty for 1 language per PDF.
+FafaIconSocialNetworksDesc=Enter here the code of a FontAwesome icon. If you don't know what is FontAwesome, you can use the generic value fa-address-book.

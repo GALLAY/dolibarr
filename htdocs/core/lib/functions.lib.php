@@ -297,7 +297,7 @@ function GETPOSTISSET($paramname)
  *  @param  int     $filter      Filter to apply when $check is set to 'custom'. (See http://php.net/manual/en/filter.filters.php for détails)
  *  @param  mixed   $options     Options to pass to filter_var when $check is set to 'custom'
  *  @param	string	$noreplace	 Force disable of replacement of __xxx__ strings.
- *  @return string|string[]      Value found (string or array), or '' if check fails
+ *  @return string|array         Value found (string or array), or '' if check fails
  */
 function GETPOST($paramname, $check = 'alphanohtml', $method = 0, $filter = null, $options = null, $noreplace = 0)
 {
@@ -559,11 +559,9 @@ function GETPOST($paramname, $check = 'alphanohtml', $method = 0, $filter = null
 		case 'alpha':
 			if (!is_array($out))
 			{
-				$out = trim($out);
 				// '"' is dangerous because param in url can close the href= or src= and add javascript functions.
 				// '../' is dangerous because it allows dir transversals
-				if (preg_match('/"/', $out)) $out = '';
-				elseif (preg_match('/\.\.\//', $out)) $out = '';
+				$out = str_replace(array('"', '../'), '', trim($out));
 			}
 			break;
 		case 'san_alpha':
@@ -593,17 +591,15 @@ function GETPOST($paramname, $check = 'alphanohtml', $method = 0, $filter = null
 		case 'array':
 			if (!is_array($out) || empty($out)) $out = array();
 			break;
-		case 'nohtml':		// Recommended for most scalar parameters
+		case 'nohtml':
 			$out = dol_string_nohtmltag($out, 0);
 			break;
-		case 'alphanohtml':	// Recommended for search parameters
+		case 'alphanohtml':	// Recommended for most scalar parameters and search parameters
 			if (!is_array($out))
 			{
-				$out = trim($out);
 				// '"' is dangerous because param in url can close the href= or src= and add javascript functions.
 				// '../' is dangerous because it allows dir transversals
-				if (preg_match('/"/', $out)) $out = '';
-				elseif (preg_match('/\.\.\//', $out)) $out = '';
+				$out = str_replace(array('"', '../'), '', trim($out));
 				$out = dol_string_nohtmltag($out);
 			}
 			break;
@@ -1302,7 +1298,7 @@ function dol_get_fiche_head($links = array(), $active = '', $title = '', $notab 
 		$tabsname = str_replace("@", "", $picto);
 		$out .= '<div id="moretabs'.$tabsname.'" class="inline-block tabsElem">';
 		$out .= '<a href="#" class="tab moretab inline-block tabunactive reposition">'.$langs->trans("More").'... ('.$nbintab.')</a>';
-		$out .= '<div id="moretabsList'.$tabsname.'" style="position: absolute; '.$left.': -999em; text-align: '.$left.'; margin:0px; padding:2px">';
+		$out .= '<div id="moretabsList'.$tabsname.'" style="position: absolute; '.$left.': -999em; text-align: '.$left.'; margin:0px; padding:2px; z-index:10;">';
 		$out .= $outmore;
 		$out .= '</div>';
 		$out .= '<div></div>';
@@ -2106,8 +2102,6 @@ function dol_now($mode = 'gmt')
 {
 	$ret = 0;
 
-	// Note that gmmktime and mktime return same value (GMT) when used without parameters
-	//if ($mode == 'gmt') $ret=gmmktime(); // Strict Standards: gmmktime(): You should be using the time() function instead
 	if ($mode == 'gmt') $ret = time(); // Time for now at greenwich.
 	elseif ($mode == 'tzserver')		// Time for now with PHP server timezone added
 	{
@@ -2123,7 +2117,7 @@ function dol_now($mode = 'gmt')
 	}*/
 	elseif ($mode == 'tzuser')				// Time for now with user timezone added
 	{
-		//print 'time: '.time().'-'.mktime().'-'.gmmktime();
+		//print 'time: '.time();
 		$offsettz = (empty($_SESSION['dol_tz']) ? 0 : $_SESSION['dol_tz']) * 60 * 60;
 		$offsetdst = (empty($_SESSION['dol_dst']) ? 0 : $_SESSION['dol_dst']) * 60 * 60;
 		$ret = (int) (dol_now('gmt') + ($offsettz + $offsetdst));
@@ -7624,15 +7618,12 @@ function printCommonFooter($zone = 'private')
 					$micro_end_time = microtime(true);
 					print ' - Build time: '.ceil(1000 * ($micro_end_time - $micro_start_time)).' ms';
 				}
-				if (function_exists("memory_get_usage"))
-				{
-					print ' - Mem: '.memory_get_usage();
+
+				if (function_exists("memory_get_usage")) {
+					print ' - Mem: '.memory_get_usage();	// Do not use true here, it seems it takes the peak amount
 				}
-				if (function_exists("xdebug_memory_usage"))
-				{
-					print ' - XDebug time: '.ceil(1000 * xdebug_time_index()).' ms';
-					print ' - XDebug mem: '.xdebug_memory_usage();
-					print ' - XDebug mem peak: '.xdebug_peak_memory_usage();
+				if (function_exists("memory_get_peak_usage")) {
+					print ' - Real mem peak: '.memory_get_peak_usage(true);
 				}
 				if (function_exists("zend_loader_file_encoded"))
 				{
