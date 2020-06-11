@@ -258,9 +258,7 @@ class BookKeeping extends CommonObject
 			if (in_array($this->doc_type, array('bank', 'expense_report')))
 			{
 				$this->errors[] = $langs->trans('ErrorFieldAccountNotDefinedForBankLine', $this->fk_docdet, $this->doc_type);
-			}
-			else
-			{
+			} else {
 				//$this->errors[]=$langs->trans('ErrorFieldAccountNotDefinedForInvoiceLine', $this->doc_ref,  $this->label_compte);
 				$mesg = $this->doc_ref.', '.$langs->trans("AccountAccounting").': '.$this->numero_compte;
 				if ($this->subledger_account && $this->subledger_account != $this->numero_compte)
@@ -361,20 +359,20 @@ class BookKeeping extends CommonObject
 				$sql .= ", '".$this->db->escape($this->doc_ref)."'";
 				$sql .= ", ".$this->fk_doc;
 				$sql .= ", ".$this->fk_docdet;
-				$sql .= ", ".(!empty($this->thirdparty_code)?("'".$this->db->escape($this->thirdparty_code)."'"):"NULL");
-				$sql .= ", ".(!empty($this->subledger_account)?("'".$this->db->escape($this->subledger_account)."'"):"NULL");
-				$sql .= ", ".(!empty($this->subledger_label)?("'".$this->db->escape($this->subledger_label)."'"):"NULL");
+				$sql .= ", ".(!empty($this->thirdparty_code) ? ("'".$this->db->escape($this->thirdparty_code)."'") : "NULL");
+				$sql .= ", ".(!empty($this->subledger_account) ? ("'".$this->db->escape($this->subledger_account)."'") : "NULL");
+				$sql .= ", ".(!empty($this->subledger_label) ? ("'".$this->db->escape($this->subledger_label)."'") : "NULL");
 				$sql .= ", '".$this->db->escape($this->numero_compte)."'";
-				$sql .= ", ".(!empty($this->label_operation)?("'".$this->db->escape($this->label_operation)."'"):"NULL");
+				$sql .= ", ".(!empty($this->label_operation) ? ("'".$this->db->escape($this->label_operation)."'") : "NULL");
 				$sql .= ", '".$this->db->escape($this->label_operation)."'";
 				$sql .= ", ".$this->debit;
 				$sql .= ", ".$this->credit;
 				$sql .= ", ".$this->montant;
-				$sql .= ", ".(!empty($this->sens)?("'".$this->db->escape($this->sens)."'"):"NULL");
+				$sql .= ", ".(!empty($this->sens) ? ("'".$this->db->escape($this->sens)."'") : "NULL");
 				$sql .= ", '".$this->db->escape($this->fk_user_author)."'";
 				$sql .= ", '".$this->db->idate($now)."'";
 				$sql .= ", '".$this->db->escape($this->code_journal)."'";
-				$sql .= ", ".(!empty($this->journal_label)?("'".$this->db->escape($this->journal_label)."'"):"NULL");
+				$sql .= ", ".(!empty($this->journal_label) ? ("'".$this->db->escape($this->journal_label)."'") : "NULL");
 				$sql .= ", ".$this->db->escape($this->piece_num);
 				$sql .= ", ".(!isset($this->entity) ? $conf->entity : $this->entity);
 				$sql .= ")";
@@ -477,8 +475,7 @@ class BookKeeping extends CommonObject
 			}
 			$linkclose .= ' title="'.dol_escape_htmltag($label, 1).'"';
 			$linkclose .= ' class="classfortooltip'.($morecss ? ' '.$morecss : '').'"';
-		}
-		else $linkclose = ($morecss ? ' class="'.$morecss.'"' : '');
+		} else $linkclose = ($morecss ? ' class="'.$morecss.'"' : '');
 
 		$linkstart = '<a href="'.$url.'"';
 		$linkstart .= $linkclose.'>';
@@ -704,7 +701,7 @@ class BookKeeping extends CommonObject
 		$sql .= ' WHERE 1 = 1';
 		$sql .= " AND entity IN (".getEntity('accountancy').")";
 		if (null !== $ref) {
-			$sql .= ' AND t.ref = '.'\''.$ref.'\'';
+			$sql .= " AND t.ref = '".$this->db->escape($ref)."'";
 		} else {
 			$sql .= ' AND t.rowid = '.$id;
 		}
@@ -1397,7 +1394,7 @@ class BookKeeping extends CommonObject
 		$sql = "DELETE";
 		$sql .= " FROM ".MAIN_DB_PREFIX.$this->table_element.$mode;
 		$sql .= " WHERE 1 = 1";
-		$sql.= dolSqlDateFilter('doc_date', 0, $delmonth, $delyear);
+		$sql .= dolSqlDateFilter('doc_date', 0, $delmonth, $delyear);
 		if (!empty($journal)) $sql .= " AND code_journal = '".$this->db->escape($journal)."'";
 		$sql .= " AND entity IN (".getEntity('accountancy').")";
 

@@ -83,7 +83,6 @@ ErrorDebitCredit=Debit and Credit fields cannot have values at the same time
 AddCompteFromBK=Add finance accounts to the group
 ListAccounts=List of the financial accounts
 Pcgtype=Group account
-Pcgsubtype=Subgroup account
 DescVentilCustomer=View the list of customer invoice lines linked (or not) to a product financial account
 DescVentilDoneCustomer=View a detailed list of invoices, customers and their product financial account
 DescVentilTodoCustomer=Link invoice lines not already linked with a product finance account

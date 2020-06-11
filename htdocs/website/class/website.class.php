@@ -112,6 +112,11 @@ class Website extends CommonObject
 	public $use_manifest;
 
 	/**
+	 * @var int
+	 */
+	public $position;
+
+	/**
 	 * List of containers
 	 *
 	 * @var array
@@ -174,7 +179,7 @@ class Website extends CommonObject
         $this->lang = preg_replace('/[_-].*$/', '', trim($this->lang)); // en_US or en-US -> en
         $tmparray = explode(',', $this->otherlang);
 		if (is_array($tmparray)) {
-			foreach($tmparray as $key => $val) {
+			foreach ($tmparray as $key => $val) {
 				$tmparray[$key] = preg_replace('/[_-].*$/', '', trim($val)); // en_US or en-US -> en
 			}
 			$this->otherlang = join(',', $tmparray);
@@ -201,6 +206,7 @@ class Website extends CommonObject
 		$sql .= 'virtualhost,';
 		$sql .= 'fk_user_creat,';
 		$sql .= 'date_creation,';
+		$sql .= 'position,';
 		$sql .= 'tms';
 		$sql .= ') VALUES (';
 		$sql .= ' '.((empty($this->entity) && $this->entity != '0') ? 'NULL' : $this->entity).',';
@@ -213,6 +219,7 @@ class Website extends CommonObject
 		$sql .= ' '.(!isset($this->virtualhost) ? 'NULL' : "'".$this->db->escape($this->virtualhost)."'").",";
 		$sql .= ' '.(!isset($this->fk_user_creat) ? $user->id : $this->fk_user_creat).',';
 		$sql .= ' '.(!isset($this->date_creation) || dol_strlen($this->date_creation) == 0 ? 'NULL' : "'".$this->db->idate($this->date_creation)."'").",";
+		$sql .= ' '.((int) $this->position).",";
 		$sql .= ' '.(!isset($this->date_modification) || dol_strlen($this->date_modification) == 0 ? 'NULL' : "'".$this->db->idate($this->date_modification)."'");
 		$sql .= ')';
 
@@ -247,6 +254,13 @@ class Website extends CommonObject
             //     if ($result < 0) $error++;
             //     // End call triggers
             // }
+        }
+
+	    if (! $error) {
+	    	$stringtodolibarrfile = "# Some properties for Dolibarr web site CMS\n";
+	    	$stringtodolibarrfile .= "param=value\n";
+	    	//print $conf->website->dir_output.'/'.$this->ref.'/.dolibarr';exit;
+	    	file_put_contents($conf->website->dir_output.'/'.$this->ref.'/.dolibarr', $stringtodolibarrfile);
         }
 
 		// Commit or rollback
@@ -353,7 +367,7 @@ class Website extends CommonObject
 
 
 	/**
-	 * Load object in memory from the database
+	 * Load all object in memory ($this->records) from the database
 	 *
 	 * @param string $sortorder Sort Order
 	 * @param string $sortfield Sort field
@@ -473,7 +487,7 @@ class Website extends CommonObject
 		$this->lang = preg_replace('/[_-].*$/', '', trim($this->lang)); // en_US or en-US -> en
 		$tmparray = explode(',', $this->otherlang);
 		if (is_array($tmparray)) {
-			foreach($tmparray as $key => $val) {
+			foreach ($tmparray as $key => $val) {
 				$tmparray[$key] = preg_replace('/[_-].*$/', '', trim($val)); // en_US or en-US -> en
 			}
 			$this->otherlang = join(',', $tmparray);
@@ -614,7 +628,7 @@ class Website extends CommonObject
 	 */
 	public function createFromClone($user, $fromid, $newref, $newlang = '')
 	{
-        global $conf;
+        global $conf, $langs;
 		global $dolibarr_main_data_root;
 
 		$now = dol_now();
@@ -656,19 +670,22 @@ class Website extends CommonObject
 		$object->virtualhost = '';
 		$object->date_creation = $now;
 		$object->fk_user_creat = $user->id;
+		$object->position = $object->position + 1;
+		if (empty($object->lang)) $object->lang = substr($langs->defaultlang, 0, 2); // Should not happen. Protection for corrupted site with no languages
 
 		// Create clone
 		$object->context['createfromclone'] = 'createfromclone';
 		$result = $object->create($user);
 		if ($result < 0) {
 			$error++;
+			$this->error = $object->error;
 			$this->errors = $object->errors;
 			dol_syslog(__METHOD__.' '.join(',', $this->errors), LOG_ERR);
 		}
 
 		if (!$error)
 		{
-			dolCopyDir($pathofwebsiteold, $pathofwebsitenew, $conf->global->MAIN_UMASK, 0);
+			dolCopyDir($pathofwebsiteold, $pathofwebsitenew, $conf->global->MAIN_UMASK, 0, null, 2);
 
 			// Check symlink to medias and restore it if ko
 			$pathtomedias = DOL_DATA_ROOT.'/medias'; // Target
@@ -721,8 +738,7 @@ class Website extends CommonObject
 						$newidforhome = $objectpagenew->id;
 					}
 				}
-				else
-				{
+				else {
 					setEventMessages($objectpageold->error, $objectpageold->errors, 'errors');
 					$error++;
 				}
@@ -927,30 +943,34 @@ class Website extends CommonObject
 		    $arrayreplacementincss['file=logos%2Fthumbs%2F'.$mysoc->logo] = "file=logos%2Fthumbs%2F__LOGO_KEY__";
 		}
 
+		// Create output directories
+		dol_syslog("Create containers dir");
+		dol_mkdir($conf->website->dir_temp.'/'.$website->ref.'/containers');
+		dol_mkdir($conf->website->dir_temp.'/'.$website->ref.'/medias/image/websitekey');
+		dol_mkdir($conf->website->dir_temp.'/'.$website->ref.'/medias/js/websitekey');
+
+		// Copy files into 'containers'
 		$srcdir = $conf->website->dir_output.'/'.$website->ref;
 		$destdir = $conf->website->dir_temp.'/'.$website->ref.'/containers';
 
-		// Create containers dir
-		dol_syslog("Create containers dir");
-		dol_mkdir($conf->website->dir_temp.'/'.$website->ref.'/containers');
-
-		// Copy files into medias
 		dol_syslog("Copy content from ".$srcdir." into ".$destdir);
-		dolCopyDir($srcdir, $destdir, 0, 1, $arrayreplacementinfilename);
+		dolCopyDir($srcdir, $destdir, 0, 1, $arrayreplacementinfilename, 2);
 
+		// Copy files into medias/image
 		$srcdir = DOL_DATA_ROOT.'/medias/image/'.$website->ref;
 		$destdir = $conf->website->dir_temp.'/'.$website->ref.'/medias/image/websitekey';
 
 		dol_syslog("Copy content from ".$srcdir." into ".$destdir);
 		dolCopyDir($srcdir, $destdir, 0, 1, $arrayreplacementinfilename);
 
+		// Copy files into medias/js
 		$srcdir = DOL_DATA_ROOT.'/medias/js/'.$website->ref;
 		$destdir = $conf->website->dir_temp.'/'.$website->ref.'/medias/js/websitekey';
 
-		// Copy containers files
 		dol_syslog("Copy content from ".$srcdir." into ".$destdir);
 		dolCopyDir($srcdir, $destdir, 0, 1, $arrayreplacementinfilename);
 
+		// Make some replacement into some files
 		$cssindestdir = $conf->website->dir_temp.'/'.$website->ref.'/containers/styles.css.php';
 		dolReplaceInFile($cssindestdir, $arrayreplacementincss);
 
@@ -1002,7 +1022,7 @@ class Website extends CommonObject
 			fputs($fp, $line);
 
 			// Warning: We must keep llx_ here. It is a generic SQL.
-			$line = 'INSERT INTO llx_website_page(rowid, fk_page, fk_website, pageurl, aliasalt, title, description, lang, otherlang, image, keywords, status, date_creation, tms, import_key, grabbed_from, type_container, htmlheader, content)';
+			$line = 'INSERT INTO llx_website_page(rowid, fk_page, fk_website, pageurl, aliasalt, title, description, lang, image, keywords, status, date_creation, tms, import_key, grabbed_from, type_container, htmlheader, content)';
 
 			$line .= " VALUES(";
 			$line .= $objectpageold->newid."__+MAX_llx_website_page__, ";
@@ -1013,7 +1033,6 @@ class Website extends CommonObject
 			$line .= "'".$this->db->escape($objectpageold->title)."', ";
 			$line .= "'".$this->db->escape($objectpageold->description)."', ";
 			$line .= "'".$this->db->escape($objectpageold->lang)."', ";
-			$line .= "'".$this->db->escape($objectpageold->otherlang)."', ";
 			$line .= "'".$this->db->escape($objectpageold->image)."', ";
 			$line .= "'".$this->db->escape($objectpageold->keywords)."', ";
 			$line .= "'".$this->db->escape($objectpageold->status)."', ";
@@ -1079,8 +1098,7 @@ class Website extends CommonObject
 		{
 			return $filename;
 		}
-		else
-		{
+		else {
 			global $errormsg;
 			$this->error = $errormsg;
 			return '';
@@ -1196,11 +1214,11 @@ class Website extends CommonObject
 					$newid = ($reg[2] + $maxrowid);
 					$aliasesarray = explode(',', $reg[3]);
 
-					$objectpagestatic->fetch($newid);
-
 					dol_syslog("Found ID ".$oldid." to replace with ID ".$newid." and shortcut aliases to create: ".$reg[3]);
 
 					dol_move($conf->website->dir_output.'/'.$object->ref.'/page'.$oldid.'.tpl.php', $conf->website->dir_output.'/'.$object->ref.'/page'.$newid.'.tpl.php', 0, 1, 0, 0);
+
+					$objectpagestatic->fetch($newid);
 
 					// The move is not enough, so we regenerate page
 					$filetpl = $conf->website->dir_output.'/'.$object->ref.'/page'.$newid.'.tpl.php';
@@ -1253,10 +1271,85 @@ class Website extends CommonObject
 			$this->db->rollback();
 			return -1;
 		}
-		else
-		{
+		else {
 			$this->db->commit();
 			return $object->id;
+		}
+	}
+
+	/**
+	 * Rebuild all files of a containers of a website. TODO Add other files too.
+	 * Note: Files are already regenerated during importWebSite so this function is useless when importing a website.
+	 *
+	 * @return 	int						<0 if KO, >=0 if OK
+	 */
+	public function rebuildWebSiteFiles()
+	{
+		global $conf;
+
+		$error = 0;
+
+		$object = $this;
+		if (empty($object->ref))
+		{
+			$this->error = 'Function importWebSite called on object not loaded (object->ref is empty)';
+			return -1;
+		}
+
+		$objectpagestatic = new WebsitePage($this->db);
+
+		$sql = 'SELECT rowid FROM '.MAIN_DB_PREFIX.'website_page WHERE fk_website = '.$this->id;
+
+		$resql = $this->db->query($sql);
+		if (! $resql) {
+			$this->error = $this->db->lasterror();
+			return -1;
+		}
+
+		$num = $this->db->num_rows($resql);
+
+		$i=0;
+		while ($i < $num) {
+			$obj = $this->db->fetch_object($resql);
+
+			$newid = $obj->rowid;
+
+			$objectpagestatic->fetch($newid);
+
+			$aliasesarray = explode(',', $objectpagestatic->aliasalt);
+
+			$filetpl = $conf->website->dir_output.'/'.$object->ref.'/page'.$newid.'.tpl.php';
+			$result = dolSavePageContent($filetpl, $object, $objectpagestatic);
+			if (!$result) {
+				$this->errors[] = 'Failed to write file '.basename($filetpl);
+				$error++;
+			}
+
+			// Regenerate alternative aliases pages
+			if (is_array($aliasesarray))
+			{
+				foreach ($aliasesarray as $aliasshortcuttocreate)
+				{
+					if (trim($aliasshortcuttocreate))
+					{
+						$filealias = $conf->website->dir_output.'/'.$object->ref.'/'.trim($aliasshortcuttocreate).'.php';
+						$result = dolSavePageAlias($filealias, $object, $objectpagestatic);
+						if (!$result) {
+							$this->errors[] = 'Failed to write file '.basename($filealias);
+							$error++;
+						}
+					}
+				}
+			}
+
+			$i++;
+		}
+
+		if ($error)
+		{
+			return -1;
+		} else {
+			return $num;
 		}
 	}
 
@@ -1267,15 +1360,13 @@ class Website extends CommonObject
 	 */
 	public function isMultiLang()
 	{
-		// TODO Can edit list of languages of web site. Return false if there is only 0 or 1 language.
-
-		return true;
+		return (empty($this->otherlang) ? false : true);
 	}
 
 	/**
 	 * Component to select language inside a container (Full CSS Only)
 	 *
-	 * @param	array|string	$languagecodes			'auto' to show all languages available for page, or language codes array like array('en_US','fr_FR','de_DE','es_ES')
+	 * @param	array|string	$languagecodes			'auto' to show all languages available for page, or language codes array like array('en','fr','de','es')
 	 * @param	Translate		$weblangs				Language Object
 	 * @param	string			$morecss				More CSS class on component
 	 * @param	string			$htmlname				Suffix for HTML name
@@ -1286,6 +1377,33 @@ class Website extends CommonObject
 		global $websitepagefile, $website;
 
 		if (!is_object($weblangs)) return 'ERROR componentSelectLang called with parameter $weblangs not defined';
+
+		$arrayofspecialmainlanguages = array(
+			'en'=>'en_US',
+			'sq'=>'sq_AL',
+			'ar'=>'ar_SA',
+			'eu'=>'eu_ES',
+			'bn'=>'bn_DB',
+			'bs'=>'bs_BA',
+			'ca'=>'ca_ES',
+			'zh'=>'zh_TW',
+			'cs'=>'cs_CZ',
+			'da'=>'da_DK',
+			'et'=>'et_EE',
+			'ka'=>'ka_GE',
+			'el'=>'el_GR',
+			'he'=>'he_IL',
+			'kn'=>'kn_IN',
+			'km'=>'km_KH',
+			'ko'=>'ko_KR',
+			'lo'=>'lo_LA',
+			'nb'=>'nb_NO',
+			'fa'=>'fa_IR',
+			'sr'=>'sr_RS',
+			'sl'=>'sl_SI',
+			'uk'=>'uk_UA',
+			'vi'=>'vi_VN'
+		);
 
 		// Load tmppage if we have $websitepagefile defined
 		$tmppage = new WebsitePage($this->db);
@@ -1302,7 +1420,7 @@ class Website extends CommonObject
 			}
 		}
 
-		// Fill with existing translation, nothing if none
+		// Fill $languagecodes array with existing translation, nothing if none
 		if (!is_array($languagecodes) && $pageid > 0)
 		{
 			$languagecodes = array();
@@ -1325,16 +1443,17 @@ class Website extends CommonObject
 				}
 			}
 		}
-		// Now $languagecodes is always an array
+		// Now $languagecodes is always an array. Example array('en', 'fr', 'es');
 
-		$languagecodeselected = $weblangs->defaultlang; // Because we must init with a value, but real value is the lang of main parent container
+		$languagecodeselected = substr($weblangs->defaultlang, 0, 2); // Because we must init with a value, but real value is the lang of main parent container
 		if (!empty($websitepagefile))
 		{
 			$pageid = str_replace(array('.tpl.php', 'page'), array('', ''), basename($websitepagefile));
 			if ($pageid > 0)
 			{
-				$languagecodeselected = $tmppage->lang;
-				if (!in_array($tmppage->lang, $languagecodes)) $languagecodes[] = $tmppage->lang; // We add language code of page into combo list
+				$pagelang = substr($tmppage->lang, 0, 2);
+				$languagecodeselected = substr($pagelang, 0, 2);
+				if (!in_array($pagelang, $languagecodes)) $languagecodes[] = $pagelang; // We add language code of page into combo list
 			}
 		}
 
@@ -1345,6 +1464,7 @@ class Website extends CommonObject
 		$url = preg_replace('/(\?|&)l=([a-zA-Z_]*)/', '', $url); // We remove param l from url
 		//$url = preg_replace('/(\?|&)lang=([a-zA-Z_]*)/', '', $url);	// We remove param lang from url
 		$url .= (preg_match('/\?/', $url) ? '&' : '?').'l=';
+		if (! preg_match('/^\//', $url)) $url = '/'.$url;
 
 		$HEIGHTOPTION = 40;
 		$MAXHEIGHT = 4 * $HEIGHTOPTION;
@@ -1368,17 +1488,23 @@ class Website extends CommonObject
 		ul.componentSelectLang'.$htmlname.' { width: 150px; }
 		ul.componentSelectLang'.$htmlname.':hover .fa { visibility: hidden; }
 		.componentSelectLang'.$htmlname.' a { text-decoration: none; width: 100%; }
-		.componentSelectLang'.$htmlname.' li { display: block; padding: 0px 20px; }
+		.componentSelectLang'.$htmlname.' li { display: block; padding: 0px 15px; margin-left: 0; margin-right: 0; }
 		.componentSelectLang'.$htmlname.' li:hover { background-color: #EEE; }
 		';
 		$out .= '</style>';
 		$out .= '<ul class="componentSelectLang'.$htmlname.($morecss ? ' '.$morecss : '').'">';
+
 		if ($languagecodeselected)
 		{
-			$shortcode = strtolower(substr($languagecodeselected, -2));
+			// Convert $languagecodeselected into a long language code
+			if (strlen($languagecodeselected) == 2) {
+				$languagecodeselected = (empty($arrayofspecialmainlanguages[$languagecodeselected]) ? $languagecodeselected.'_'.strtoupper($languagecodeselected) : $arrayofspecialmainlanguages[$languagecodeselected]);
+			}
+
+			$countrycode = strtolower(substr($languagecodeselected, -2));
 			$label = $weblangs->trans("Language_".$languagecodeselected);
-			if ($shortcode == 'us') $label = preg_replace('/\s*\(.*\)/', '', $label);
-			$out .= '<a href="'.$url.$languagecodeselected.'"><li><img height="12px" src="medias/image/common/flags/'.$shortcode.'.png" style="margin-right: 5px;"/>'.$label;
+			if ($countrycode == 'us') $label = preg_replace('/\s*\(.*\)/', '', $label);
+			$out .= '<a href="'.$url.substr($languagecodeselected, 0, 2).'"><li><img height="12px" src="/medias/image/common/flags/'.$countrycode.'.png" style="margin-right: 5px;"/><span class="websitecomponentlilang">'.$label.'</span>';
 			$out .= '<span class="fa fa-caret-down" style="padding-left: 5px;" />';
 			$out .= '</li></a>';
 		}
@@ -1387,11 +1513,17 @@ class Website extends CommonObject
         {
             foreach ($languagecodes as $languagecode)
             {
+            	// Convert $languagecode into a long language code
+                if (strlen($languagecode) == 2) {
+                	$languagecode = (empty($arrayofspecialmainlanguages[$languagecode]) ? $languagecode.'_'.strtoupper($languagecode) : $arrayofspecialmainlanguages[$languagecode]);
+                }
+
                 if ($languagecode == $languagecodeselected) continue; // Already output
-                $shortcode = strtolower(substr($languagecode, -2));
+
+                $countrycode = strtolower(substr($languagecode, -2));
                 $label = $weblangs->trans("Language_".$languagecode);
-                if ($shortcode == 'us') $label = preg_replace('/\s*\(.*\)/', '', $label);
-                $out .= '<a href="'.$url.$languagecode.'"><li><img height="12px" src="medias/image/common/flags/'.$shortcode.'.png" style="margin-right: 5px;"/>'.$label;
+                if ($countrycode == 'us') $label = preg_replace('/\s*\(.*\)/', '', $label);
+                $out .= '<a href="'.$url.substr($languagecode, 0, 2).'"><li><img height="12px" src="/medias/image/common/flags/'.$countrycode.'.png" style="margin-right: 5px;"/><span class="websitecomponentlilang">'.$label.'</span>';
                 if (empty($i) && empty($languagecodeselected)) $out .= '<span class="fa fa-caret-down" style="padding-left: 5px;" />';
                 $out .= '</li></a>';
                 $i++;

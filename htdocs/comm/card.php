@@ -5,7 +5,7 @@
  * Copyright (C) 2006      Andre Cianfarani            <acianfa@free.fr>
  * Copyright (C) 2005-2017 Regis Houssin               <regis.houssin@inodbox.com>
  * Copyright (C) 2008      Raphael Bertrand (Resultic) <raphael.bertrand@resultic.fr>
- * Copyright (C) 2010-2014 Juanjo Menent               <jmenent@2byte.es>
+ * Copyright (C) 2010-2020 Juanjo Menent               <jmenent@2byte.es>
  * Copyright (C) 2013      Alexandre Spangaro          <aspangaro@open-dsi.fr>
  * Copyright (C) 2015-2019 Frédéric France             <frederic.france@netlogic.fr>
  * Copyright (C) 2015      Marcos García               <marcosgdf@gmail.com>
@@ -65,11 +65,12 @@ $result = restrictedArea($user, 'societe', $id, '&societe');
 $action = GETPOST('action', 'aZ09');
 $mode = GETPOST("mode");
 
+$limit = GETPOST('limit', 'int') ? GETPOST('limit', 'int') : $conf->liste_limit;
 $sortfield = GETPOST("sortfield", 'alpha');
 $sortorder = GETPOST("sortorder", 'alpha');
-$page = GETPOST("page", 'int');
+$page = GETPOSTISSET('pageplusone') ? (GETPOST('pageplusone') - 1) : GETPOST("page", 'int');
 if (empty($page) || $page == -1) { $page = 0; }     // If $page is not defined, or '' or -1
-$offset = $conf->liste_limit * $page;
+$offset = $limit * $page;
 $pageprev = $page - 1;
 $pagenext = $page + 1;
 if (!$sortorder) $sortorder = "ASC";
@@ -329,9 +330,7 @@ if ($object->id > 0)
 	if ($action == 'editconditions')
 	{
 		$form->form_conditions_reglement($_SERVER['PHP_SELF'].'?socid='.$object->id, $object->cond_reglement_id, 'cond_reglement_id', 1);
-	}
-	else
-	{
+	} else {
 		$form->form_conditions_reglement($_SERVER['PHP_SELF'].'?socid='.$object->id, $object->cond_reglement_id, 'none');
 	}
 	print "</td>";
@@ -348,9 +347,7 @@ if ($object->id > 0)
 	if ($action == 'editmode')
 	{
 		$form->form_modes_reglement($_SERVER['PHP_SELF'].'?socid='.$object->id, $object->mode_reglement_id, 'mode_reglement_id', 'CRDT', 1, 1);
-	}
-	else
-	{
+	} else {
 		$form->form_modes_reglement($_SERVER['PHP_SELF'].'?socid='.$object->id, $object->mode_reglement_id, 'none');
 	}
 	print "</td>";
@@ -369,9 +366,7 @@ if ($object->id > 0)
 		if ($action == 'editbankaccount')
 		{
 			$form->formSelectAccount($_SERVER['PHP_SELF'].'?socid='.$object->id, $object->fk_account, 'fk_account', 1);
-		}
-		else
-		{
+		} else {
 			$form->formSelectAccount($_SERVER['PHP_SELF'].'?socid='.$object->id, $object->fk_account, 'none');
 		}
 		print "</td>";
@@ -477,9 +472,7 @@ if ($object->id > 0)
         if ($action == 'editshipping')
         {
             $form->formSelectShippingMethod($_SERVER['PHP_SELF'].'?socid='.$object->id, $object->shipping_method_id, 'shipping_method_id', 1);
-        }
-        else
-        {
+        } else {
             $form->formSelectShippingMethod($_SERVER['PHP_SELF'].'?socid='.$object->id, $object->shipping_method_id, 'none');
         }
         print "</td>";
@@ -516,9 +509,7 @@ if ($object->id > 0)
         {
             $adh->ref = $adh->getFullName($langs);
             print $adh->getNomUrl(1);
-        }
-        else
-        {
+        } else {
             print '<span class="opacitymedium">'.$langs->trans("ThirdpartyNotLinkedToMember").'</span>';
         }
         print '</td>';
@@ -545,9 +536,7 @@ if ($object->id > 0)
 	    if ($action == 'editlevel')
 	    {
 	        $formcompany->form_prospect_level($_SERVER['PHP_SELF'].'?socid='.$object->id, $object->fk_prospectlevel, 'prospect_level_id', 1);
-	    }
-	    else
-	    {
+	    } else {
 	        print $object->getLibProspLevel();
 	    }
         print "</td>";
@@ -581,7 +570,7 @@ if ($object->id > 0)
 	$boxstat .= '<table summary="'.dol_escape_htmltag($langs->trans("DolibarrStateBoard")).'" class="border boxtable boxtablenobottom boxtablenotop" width="100%">';
 	$boxstat .= '<tr class="impair"><td colspan="2" class="tdboxstats nohover">';
 
-	if (!empty($conf->propal->enabled))
+	if (!empty($conf->propal->enabled) && $user->rights->propal->lire)
 	{
 		// Box proposals
 		$tmp = $object->getOutstandingProposals();
@@ -599,7 +588,7 @@ if ($object->id > 0)
 		if ($link) $boxstat .= '</a>';
 	}
 
-	if (!empty($conf->commande->enabled))
+	if (!empty($conf->commande->enabled) && $user->rights->commande->lire)
 	{
 		// Box commandes
 		$tmp = $object->getOutstandingOrders();
@@ -617,7 +606,7 @@ if ($object->id > 0)
 		if ($link) $boxstat .= '</a>';
 	}
 
-	if (!empty($conf->facture->enabled))
+	if (!empty($conf->facture->enabled) && $user->rights->facture->lire)
 	{
 		// Box factures
 		$tmp = $object->getOutstandingBills();
@@ -666,7 +655,7 @@ if ($object->id > 0)
 	$now = dol_now();
 
 	/*
-	 * Last proposals
+	 * Latest proposals
 	 */
 	if (!empty($conf->propal->enabled) && $user->rights->propal->lire)
 	{
@@ -730,15 +719,13 @@ if ($object->id > 0)
 				print "</table>";
 				print '</div>';
 			}
-		}
-		else
-		{
+		} else {
 			dol_print_error($db);
 		}
 	}
 
 	/*
-	 * Last orders
+	 * Latest orders
 	 */
 	if (!empty($conf->commande->enabled) && $user->rights->commande->lire)
 	{
@@ -751,7 +738,7 @@ if ($object->id > 0)
 		$sql .= " FROM ".MAIN_DB_PREFIX."societe as s, ".MAIN_DB_PREFIX."commande as c";
 		$sql .= " WHERE c.fk_soc = s.rowid ";
 		$sql .= " AND s.rowid = ".$object->id;
-		$sql .= " AND c.entity = ".$conf->entity;
+		$sql .= " AND c.entity IN (".getEntity('commande').')';
 		$sql .= " ORDER BY c.date_commande DESC";
 
 		$resql = $db->query($sql);
@@ -816,15 +803,13 @@ if ($object->id > 0)
 				print "</table>";
 				print '</div>';
 			}
-		}
-		else
-		{
+		} else {
 			dol_print_error($db);
 		}
 	}
 
     /*
-     *   Last shipments
+     *   Latest shipments
      */
     if (!empty($conf->expedition->enabled) && $user->rights->expedition->lire)
     {
@@ -897,7 +882,7 @@ if ($object->id > 0)
     }
 
 	/*
-	 * Last linked contracts
+	 * Latest linked contracts
 	 */
 	if (!empty($conf->contrat->enabled) && $user->rights->contrat->lire)
 	{
@@ -905,7 +890,7 @@ if ($object->id > 0)
 		$sql .= " FROM ".MAIN_DB_PREFIX."societe as s, ".MAIN_DB_PREFIX."contrat as c";
 		$sql .= " WHERE c.fk_soc = s.rowid ";
 		$sql .= " AND s.rowid = ".$object->id;
-		$sql .= " AND c.entity = ".$conf->entity;
+		$sql .= " AND c.entity IN (".getEntity('contract').")";
 		$sql .= " ORDER BY c.datec DESC";
 
 		$resql = $db->query($sql);
@@ -959,15 +944,13 @@ if ($object->id > 0)
 				print "</table>";
 				print '</div>';
 			}
-		}
-		else
-		{
+		} else {
 			dol_print_error($db);
 		}
 	}
 
 	/*
-	 * Last interventions
+	 * Latest interventions
 	 */
 	if (!empty($conf->ficheinter->enabled) && $user->rights->ficheinter->lire)
 	{
@@ -975,7 +958,7 @@ if ($object->id > 0)
 		$sql .= " FROM ".MAIN_DB_PREFIX."societe as s, ".MAIN_DB_PREFIX."fichinter as f";
 		$sql .= " WHERE f.fk_soc = s.rowid";
 		$sql .= " AND s.rowid = ".$object->id;
-		$sql .= " AND f.entity = ".$conf->entity;
+		$sql .= " AND f.entity IN (".getEntity('intervention').")";
 		$sql .= " ORDER BY f.tms DESC";
 
 		$resql = $db->query($sql);
@@ -1020,15 +1003,13 @@ if ($object->id > 0)
 				print "</table>";
 				print '</div>';
 			}
-		}
-		else
-		{
+		} else {
 			dol_print_error($db);
 		}
 	}
 
 	/*
-	 *   Last invoices templates
+	 *   Latest invoices templates
 	 */
 	if (!empty($conf->facture->enabled) && $user->rights->facture->lire)
 	{
@@ -1044,7 +1025,7 @@ if ($object->id > 0)
 		$sql .= ', s.nom, s.rowid as socid';
 		$sql .= " FROM ".MAIN_DB_PREFIX."societe as s,".MAIN_DB_PREFIX."facture_rec as f";
 		$sql .= " WHERE f.fk_soc = s.rowid AND s.rowid = ".$object->id;
-		$sql .= " AND f.entity = ".$conf->entity;
+		$sql .= " AND f.entity IN (".getEntity('invoice').")";
 		$sql .= ' GROUP BY f.rowid, f.titre, f.total, f.tva, f.total_ttc,';
 		$sql .= ' f.date_last_gen, f.datec, f.frequency, f.unit_frequency,';
 		$sql .= ' f.suspended, f.date_when,';
@@ -1063,7 +1044,7 @@ if ($object->id > 0)
 				print '<table class="noborder centpercent lastrecordtable">';
 
 				print '<tr class="liste_titre">';
-				print '<td colspan="4"><table width="100%" class="nobordernopadding"><tr><td>'.$langs->trans("LatestCustomerTemplateInvoices", ($num <= $MAXLIST ? "" : $MAXLIST)).'</td><td class="right"><a class="notasortlink" href="'.DOL_URL_ROOT.'/compta/facture/list.php?socid='.$object->id.'">'.$langs->trans("AllCustomerTemplateInvoices").'<span class="badge marginleftonlyshort">'.$num.'</span></a></td>';
+				print '<td colspan="4"><table width="100%" class="nobordernopadding"><tr><td>'.$langs->trans("LatestCustomerTemplateInvoices", ($num <= $MAXLIST ? "" : $MAXLIST)).'</td><td class="right"><a class="notasortlink" href="'.DOL_URL_ROOT.'/compta/facture/invoicetemplate_list.php?socid='.$object->id.'">'.$langs->trans("AllCustomerTemplateInvoices").'<span class="badge marginleftonlyshort">'.$num.'</span></a></td>';
 				print '</tr></table></td>';
 				print '</tr>';
 			}
@@ -1091,15 +1072,11 @@ if ($object->id > 0)
 				if ($objp->frequency && $objp->date_last_gen > 0)
 				{
 					print '<td class="right" width="80px">'.dol_print_date($db->jdate($objp->date_last_gen), 'day').'</td>';
-				}
-				else
-				{
+				} else {
 					if ($objp->dc > 0)
 					{
 						print '<td class="right" width="80px">'.dol_print_date($db->jdate($objp->dc), 'day').'</td>';
-					}
-					else
-					{
+					} else {
 						print '<td class="right"><b>!!!</b></td>';
 					}
 				}
@@ -1128,9 +1105,7 @@ if ($object->id > 0)
 				print "</table>";
 				print '</div>';
 			}
-		}
-		else
-		{
+		} else {
 			dol_print_error($db);
 		}
 	}
@@ -1193,9 +1168,7 @@ if ($object->id > 0)
 				if ($objp->df > 0)
 				{
 					print '<td class="right" width="80px">'.dol_print_date($db->jdate($objp->df), 'day').'</td>';
-				}
-				else
-				{
+				} else {
 					print '<td class="right"><b>!!!</b></td>';
 				}
 				print '<td class="right" style="min-width: 60px">';
@@ -1220,9 +1193,7 @@ if ($object->id > 0)
 				print "</table>";
 				print '</div>';
 			}
-		}
-		else
-		{
+		} else {
 			dol_print_error($db);
 		}
 	}
@@ -1287,9 +1258,7 @@ if ($object->id > 0)
     			if (empty($user->rights->facture->creer))
     			{
     			    print '<div class="inline-block divButAction"><a class="butActionRefused classfortooltip" title="'.dol_escape_js($langs->trans("NotAllowed")).'" href="#">'.$langs->trans("AddBill").'</a></div>';
-    			}
-    			else
-    			{
+    			} else {
     				$langs->load("bills");
     				$langs->load("orders");
 
@@ -1299,8 +1268,7 @@ if ($object->id > 0)
     				    {
     					    if (!empty($orders2invoice) && $orders2invoice > 0) print '<div class="inline-block divButAction"><a class="butAction" href="'.DOL_URL_ROOT.'/commande/orderstoinvoice.php?socid='.$object->id.'">'.$langs->trans("CreateInvoiceForThisCustomer").'</a></div>';
     					    else print '<div class="inline-block divButAction"><a class="butActionRefused classfortooltip" title="'.dol_escape_js($langs->trans("NoOrdersToInvoice")).'" href="#">'.$langs->trans("CreateInvoiceForThisCustomer").'</a></div>';
-    				    }
-    				    else print '<div class="inline-block divButAction"><a class="butActionRefused classfortooltip" title="'.dol_escape_js($langs->trans("ThirdPartyMustBeEditAsCustomer")).'" href="#">'.$langs->trans("AddBill").'</a></div>';
+    				    } else print '<div class="inline-block divButAction"><a class="butActionRefused classfortooltip" title="'.dol_escape_js($langs->trans("ThirdPartyMustBeEditAsCustomer")).'" href="#">'.$langs->trans("AddBill").'</a></div>';
     				}
 
     				if ($object->client != 0 && $object->client != 2) print '<div class="inline-block divButAction"><a class="butAction" href="'.DOL_URL_ROOT.'/compta/facture/card.php?action=create&socid='.$object->id.'">'.$langs->trans("AddBill").'</a></div>';
@@ -1315,9 +1283,7 @@ if ($object->id > 0)
     		if ($user->rights->agenda->myactions->create)
     		{
     			print '<div class="inline-block divButAction"><a class="butAction" href="'.DOL_URL_ROOT.'/comm/action/card.php?action=create&socid='.$object->id.'">'.$langs->trans("AddAction").'</a></div>';
-    		}
-    		else
-    		{
+    		} else {
     			print '<div class="inline-block divButAction"><a class="butAction" title="'.dol_escape_js($langs->trans("NotAllowed")).'" href="#">'.$langs->trans("AddAction").'</a></div>';
     		}
     	}
@@ -1341,9 +1307,7 @@ if ($object->id > 0)
         // List of done actions
 		show_actions_done($conf, $langs, $db, $object);
 	}
-}
-else
-{
+} else {
 	$langs->load("errors");
 	print $langs->trans('ErrorRecordNotFound');
 }

@@ -83,7 +83,7 @@ $search_qty = trim(GETPOST("search_qty", 'alpha'));
 $search_type_mouvement = GETPOST('search_type_mouvement', 'int');
 
 $limit = GETPOST('limit', 'int') ?GETPOST('limit', 'int') : $conf->liste_limit;
-$page = GETPOST("page", 'int');
+$page = GETPOSTISSET('pageplusone') ? (GETPOST('pageplusone') - 1) : GETPOST("page", 'int');
 $sortfield = GETPOST("sortfield", 'alpha');
 $sortorder = GETPOST("sortorder", 'alpha');
 if (empty($page) || $page == -1) { $page = 0; }     // If $page is not defined, or '' or -1
@@ -790,8 +790,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 			print '<td class="center nowraponall">';
 			if ($productlot->id > 0)
 				print $productlot->getNomUrl(1);
-			else
-				print $productlot->batch; // the id may not be defined if movement was entered when lot was not saved or if lot was removed after movement.
+			else print $productlot->batch; // the id may not be defined if movement was entered when lot was not saved or if lot was removed after movement.
 			print '</td>';
 		}
 		if (!empty($arrayfields['pl.eatby']['checked'])) {

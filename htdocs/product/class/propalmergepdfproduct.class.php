@@ -127,19 +127,6 @@ class Propalmergepdfproduct extends CommonObject
 		if (!$error)
         {
             $this->id = $this->db->last_insert_id(MAIN_DB_PREFIX."propal_merge_pdf_product");
-
-			if (!$notrigger)
-			{
-	            // Uncomment this and change MYOBJECT to your own tag if you
-	            // want this action calls a trigger.
-
-	            //// Call triggers
-	            //include_once DOL_DOCUMENT_ROOT . '/core/class/interfaces.class.php';
-	            //$interface=new Interfaces($this->db);
-	            //$result=$interface->run_triggers('MYOBJECT_CREATE',$this,$user,$langs,$conf);
-	            //if ($result < 0) { $error++; $this->errors=$interface->errors; }
-	            //// End call triggers
-			}
         }
 
         // Commit or rollback
@@ -152,9 +139,7 @@ class Propalmergepdfproduct extends CommonObject
 			}
 			$this->db->rollback();
 			return -1 * $error;
-		}
-		else
-		{
+		} else {
 			$this->db->commit();
             return $this->id;
 		}
@@ -211,9 +196,7 @@ class Propalmergepdfproduct extends CommonObject
             $this->db->free($resql);
 
             return 1;
-        }
-        else
-        {
+        } else {
       	    $this->error = "Error ".$this->db->lasterror();
             dol_syslog(get_class($this)."::fetch ".$this->error, LOG_ERR);
             return -1;
@@ -285,9 +268,7 @@ class Propalmergepdfproduct extends CommonObject
     		$this->db->free($resql);
 
     		return 1;
-    	}
-    	else
-    	{
+    	} else {
     		$this->error = "Error ".$this->db->lasterror();
     		dol_syslog(get_class($this)."::fetch_by_product ".$this->error, LOG_ERR);
     		return -1;
@@ -336,22 +317,6 @@ class Propalmergepdfproduct extends CommonObject
         $resql = $this->db->query($sql);
     	if (!$resql) { $error++; $this->errors[] = "Error ".$this->db->lasterror(); }
 
-		//if (! $error)
-		//{
-		//	if (! $notrigger)
-		//	{
-	            // Uncomment this and change MYOBJECT to your own tag if you
-	            // want this action calls a trigger.
-
-	            //// Call triggers
-	            //include_once DOL_DOCUMENT_ROOT . '/core/class/interfaces.class.php';
-	            //$interface=new Interfaces($this->db);
-	            //$result=$interface->run_triggers('MYOBJECT_MODIFY',$this,$user,$langs,$conf);
-	            //if ($result < 0) { $error++; $this->errors=$interface->errors; }
-	            //// End call triggers
-	    //	}
-		//}
-
         // Commit or rollback
 		if ($error)
 		{
@@ -362,9 +327,7 @@ class Propalmergepdfproduct extends CommonObject
 			}
 			$this->db->rollback();
 			return -1 * $error;
-		}
-		else
-		{
+		} else {
 			$this->db->commit();
 			return 1;
 		}
@@ -387,22 +350,6 @@ class Propalmergepdfproduct extends CommonObject
 
 		if (!$error)
 		{
-			if (!$notrigger)
-			{
-				// Uncomment this and change MYOBJECT to your own tag if you
-		        // want this action calls a trigger.
-
-		        //// Call triggers
-		        //include_once DOL_DOCUMENT_ROOT . '/core/class/interfaces.class.php';
-		        //$interface=new Interfaces($this->db);
-		        //$result=$interface->run_triggers('MYOBJECT_DELETE',$this,$user,$langs,$conf);
-		        //if ($result < 0) { $error++; $this->errors=$interface->errors; }
-		        //// End call triggers
-			}
-		}
-
-		if (!$error)
-		{
     		$sql = "DELETE FROM ".MAIN_DB_PREFIX."propal_merge_pdf_product";
     		$sql .= " WHERE rowid=".$this->id;
 
@@ -421,9 +368,7 @@ class Propalmergepdfproduct extends CommonObject
 			}
 			$this->db->rollback();
 			return -1 * $error;
-		}
-		else
-		{
+		} else {
 			$this->db->commit();
 			return 1;
 		}
@@ -446,22 +391,6 @@ class Propalmergepdfproduct extends CommonObject
 		$error = 0;
 
 		$this->db->begin();
-
-		//if (! $error)
-		//{
-		//	if (! $notrigger)
-		//	{
-				// Uncomment this and change MYOBJECT to your own tag if you
-				// want this action calls a trigger.
-
-				//// Call triggers
-				//include_once DOL_DOCUMENT_ROOT . '/core/class/interfaces.class.php';
-				//$interface=new Interfaces($this->db);
-				//$result=$interface->run_triggers('MYOBJECT_DELETE',$this,$user,$langs,$conf);
-				//if ($result < 0) { $error++; $this->errors=$interface->errors; }
-				//// End call triggers
-		//	}
-		//}
 
 		if (!$error)
 		{
@@ -487,9 +416,7 @@ class Propalmergepdfproduct extends CommonObject
 			}
 			$this->db->rollback();
 			return -1 * $error;
-		}
-		else
-		{
+		} else {
 			$this->db->commit();
 			return 1;
 		}
@@ -509,22 +436,6 @@ class Propalmergepdfproduct extends CommonObject
 		$error = 0;
 
 		$this->db->begin();
-
-		//if (! $error)
-		//{
-		//	if (! $notrigger)
-		//	{
-				// Uncomment this and change MYOBJECT to your own tag if you
-				// want this action calls a trigger.
-
-				//// Call triggers
-				//include_once DOL_DOCUMENT_ROOT . '/core/class/interfaces.class.php';
-				//$interface=new Interfaces($this->db);
-				//$result=$interface->run_triggers('MYOBJECT_DELETE',$this,$user,$langs,$conf);
-				//if ($result < 0) { $error++; $this->errors=$interface->errors; }
-				//// End call triggers
-		//	}
-		//}
 
 		if (!$error)
 		{
@@ -546,9 +457,7 @@ class Propalmergepdfproduct extends CommonObject
 			}
 			$this->db->rollback();
 			return -1 * $error;
-		}
-		else
-		{
+		} else {
 			$this->db->commit();
 			return 1;
 		}
@@ -602,9 +511,7 @@ class Propalmergepdfproduct extends CommonObject
 		{
 			$this->db->commit();
 			return $object->id;
-		}
-		else
-		{
+		} else {
 			$this->db->rollback();
 			return -1;
 		}

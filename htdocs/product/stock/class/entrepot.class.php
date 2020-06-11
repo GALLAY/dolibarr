@@ -4,7 +4,7 @@
  * Copyright (C) 2005-2008 Regis Houssin        <regis.houssin@inodbox.com>
  * Copyright (C) 2011	   Juanjo Menent        <jmenent@2byte.es>
  * Copyright (C) 2016	   Francis Appels       <francis.appels@yahoo.com>
- * Copyright (C) 2019       Frédéric France         <frederic.france@netlogic.fr>
+ * Copyright (C) 2019-2020  Frédéric France         <frederic.france@netlogic.fr>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -48,7 +48,11 @@ class Entrepot extends CommonObject
 	 * @var string String with name of icon for myobject. Must be the part after the 'object_' into object_myobject.png
 	 */
 	public $picto = 'stock';
-	public $ismultientitymanaged = 1; // 0=No test on entity, 1=Test with field entity, 2=Test with link by societe
+
+    /**
+     * @var int 0=No test on entity, 1=Test with field entity, 2=Test with link by societe
+     */
+	public $ismultientitymanaged = 1;
 
 	/**
 	 * @var string	Label
@@ -90,6 +94,16 @@ class Entrepot extends CommonObject
 	public $town;
 
 	/**
+	 * @var string Phone
+	 */
+	public $phone;
+
+	/**
+	 * @var string Fax
+	 */
+	public $fax;
+
+	/**
      * @var int ID of parent
      */
 	public $fk_parent;
@@ -103,23 +117,25 @@ class Entrepot extends CommonObject
 	 * @var array  Array with all fields and their property. Do not use it as a static var. It may be modified by constructor.
 	 */
 	public $fields = array(
-		'rowid' =>array('type'=>'integer', 'label'=>'ID', 'enabled'=>1, 'visible'=>-2, 'notnull'=>1, 'position'=>10),
-		'ref' =>array('type'=>'varchar(255)', 'label'=>'Ref', 'enabled'=>1, 'visible'=>-2, 'showoncombobox'=>1, 'position'=>25),
+		'rowid' =>array('type'=>'integer', 'label'=>'ID', 'enabled'=>1, 'visible'=>0, 'notnull'=>1, 'position'=>10),
+		'ref' =>array('type'=>'varchar(255)', 'label'=>'Ref', 'enabled'=>1, 'visible'=>1, 'showoncombobox'=>1, 'position'=>25),
 		'entity' =>array('type'=>'integer', 'label'=>'Entity', 'enabled'=>1, 'visible'=>0, 'notnull'=>1, 'position'=>30),
 		'description' =>array('type'=>'text', 'label'=>'Description', 'enabled'=>1, 'visible'=>-2, 'position'=>35),
-		'lieu' =>array('type'=>'varchar(64)', 'label'=>'LocationSummary', 'enabled'=>1, 'visible'=>-2, 'position'=>40, 'showoncombobox'=>1),
-		'fk_parent' =>array('type'=>'integer', 'label'=>'ParentWarehouse', 'enabled'=>1, 'visible'=>-2, 'position'=>41),
+		'lieu' =>array('type'=>'varchar(64)', 'label'=>'LocationSummary', 'enabled'=>1, 'visible'=>1, 'position'=>40, 'showoncombobox'=>1),
+		'fk_parent' =>array('type'=>'integer:Entrepot:product/stock/class/entrepot.class.php:1:statut=1 AND entity IN (__SHARED_ENTITIES__)', 'label'=>'ParentWarehouse', 'enabled'=>1, 'visible'=>-2, 'position'=>41),
 		'address' =>array('type'=>'varchar(255)', 'label'=>'Address', 'enabled'=>1, 'visible'=>-2, 'position'=>45),
 		'zip' =>array('type'=>'varchar(10)', 'label'=>'Zip', 'enabled'=>1, 'visible'=>-2, 'position'=>50),
 		'town' =>array('type'=>'varchar(50)', 'label'=>'Town', 'enabled'=>1, 'visible'=>-2, 'position'=>55),
-		'fk_departement' =>array('type'=>'integer', 'label'=>'State', 'enabled'=>1, 'visible'=>0, 'position'=>60),
-		'fk_pays' =>array('type'=>'integer', 'label'=>'Country', 'enabled'=>1, 'visible'=>-2, 'position'=>65),
+		'fk_departement' =>array('type'=>'sellist:c_departements:label:rowid::active=1', 'label'=>'State', 'enabled'=>1, 'visible'=>0, 'position'=>60),
+		'fk_pays' =>array('type'=>'sellist:c_country:label:rowid::active=1', 'label'=>'Country', 'enabled'=>1, 'visible'=>-2, 'position'=>65),
+		'phone' =>array('type'=>'varchar(20)', 'label'=>'Phone', 'enabled'=>1, 'visible'=>-2, 'position'=>70),
+		'fax' =>array('type'=>'varchar(20)', 'label'=>'Fax', 'enabled'=>1, 'visible'=>-2, 'position'=>75),
 		//'fk_user_author' =>array('type'=>'integer', 'label'=>'Fk user author', 'enabled'=>1, 'visible'=>-2, 'position'=>82),
 		'datec' =>array('type'=>'datetime', 'label'=>'DateCreation', 'enabled'=>1, 'visible'=>-2, 'position'=>500),
 		'tms' =>array('type'=>'timestamp', 'label'=>'DateModification', 'enabled'=>1, 'visible'=>-2, 'notnull'=>1, 'position'=>501),
 		//'import_key' =>array('type'=>'varchar(14)', 'label'=>'ImportId', 'enabled'=>1, 'visible'=>-2, 'position'=>1000),
 		//'model_pdf' =>array('type'=>'varchar(255)', 'label'=>'ModelPDF', 'enabled'=>1, 'visible'=>0, 'position'=>1010),
-		'statut' =>array('type'=>'tinyint(4)', 'label'=>'Status', 'enabled'=>1, 'visible'=>-2, 'position'=>200),
+		'statut' =>array('type'=>'tinyint(4)', 'label'=>'Status', 'enabled'=>1, 'visible'=>1, 'position'=>200),
 	);
 
 	/**
@@ -153,9 +169,7 @@ class Entrepot extends CommonObject
 		{
 			$this->statuts[self::STATUS_OPEN_ALL] = 'OpenAll';
 			$this->statuts[self::STATUS_OPEN_INTERNAL] = 'OpenInternal';
-		}
-		else
-		{
+		} else {
 			$this->statuts[self::STATUS_OPEN_ALL] = 'Opened';
 		}
 	}
@@ -172,11 +186,10 @@ class Entrepot extends CommonObject
 
 		$error = 0;
 
-		$this->libelle = trim($this->libelle);
+		$this->label = trim(!empty($this->label) ? $this->label : $this->libelle);
 
-		// Si libelle non defini, erreur
-		if ($this->libelle == '')
-		{
+		// Error if label not defined
+		if ($this->label == '') {
 			$this->error = "ErrorFieldRequired";
 			return 0;
 		}
@@ -186,7 +199,7 @@ class Entrepot extends CommonObject
 		$this->db->begin();
 
 		$sql = "INSERT INTO ".MAIN_DB_PREFIX."entrepot (ref, entity, datec, fk_user_author, fk_parent)";
-		$sql .= " VALUES ('".$this->db->escape($this->libelle)."', ".$conf->entity.", '".$this->db->idate($now)."', ".$user->id.", ".($this->fk_parent > 0 ? $this->fk_parent : "NULL").")";
+		$sql .= " VALUES ('".$this->db->escape($this->label)."', ".$conf->entity.", '".$this->db->idate($now)."', ".$user->id.", ".($this->fk_parent > 0 ? $this->fk_parent : "NULL").")";
 
 		dol_syslog(get_class($this)."::create", LOG_DEBUG);
 		$result = $this->db->query($sql);
@@ -209,7 +222,7 @@ class Entrepot extends CommonObject
                 // Actions on extra fields
                 if (!$error)
                 {
-                    if (empty($conf->global->MAIN_EXTRAFIELDS_DISABLED)) // For avoid conflicts if trigger used
+                    if (!$error)
                     {
                         $result = $this->insertExtraFields();
                         if ($result < 0)
@@ -223,22 +236,17 @@ class Entrepot extends CommonObject
 				{
 					$this->db->commit();
 					return $id;
-				}
-				else
-				{
+				} else {
 					dol_syslog(get_class($this)."::create return -3");
 					$this->db->rollback();
 					return -3;
 				}
-			}
-			else {
+			} else {
 				$this->error = "Failed to get insert id";
 				dol_syslog(get_class($this)."::create return -2");
 				return -2;
 			}
-		}
-		else
-		{
+		} else {
 			$this->error = $this->db->error();
 			dol_syslog(get_class($this)."::create Error ".$this->db->error());
 			$this->db->rollback();
@@ -260,6 +268,7 @@ class Entrepot extends CommonObject
         $error = 0;
 
 	    if (empty($id)) $id = $this->id;
+	    if (empty($this->label)) $this->label = $this->libelle; // For backward compatibility
 
 		// Check if new parent is already a child of current warehouse
 		if (!empty($this->fk_parent))
@@ -273,7 +282,8 @@ class Entrepot extends CommonObject
 			}
 		}
 
-		$this->libelle = trim($this->libelle);
+		$this->label = trim(!empty($this->label) ? $this->label : $this->libelle);
+
 		$this->description = trim($this->description);
 
 		$this->lieu = trim($this->lieu);
@@ -284,7 +294,7 @@ class Entrepot extends CommonObject
 		$this->country_id = ($this->country_id > 0 ? $this->country_id : 0);
 
 		$sql = "UPDATE ".MAIN_DB_PREFIX."entrepot ";
-		$sql .= " SET ref = '".$this->db->escape($this->libelle)."'";
+		$sql .= " SET ref = '".$this->db->escape($this->label)."'";
 		$sql .= ", fk_parent = ".(($this->fk_parent > 0) ? $this->fk_parent : "NULL");
 		$sql .= ", description = '".$this->db->escape($this->description)."'";
 		$sql .= ", statut = ".$this->statut;
@@ -293,6 +303,8 @@ class Entrepot extends CommonObject
 		$sql .= ", zip = '".$this->db->escape($this->zip)."'";
 		$sql .= ", town = '".$this->db->escape($this->town)."'";
 		$sql .= ", fk_pays = ".$this->country_id;
+		$sql .= ", phone = '".$this->db->escape($this->phone)."'";
+		$sql .= ", fax = '".$this->db->escape($this->fax)."'";
 		$sql .= " WHERE rowid = ".$id;
 
 		$this->db->begin();
@@ -305,7 +317,7 @@ class Entrepot extends CommonObject
             $this->errors[] = "Error ".$this->db->lasterror();
         }
 
-        if (!$error && empty($conf->global->MAIN_EXTRAFIELDS_DISABLED) && is_array($this->array_options) && count($this->array_options) > 0) {
+        if (!$error) {
             $result = $this->insertExtraFields();
             if ($result < 0)
             {
@@ -369,7 +381,7 @@ class Entrepot extends CommonObject
 		// Removed extrafields
 		if (!$error)
 		{
-			if (empty($conf->global->MAIN_EXTRAFIELDS_DISABLED)) // For avoid conflicts if trigger used
+			if (!$error)
 			{
 				$result = $this->deleteExtraFields();
 				if ($result < 0)
@@ -410,9 +422,7 @@ class Entrepot extends CommonObject
 		{
 			$this->db->commit();
 			return 1;
-		}
-		else
-		{
+		} else {
 			$this->db->rollback();
 			return -1;
 		}
@@ -440,14 +450,12 @@ class Entrepot extends CommonObject
 			return -1;
 		}
 
-		$sql  = "SELECT rowid, fk_parent, ref as label, description, statut, lieu, address, zip, town, fk_pays as country_id";
+		$sql  = "SELECT rowid, fk_parent, ref as label, description, statut, lieu, address, zip, town, fk_pays as country_id, phone, fax";
 		$sql .= " FROM ".MAIN_DB_PREFIX."entrepot";
 		if ($id)
 		{
 			$sql .= " WHERE rowid = '".$id."'";
-		}
-		else
-		{
+		} else {
 			$sql .= " WHERE entity = ".$conf->entity;
 			if ($ref) $sql .= " AND ref = '".$this->db->escape($ref)."'";
 		}
@@ -471,6 +479,8 @@ class Entrepot extends CommonObject
 				$this->zip            = $obj->zip;
 				$this->town           = $obj->town;
 				$this->country_id     = $obj->country_id;
+				$this->phone = $obj->phone;
+				$this->fax = $obj->fax;
 
                 // Retreive all extrafield
                 // fetch optionals attributes and labels
@@ -482,15 +492,11 @@ class Entrepot extends CommonObject
 				$this->country_code = $tmp['code'];
 
 				return 1;
-			}
-			else
-			{
+			} else {
                 $this->error = "Record Not Found";
 				return 0;
 			}
-		}
-		else
-		{
+		} else {
 			$this->error = $this->db->error();
 			return -1;
 		}
@@ -536,9 +542,7 @@ class Entrepot extends CommonObject
 			}
 
 			$this->db->free($result);
-		}
-		else
-		{
+		} else {
 	        dol_print_error($this->db);
 		}
 	}
@@ -601,9 +605,7 @@ class Entrepot extends CommonObject
 			$obj = $this->db->fetch_object($result);
 			$ret['nb'] = $obj->nb;
 			$this->db->free($result);
-		}
-		else
-		{
+		} else {
 			$this->error = $this->db->lasterror();
 			return -1;
 		}
@@ -636,9 +638,7 @@ class Entrepot extends CommonObject
 			$ret['nb'] = $obj->nb;
 			$ret['value'] = $obj->value;
 			$this->db->free($result);
-		}
-		else
-		{
+		} else {
 			$this->error = $this->db->lasterror();
 			return -1;
 		}
@@ -692,14 +692,16 @@ class Entrepot extends CommonObject
 	 */
 	public function getNomUrl($withpicto = 0, $option = '', $showfullpath = 0, $notooltip = 0)
 	{
-		global $conf, $langs;
+		global $conf, $langs, $hookmanager;
 		$langs->load("stocks");
 
         if (!empty($conf->dol_no_mouse_hover)) $notooltip = 1; // Force disable tooltips
 
+        if (!empty($conf->global->MAIN_OPTIMIZEFORTEXTBROWSER) && $withpicto) $withpicto = 0;
+
         $result = '';
 
-        $label = '<u>'.$langs->trans("ShowWarehouse").'</u>';
+        $label = '<u>'.$langs->trans("Warehouse").'</u>';
         $label .= '<br><b>'.$langs->trans('Ref').':</b> '.(empty($this->ref) ? (empty($this->label) ? $this->libelle : $this->label) : $this->ref);
         if (!empty($this->lieu)) {
             $label .= '<br><b>'.$langs->trans('LocationSummary').':</b> '.$this->lieu;
@@ -715,7 +717,7 @@ class Entrepot extends CommonObject
         {
             if (!empty($conf->global->MAIN_OPTIMIZEFORTEXTBROWSER))
             {
-                $label = $langs->trans("ShowWarehouse");
+                $label = $langs->trans("Warehouse");
                 $linkclose .= ' alt="'.dol_escape_htmltag($label, 1).'"';
             }
             $linkclose .= ' title="'.dol_escape_htmltag($label, 1).'"';
@@ -728,8 +730,18 @@ class Entrepot extends CommonObject
 
         $result .= $linkstart;
         if ($withpicto) $result .= img_object(($notooltip ? '' : $label), ($this->picto ? $this->picto : 'generic'), ($notooltip ? (($withpicto != 2) ? 'class="paddingright"' : '') : 'class="'.(($withpicto != 2) ? 'paddingright ' : '').'classfortooltip"'), 0, 0, $notooltip ? 0 : 1);
-        if ($withpicto != 2) $result .= ($showfullpath ? $this->get_full_arbo() : (empty($this->label) ? $this->libelle : $this->label));
+        if ($withpicto != 2) $result .= (($showfullpath || !empty($conf->global->STOCK_ALWAYS_SHOW_FULL_ARBO)) ? $this->get_full_arbo() : (empty($this->label)?$this->libelle:$this->label));
         $result .= $linkend;
+
+        global $action;
+        $hookmanager->initHooks(array('warehousedao'));
+        $parameters = array('id'=>$this->id, 'getnomurl'=>$result, 'withpicto' => $withpicto, 'option' => $option, 'showfullpath' => $showfullpath, 'notooltip'=> $notooltip);
+        $reshook = $hookmanager->executeHooks('getNomUrl', $parameters, $this, $action); // Note that $action and $object may have been modified by some hooks
+        if ($reshook > 0) {
+            $result = $hookmanager->resPrint;
+        } else {
+            $result .= $hookmanager->resPrint;
+        }
 
 		return $result;
 	}
@@ -749,7 +761,7 @@ class Entrepot extends CommonObject
 
         // Initialize parameters
         $this->id = 0;
-        $this->libelle = 'WAREHOUSE SPECIMEN';
+        $this->label = 'WAREHOUSE SPECIMEN';
         $this->description = 'WAREHOUSE SPECIMEN '.dol_print_date($now, 'dayhourlog');
 		$this->statut = 1;
         $this->specimen = 1;
@@ -793,10 +805,8 @@ class Entrepot extends CommonObject
                 	$warehousetmp->fetch($parentid);
                 	$TArbo[] = $warehousetmp->label;
                  	$parentid = $objarbo->fk_parent;
-                }
-                else break;
-            }
-            else dol_print_error($this->db);
+                } else break;
+            } else dol_print_error($this->db);
 
             $i++;
         }

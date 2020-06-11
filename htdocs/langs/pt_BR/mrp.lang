@@ -1,7 +1,7 @@
 # Dolibarr language file - Source file is en_US - mrp
 Mrp=Ordens de fabricação
 MO=Ordem de fabricação
-MRPDescription=Módulo para gerenciar Ordens de Manufatura (MO)
+MRPDescription=Módulo para gerenciar ordens de produção e manufatura (MO).
 MRPArea=Area MRP
 MrpSetupPage=Configuração do módulo MRP
 MenuBOM=Lista de materiais
@@ -13,6 +13,7 @@ BOMsSetup=Configuração do módulo BOM
 ListOfBOMs=Lista de BOMs
 ListOfManufacturingOrders=Lista de ordens de fabricação
 NewBOM=Nova Lista de Materiais
+ProductBOMHelp=Produto a ser criado com esta lista técnica. Nota: Os produtos com propriedade \n'Natureza do produto' = 'Matéria-prima' não estão visíveis nesta lista.
 BOMsNumberingModules=Modelos de numeração para BOM
 BOMsModelModule=Modelos de documentos lista técnica
 MOsNumberingModules=Modelos de numeração MO
@@ -21,7 +22,10 @@ FreeLegalTextOnBOMs=Texto livre para documentação da BOM
 WatermarkOnDraftBOMs=Marca d'agua no rascunho da BOM
 FreeLegalTextOnMOs=Texto livre no documento do MO
 WatermarkOnDraftMOs=Marca d'água no rascunho MO
+ConfirmCloneBillOfMaterials=Tem certeza de que deseja clonar a lista de materiais %s?
+ConfirmCloneMo=Tem certeza de que deseja clonar a ordem de fabricação %s?
 ManufacturingEfficiency=Eficiência de fabricação
+ValueOfMeansLoss=Valor de 0,95 significa uma média de 5 %% de perda durante a produção
 DeleteBillOfMaterials=Excluir lista de materiais
 DeleteMo=Excluir ordem de fabricação
 ConfirmDeleteBillOfMaterials=Tem certeza de que deseja excluir esta lista de materiais?
@@ -59,3 +63,8 @@ ConfirmProductionDesc=Ao clicar em '%s', você validará o consumo e / ou produ�
 ProductionForRef=Produção de %s
 AutoCloseMO=Fechar automaticamente a ordem de fabricação se forem atingidas quantidades para consumir e produzir
 NoStockChangeOnServices=Nenhuma alteração de estoque em serviços
+ProductQtyToConsumeByMO=Quantidade do produto a ser consumida por MO aberto
+ProductQtyToProduceByMO=Quantidade do produto ser produzida por MO aberto
+AddNewConsumeLines=Adicione nova linha para consumir
+ProductsToConsume=Produtos para consumir
+ProductsToProduce=Produtos para produzir
