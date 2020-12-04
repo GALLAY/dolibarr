@@ -56,6 +56,10 @@ if (empty($user->id) && !empty($_SESSION['dol_login']))
 {
 	$user->fetch('', $_SESSION['dol_login'], '', 1);
 	$user->getrights();
+
+	// Reload menu now we have the good user (and we need the good menu to have ->showmenu('topnb') correct.
+	$menumanager = new MenuManager($db, empty($user->socid) ? 0 : 1);
+	$menumanager->loadMenu();
 }
 
 
@@ -452,6 +456,9 @@ input.buttonpaymentstripe {
 	background-repeat: no-repeat;
 	background-position: 8px 7px;
 }
+.logopublicpayment #dolpaymentlogo {
+	max-height: 100px;
+}
 a.buttonticket {
 	padding-left: 5px;
 	padding-right: 5px;
@@ -490,6 +497,10 @@ select.flat, form.flat select, .pageplusone {
 input.pageplusone {
     padding-bottom: 4px;
     padding-top: 4px;
+}
+
+.saturatemedium {
+	filter: saturate(0.8);
 }
 
 .optionblue {
@@ -625,7 +636,7 @@ form {
     padding:0px;
     margin:0px;
 }
-div.float
+div.float, span.floatleft
 {
     float:<?php print $left; ?>;
 }
@@ -633,9 +644,16 @@ div.floatright
 {
     float:<?php print $right; ?>;
 }
+.block
+{
+	display:block;
+}
 .inline-block
 {
 	display:inline-block;
+}
+.largenumber {
+    font-size: 1.4em;
 }
 
 th .button {
@@ -778,6 +796,11 @@ textarea.centpercent {
     font-size: 0.85em;
     opacity: 0.7;
 }
+.longmessagecut {
+    max-height: 250px;
+    max-width: 100%;
+    overflow-y: auto;
+}
 
 .text-warning{
     color : <?php print $textWarning; ?>
@@ -870,6 +893,34 @@ if ($conf->browser->layout == 'phone') {
    	white-space: nowrap;
 }
 <?php } ?>
+
+
+.a-filter, .a-mesure {
+    border-radius: 50px;
+    background: var(--colortexttitlenotab);
+    color: #fff;
+    padding: 8px 10px 8px 6px;
+}
+.a-filter:before {
+    content: "\f0b0";
+}
+.a-mesure:before {
+    content: "\f080";
+}
+.a-filter:before, .a-mesure:before {
+	font-family: "Font Awesome 5 Free";
+	font-weight: 600;
+	padding-right: 5px;
+	padding-left: 5px;
+}
+.a-filter-disabled, .a-mesure-disabled {
+    border-radius: 50px;
+    background: var(--colorbacktitle1);
+    padding: 8px;
+    opacity: 0.6;
+}
+
+
 div.confirmmessage {
 	padding-top: 6px;
 }
@@ -954,6 +1005,18 @@ select.flat.selectlimit {
 }
 .tdoverflowmax100 {			/* For tdoverflow, the max-midth become a minimum ! */
     max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.tdoverflowmax100imp {			/* For tdoverflow, the max-midth become a minimum ! */
+    max-width: 100px !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.tdoverflowmax125 {			/* For tdoverflow, the max-midth become a minimum ! */
+    max-width: 125px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1156,12 +1219,14 @@ table[summary="list_of_modules"] .fa-cog {
 .maxwidth125 { max-width: 125px; }
 .maxwidth150 { max-width: 150px; }
 .maxwidth200 { max-width: 200px; }
+.maxwidth250 { max-width: 250px; }
 .maxwidth300 { max-width: 300px; }
 .maxwidth400 { max-width: 400px; }
 .maxwidth500 { max-width: 500px; }
 .maxwidth50imp  { max-width: 50px !important; }
 .maxwidth75imp  { max-width: 75px !important; }
 .minheight20 { min-height: 20px; }
+.minheight30 { min-height: 30px; }
 .minheight40 { min-height: 40px; }
 .titlefieldcreate { width: 20%; }
 .titlefield       { /* width: 25%; */ width: 250px; }
@@ -1214,6 +1279,15 @@ table[summary="list_of_modules"] .fa-cog {
     .minwidth500imp { min-width: 250px !important; }
 }
 
+.widthcentpercentminusx {
+	width: calc(100% - 50px) !important;
+	display: inline-block;
+}
+.widthcentpercentminusxx {
+	width: calc(100% - 70px) !important;
+	display: inline-block;
+}
+
 /* Force values for small screen 767 */
 @media only screen and (max-width: 767px)
 {
@@ -1223,6 +1297,10 @@ table[summary="list_of_modules"] .fa-cog {
 	div.refidno {
 		font-size: <?php print is_numeric($fontsize) ? ($fontsize).'px' : $fontsize; ?> !important;
 	}
+
+	div.divphotoref {
+	    padding-right: 10px !important;
+	}
 }
 
 /* Force values for small screen 570 */
@@ -1231,12 +1309,24 @@ table[summary="list_of_modules"] .fa-cog {
 	body {
 		font-size: <?php print is_numeric($fontsize) ? ($fontsize).'px' : $fontsize; ?>;
 	}
+
 	div.refidno {
 		font-size: <?php print is_numeric($fontsize) ? ($fontsize).'px' : $fontsize; ?> !important;
 	}
 
 	.login_vertical_align {
     	padding-left: 0;
+    }
+    .login_table input#username, .login_table input#password, .login_table input#securitycode {
+		margin-left: 5px !important;    
+    }
+	div#login_left, div#login_right {
+	    min-width: 150px !important;
+	    padding-left: 5px !important;
+	    padding-right: 5px !important;
+    }
+    .login_table div#login_right .tdinputlogin, .login_table div#login_right .tdinputlogin input {
+	    min-width: 150px !important;
     }
 
 	.divmainbodylarge { margin-left: 20px; margin-right: 20px; }
@@ -1409,6 +1499,22 @@ td.showDragHandle {
 <?php } ?>
 }
 
+/* DOL_XXX For having horizontal scroll into array (like with smartphone) */
+
+.classforhorizontalscrolloftabs #id-container {
+	width: 100%;
+}
+.classforhorizontalscrolloftabs .side-nav {
+	display: block;
+	float: left;
+}
+.classforhorizontalscrolloftabs #id-right {
+	width:calc(100% - 210px);
+	display: inline-block;
+}
+
+
+
 .side-nav {
 <?php if (GETPOST('optioncss', 'aZ09') == 'print') { ?>
 	display: none;
@@ -1461,9 +1567,10 @@ td.showDragHandle {
 ?>
 }
 
-/*
-*	Slide animation
-*/
+
+/**
+ *	Slide animation
+ */
 .side-nav-vert, #id-right {
 	transition: padding-left 0.5s ease, margin-left 0.5s ease;
 }
@@ -2131,30 +2238,30 @@ div.mainmenu.website {
 		$found = 0; $url = '';
 		foreach ($conf->file->dol_document_root as $dirroot)
 		{
-		    if (file_exists($dirroot."/".$val."/img/".$val.".png"))
+			if (file_exists($dirroot."/".$val."/img/".$val.".png"))
 			{
-			    $url = dol_buildpath('/'.$val.'/img/'.$val.'.png', 1);
-			    $found = 1;
-			    break;
+				$url = dol_buildpath('/'.$val.'/img/'.$val.'.png', 1);
+				$found = 1;
+				break;
 			}
 		}
 		// Img file not found
 		if (!$found)
 		{
-		    if (!defined('DISABLE_FONT_AWSOME')) {
-		        print "/* A mainmenu entry was found but img file ".$val.".png not found (check /".$val."/img/".$val.".png), so we use a generic one */\n";
-		        print 'div.mainmenu.'.$val.'::before {
+			if (!defined('DISABLE_FONT_AWSOME')) {
+				print "/* A mainmenu entry was found but img file ".$val.".png not found (check /".$val."/img/".$val.".png), so we use a generic one */\n";
+				print 'div.mainmenu.'.$val.'::before {
 	                    content: "\f249";
 	                }';
-		    } else {
-		    	print "/* A mainmenu entry was found but img file ".$val.".png not found (check /".$val."/img/".$val.".png), so we use a generic one. */\n";
-		    	print "/* Overwrite this definition in your own css with a different content to use your own font awesome icon. */\n";
-		        $url = dol_buildpath($path.'/theme/'.$theme.'/img/menus/generic'.(min($generic, 4))."_over.png", 1);
-		        print "div.mainmenu.".$val." {\n";
-		        print "	background-image: url(".$url.");\n";
-		        print "}\n";
-	    	}
-	    	$generic++;
+			} else {
+				print "/* A mainmenu entry was found but img file ".$val.".png not found (check /".$val."/img/".$val.".png), so we use a generic one. */\n";
+				print "/* Overwrite this definition in your own css with a different content to use your own font awesome icon. */\n";
+				$url = dol_buildpath($path.'/theme/'.$theme.'/img/menus/generic'.(min($generic, 4))."_over.png", 1);
+				print "div.mainmenu.".$val." {\n";
+				print "	background-image: url(".$url.");\n";
+				print "}\n";
+			}
+			$generic++;
 		} else {
 			print "div.mainmenu.".$val." {\n";
 			print "	background-image: url(".$url.");\n";
@@ -2250,9 +2357,11 @@ form#login {
 }
 .login_table .tdinputlogin {
     background-color: #fff;
-    border: 2px solid #ccc;
     min-width: 220px;
     border-radius: 2px;
+}
+.login_table .tdinputlogin {
+	border-bottom: 1px solid #ccc; 
 }
 .login_table .tdinputlogin .fa {
 	padding-left: 10px;
@@ -2425,6 +2534,9 @@ img.userphotosmall {			/* size for user photo in lists */
     background-size: contain;
     vertical-align: middle;
 }
+img.userphoto[alt="Gravatar avatar"] {
+    background: #fff;
+}
 .span-icon-user {
 	background-image: url(<?php echo dol_buildpath($path.'/theme/'.$theme.'/img/object_user.png', 1); ?>);
 	background-repeat: no-repeat;
@@ -2470,7 +2582,7 @@ div.vmenu, td.vmenu {
 .searchform { padding-top: 10px; }
 
 a.vmenu:link, a.vmenu:visited, a.vmenu:hover, a.vmenu:active, span.vmenu, span.vsmenu { white-space: nowrap; font-size:<?php print $fontsize ?>px; font-family: <?php print $fontlist ?>; text-align: <?php print $left; ?>; font-weight: bold; }
-font.vmenudisabled  { font-size:<?php print $fontsize ?>px; font-family: <?php print $fontlist ?>; text-align: <?php print $left; ?>; font-weight: bold; color: #aaa; margin-left: 4px; }
+font.vmenudisabled  { font-size:<?php print $fontsize ?>px; font-family: <?php print $fontlist ?>; text-align: <?php print $left; ?>; font-weight: bold; color: #aaa; margin-left: 4px; white-space: nowrap; }
 a.vmenu:link, a.vmenu:visited { color: #<?php echo $colortextbackvmenu; ?>; }
 
 a.vsmenu:link, a.vsmenu:visited, a.vsmenu:hover, a.vsmenu:active, span.vsmenu { font-size:<?php print $fontsize ?>px; font-family: <?php print $fontlist ?>; text-align: <?php print $left; ?>; font-weight: normal; color: #202020; margin: 1px 1px 1px 8px; }
@@ -2479,6 +2591,17 @@ a.vsmenu:link, a.vsmenu:visited { color: #<?php echo $colortextbackvmenu; ?>; wh
 font.vsmenudisabledmargin { margin: 1px 1px 1px 8px; }
 
 a.help:link, a.help:visited, a.help:hover, a.help:active, span.help { text-align: <?php print $left; ?>; font-weight: normal; color: #999; text-decoration: none; }
+
+.helppresentcircle {
+    color: var(--colorbackhmenu1);
+    filter: invert(0.5);
+    margin-left: -7px;
+    display: inline-block;
+    margin-top: -10px;
+    font-size: x-small;
+    vertical-align: super;
+    opacity: 0.95;
+}
 
 div.blockvmenulogo
 {
@@ -2765,7 +2888,7 @@ a.tabTitle {
     white-space: nowrap;
 }
 .tabTitleText {
-	display: hidden;
+	display: none;
 }
 .imgTabTitle {
 	max-height: 14px;
@@ -2875,11 +2998,21 @@ tr.nocellnopadd td.nobordernopadding, tr.nocellnopadd td.nocellnopadd
 .unsetcolor {
 	color: unset !important;
 }
+
+.smallpaddingimp {
+    padding: 4px !important;
+}
 .nopaddingleft {
 	padding-<?php print $left; ?>: 0px;
 }
 .nopaddingright {
 	padding-<?php print $right; ?>: 0px;
+}
+.nopaddingtopimp {
+	padding-top: 0px !important;
+}
+.nopaddingbottomimp {
+	padding-bottom: 0px !important;
 }
 .notopnoleft {
 	border-collapse: collapse;
@@ -3218,6 +3351,14 @@ table.hidepaginationprevious .paginationprevious {
 }
 table.hidepaginationnext .paginationnext {
 	display: none;
+}
+.paginationafterarrows a.btnTitlePlus {
+    border: 1px solid var(--btncolorborder);
+}
+.paginationafterarrows a.btnTitlePlus:hover span:before {
+    /* text-shadow: 0px 0px 5px #ccc; */
+    /* filter: invert(0.3); */
+    font-size: 1.03em;
 }
 
 
@@ -3602,6 +3743,15 @@ ul.noborder li:nth-child(even):not(.liste_titre) {
 }
 @media only screen and (max-width: 767px)
 {
+	.tabBar .arearef .pagination.paginationref {
+	    max-width: calc(50%);
+	}
+
+	.clearbothonsmartphone {
+	    clear: both;
+	    display: block !important;
+	}
+
 	div.tabs {
 		padding-left: 0 !important;
 		margin-left: 0 !important;
@@ -3759,7 +3909,7 @@ img.boxhandle, img.boxclose {
 .ok      { color: #114466; }
 .warning { color: #887711 !important; }
 .error   { color: #550000 !important; font-weight: bold; }
-.green   { color: #118822; }
+.green   { color: #118822 !important; }
 
 div.ok {
   color: #114466;
@@ -3852,6 +4002,7 @@ div.boximport {
 .fieldrequired { font-weight: bold; color: #000055; }
 
 .widthpictotitle { width: 40px; font-size: 1.4em; text-align: <?php echo $left; ?>; }
+table.titlemodulehelp tr td img.widthpictotitle { width: 80px; }
 
 .dolgraphtitle { margin-top: 6px; margin-bottom: 4px; }
 .dolgraphtitlecssboxes { /* margin: 0px; */ }
@@ -3913,10 +4064,14 @@ div.titre {
 	text-decoration: none;
 	padding-top: 5px;
     padding-bottom: 5px;
+    text-transform: uppercase;
 	/* text-shadow: 1px 1px 2px #FFFFFF; */
 	<?php print (empty($conf->dol_optimize_smallscreen) ? '' : 'margin-top: 4px;'); ?>
 }
-.secondary, div.titre {
+div.titre {
+	color: var(--colortexttitlenotab);
+}
+.secondary {
 	color: var(--colortexttitlenotab);
 }
 .tertiary {
@@ -4064,17 +4219,20 @@ div.ui-tooltip {
 	max-width: <?php print dol_size(600, 'width'); ?>px !important;
 }
 
-.mytooltip {
+div.ui-tooltip.mytooltip {
 	width: <?php print dol_size(450, 'width'); ?>px;
 	border-top: solid 1px #BBBBBB;
 	border-<?php print $left; ?>: solid 1px #BBBBBB;
 	border-<?php print $right; ?>: solid 1px #444444;
 	border-bottom: solid 1px #444444;
-	padding: 5px 20px;
+	padding: 10px 20px;
 	border-radius: 0;
 	box-shadow: 0 0 4px grey;
 	margin: 2px;
 	font-stretch: condensed;
+	/*background: var(--tooltipbgcolor) !important;
+	color : var(--tooltipfontcolor);*/
+	line-height: 1.6em;
 }
 
 
@@ -4327,6 +4485,7 @@ table.cal_month td:last-child   { border-right: 0px; }
 .cal_today_peruser_impair { background: #F8F8F0; }
 .peruser_busy      { background: #CC8888; }
 .peruser_notbusy   { background: #EEDDDD; opacity: 0.5; }
+div.event { margin: 8px; border-radius: 4px; box-shadow: 2px 2px 5px rgba(100, 100, 100, 0.2); }
 table.cal_event    { border: none; border-collapse: collapse; margin-bottom: 1px; -webkit-border-radius: 3px; border-radius: 3px; min-height: 20px;	}
 table.cal_event td { border: none; padding-<?php print $left; ?>: 2px; padding-<?php print $right; ?>: 2px; padding-top: 0px; padding-bottom: 0px; }
 table.cal_event td.cal_event { padding: 4px 4px !important; }
@@ -4788,9 +4947,14 @@ div.scroll2 {
 	width: <?php print isset($_SESSION['dol_screenwidth']) ?max($_SESSION['dol_screenwidth'] - 830, 450) : '450'; ?>px !important;
 }
 
-.gtaskname div, .gtaskname {
+div#GanttChartDIVglisthead, div#GanttChartDIVgcharthead {
+    line-height: 2;
+}
+
+.gtaskname div, .gtaskname, .gstartdate div, .gstartdate, .genddate div, .genddate {
 	font-size: unset !important;
 }
+
 div.gantt, .gtaskheading, .gmajorheading, .gminorheading, .gminorheadingwkend {
 	font-size: unset !important;
 	font-weight: normal !important;
@@ -5230,6 +5394,9 @@ a span.select2-chosen
 .select2-results {
 	max-height:	400px;
 }
+.select2-results__option {
+	word-break: break-word;
+}
 .select2-container.select2-container-disabled .select2-choice, .select2-container-multi.select2-container-disabled .select2-choices {
 	background-color: #FFFFFF;
 	background-image: none;
@@ -5351,6 +5518,10 @@ span.noborderoncategories {
 /* ============================================================================== */
 /*  External lib multiselect with checkbox                                        */
 /* ============================================================================== */
+
+.multi-select-menu {
+	z-index: 10;
+}
 
 .multi-select-container {
   display: inline-block;
@@ -6125,6 +6296,41 @@ border-top-right-radius: 6px;
 
 
 /* ============================================================================== */
+/* CSS style for debugbar                                                         */
+/* ============================================================================== */
+
+span.phpdebugbar-tooltip.phpdebugbar-tooltip-extra-wide, span.phpdebugbar-tooltip.phpdebugbar-tooltip-wide {
+    width: 250px !important;
+}
+.phpdebugbar-indicator span.phpdebugbar-tooltip {
+    opacity: .95 !important;
+}
+a.phpdebugbar-tab.phpdebugbar-active {
+	background-image: unset !important;
+}
+.phpdebugbar-indicator .fa {
+	font-family: "Font Awesome 5 Free";
+	font-weight: 600;
+}
+div.phpdebugbar-widgets-messages li.phpdebugbar-widgets-list-item span.phpdebugbar-widgets-value.phpdebugbar-widgets-warning:before,
+div.phpdebugbar-widgets-messages li.phpdebugbar-widgets-list-item span.phpdebugbar-widgets-value.phpdebugbar-widgets-error:before,
+div.phpdebugbar-widgets-exceptions a.phpdebugbar-widgets-editor-link:before,
+div.phpdebugbar-widgets-sqlqueries span.phpdebugbar-widgets-database:before,
+div.phpdebugbar-widgets-sqlqueries span.phpdebugbar-widgets-duration:before,
+div.phpdebugbar-widgets-sqlqueries span.phpdebugbar-widgets-memory:before,
+div.phpdebugbar-widgets-sqlqueries span.phpdebugbar-widgets-row-count:before,
+div.phpdebugbar-widgets-sqlqueries span.phpdebugbar-widgets-copy-clipboard:before,
+div.phpdebugbar-widgets-sqlqueries span.phpdebugbar-widgets-stmt-id:before,
+div.phpdebugbar-widgets-templates span.phpdebugbar-widgets-render-time:before,
+div.phpdebugbar-widgets-templates span.phpdebugbar-widgets-memory:before,
+div.phpdebugbar-widgets-templates span.phpdebugbar-widgets-param-count:before,
+div.phpdebugbar-widgets-templates span.phpdebugbar-widgets-type:before,
+div.phpdebugbar-widgets-templates a.phpdebugbar-widgets-editor-link:before
+{
+	font-family: "Font Awesome 5 Free" !important;
+}
+
+/* ============================================================================== */
 /* CSS style used for jFlot                                                       */
 /* ============================================================================== */
 
@@ -6315,11 +6521,11 @@ if (is_object($db)) $db->close();
 ::-webkit-scrollbar {
 	width: 12px;
 }
-::-webkit-scrollbar-button {
-	background: #aaa;
-}
+/*::-webkit-scrollbar-button {
+	background: #bbb;
+}*/
 ::-webkit-scrollbar-track-piece {
-	background: #fff;
+	background: #f4f4f4;
 }
 ::-webkit-scrollbar-thumb {
 	background: #ddd;

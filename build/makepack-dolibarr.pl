@@ -503,7 +503,10 @@ if ($nboftargetok) {
 		$ret=`rm -f  $BUILDROOT/$PROJECT/htdocs/install/mysql/README`;
 		$ret=`rm -f  $BUILDROOT/$PROJECT/htdocs/install/pgsql/README`;
 
-		$ret=`rm -fr  $BUILDROOT/$PROJECT/htdocs/install/mssql`;
+		$ret=`rm -fr $BUILDROOT/$PROJECT/htdocs/install/mssql`;
+		$ret=`rm -fr $BUILDROOT/$PROJECT/htdocs/install/sqlite3`;
+
+		$ret=`rm -fr $BUILDROOT/$PROJECT/node_modules`;
 
 		$ret=`rm -fr $BUILDROOT/$PROJECT/dev/ansible`;
 		$ret=`rm -fr $BUILDROOT/$PROJECT/dev/codesniffer`;
@@ -620,6 +623,9 @@ if ($nboftargetok) {
         $ret=`rm -fr $BUILDROOT/$PROJECT/htdocs/includes/tecnickcom/tcpdf/fonts/utils`;
         $ret=`rm -fr $BUILDROOT/$PROJECT/htdocs/includes/tecnickcom/tcpdf/tools`;
         $ret=`rm -f  $BUILDROOT/$PROJECT/htdocs/includes/tecnickcom/tcpdf/LICENSE.TXT`;
+
+        $ret=`rm -f  $BUILDROOT/$PROJECT/htdocs/includes/autoload.php`;
+
         $ret=`rm -f  $BUILDROOT/$PROJECT/htdocs/theme/common/octicons/LICENSE`;
 	}
 

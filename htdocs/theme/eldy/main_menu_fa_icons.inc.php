@@ -16,6 +16,9 @@
 	color: #<?php echo $colortextbackhmenu; ?>;
 }
 
+.fa-15x {
+    font-size: 1.5em;
+}
 
 div.mainmenu.menu {
 	background-image: none;
@@ -124,7 +127,7 @@ div.mainmenu.tools::before {
 }
 
 div.mainmenu.website::before {
-    content: "\f542";
+    content: "\f57d";
 }
 
 div.mainmenu.generic1::before {
@@ -149,7 +152,7 @@ div.mainmenu.generic4::before {
 	opacity: 0.7;
 	color: #440;
 }
-.fa-at, .fa-external-link-alt {
+.fa-at, .fa-external-link-alt, .fa-share-alt {
 	opacity: 0.7;
 	color: #304;
 }
